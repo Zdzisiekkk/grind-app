@@ -41,6 +41,13 @@ export type Profile = {
   height_cm: number | null;
   birth_year: number | null;
   sex: "m" | "f" | "other" | null;
+  /** Cel nawodnienia na dobę w mililitrach. */
+  daily_water_ml: number | null;
+  /** Ile mililitrów dodaje jedno tapnięcie „+". */
+  water_portion_ml: number;
+  water_reminder_from: string | null;
+  water_reminder_to: string | null;
+  water_reminder_every_min: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -156,6 +163,43 @@ export type WorkoutLog = {
   notes: string | null;
   created_at: string;
 };
+
+export type Habit = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  note: string | null;
+  target_per_day: number;
+  unit: string | null;
+  /** ISO: 1 = poniedziałek … 7 = niedziela. Pusta tablica = codziennie. */
+  days_of_week: number[];
+  reminder_at: string | null;
+  is_archived: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HabitLog = {
+  id: string;
+  user_id: string;
+  habit_id: string;
+  date: string;
+  count: number;
+  note: string | null;
+  created_at: string;
+};
+
+export type WaterLog = {
+  id: string;
+  user_id: string;
+  date: string;
+  ml: number;
+  created_at: string;
+};
+
+export type DailyWater = { user_id: string; date: string; ml: number; wpisy: number };
 
 export type InjuryStatus = "active" | "monitoring" | "healed";
 export type InjurySide = "left" | "right" | "both" | "none";
@@ -326,6 +370,8 @@ export type PeriodSummary = {
     max_level: number;
     entries: number;
   }[];
+  avg_water_ml: number | null;
+  habit_days_done: number;
   weight_start: number | null;
   weight_end: number | null;
 };
@@ -352,6 +398,9 @@ export type Database = {
       workout_logs: Tbl<WorkoutLog, "user_id" | "exercise_name" | "set_number">;
       injuries: Tbl<Injury, "user_id" | "name">;
       pain_logs: Tbl<PainLog, "user_id" | "injury_id" | "level">;
+      habits: Tbl<Habit, "user_id" | "name">;
+      habit_logs: Tbl<HabitLog, "user_id" | "habit_id">;
+      water_logs: Tbl<WaterLog, "user_id" | "ml">;
       body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
       foods: Tbl<Food, "name" | "kcal_100g">;
       meals: Tbl<Meal, "user_id" | "meal_type">;
@@ -366,6 +415,7 @@ export type Database = {
       v_daily_nutrition: { Row: DailyNutrition; Relationships: [] };
       v_daily_volume: { Row: DailyVolume; Relationships: [] };
       v_exercise_prs: { Row: ExercisePr; Relationships: [] };
+      v_daily_water: { Row: DailyWater; Relationships: [] };
     };
     Functions: {
       clone_plan: {

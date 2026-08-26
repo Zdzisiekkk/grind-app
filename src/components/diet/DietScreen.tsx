@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Button, Card, Chip } from "@/components/ui";
 import { MacroSummary } from "@/components/diet/MacroSummary";
 import { AddFoodSheet } from "@/components/diet/AddFoodSheet";
+import { WaterTracker } from "@/components/diet/WaterTracker";
 import { DateNav } from "@/components/DateNav";
 import type { MealEntry, MealType } from "@/lib/database.types";
 import { MEAL_TYPES } from "@/lib/constants";
@@ -19,11 +20,17 @@ export function DietScreen({
   date,
   initialEntries,
   goals,
+  water,
 }: {
   userId: string;
   date: string;
   initialEntries: EntryWithMeal[];
   goals: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null };
+  water: {
+    entries: { id: string; ml: number; created_at: string }[];
+    goalMl: number;
+    portionMl: number;
+  };
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState(initialEntries);
@@ -49,6 +56,14 @@ export function DietScreen({
       <Card>
         <MacroSummary totals={totals} goals={goals} />
       </Card>
+
+      <WaterTracker
+        userId={userId}
+        date={date}
+        entries={water.entries}
+        goalMl={water.goalMl}
+        portionMl={water.portionMl}
+      />
 
       {MEAL_TYPES.map((meal) => {
         const mealEntries = entries.filter((e) => e.meal_type === meal.value);

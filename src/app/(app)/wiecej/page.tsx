@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/cwiczenia", icon: "📚", label: "Katalog ćwiczeń", desc: "Technika, ilustracje, Twoja historia" },
   { href: "/aktywnosci", icon: "🏃", label: "Aktywności", desc: "Bieganie, rower, sparingi MMA" },
   { href: "/kontuzje", icon: "🩹", label: "Kontuzje", desc: "Kolano, bark, plecy — ból w skali 0–10" },
+  { href: "/nawyki", icon: "🔁", label: "Nawyki", desc: "Suplementy, sen, rozciąganie — z przypomnieniami" },
   { href: "/kalendarz", icon: "📅", label: "Kalendarz", desc: "Co robiłeś danego dnia" },
   { href: "/profil", icon: "👤", label: "Profil i cele", desc: "Cele kaloryczne, waga, wylogowanie" },
 ] as const;

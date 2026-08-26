@@ -144,3 +144,50 @@ export function painDescriptor(level: number): { label: string; color: string } 
   const { color, label } = painStatus(level);
   return { color, label };
 }
+
+/* --------------------------------- Nawyki --------------------------------- */
+
+/** Ikony do wyboru przy nawyku — emoji, żeby nie ciągnąć zestawu ikon. */
+export const HABIT_ICONS = [
+  "✅", "💊", "🧘", "🛌", "💧", "🥗", "🚭", "📖", "🧴", "🦷",
+  "🩹", "🏃", "🧊", "☀️", "📵", "🧠", "🫁", "🧂",
+] as const;
+
+export const WEEKDAYS = [
+  { value: 1, short: "Pn", label: "poniedziałek" },
+  { value: 2, short: "Wt", label: "wtorek" },
+  { value: 3, short: "Śr", label: "środa" },
+  { value: 4, short: "Cz", label: "czwartek" },
+  { value: 5, short: "Pt", label: "piątek" },
+  { value: 6, short: "So", label: "sobota" },
+  { value: 7, short: "Nd", label: "niedziela" },
+] as const;
+
+/** ISO-owy dzień tygodnia (1 = poniedziałek) z daty w formacie YYYY-MM-DD. */
+export function isoWeekday(dateISO: string): number {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return day === 0 ? 7 : day;
+}
+
+/** Czy nawyk obowiązuje danego dnia. Pusta lista dni = codziennie. */
+export function habitDueOn(daysOfWeek: number[], dateISO: string): boolean {
+  return daysOfWeek.length === 0 || daysOfWeek.includes(isoWeekday(dateISO));
+}
+
+/* ------------------------------- Nawodnienie ------------------------------ */
+
+export const DEFAULT_WATER_GOAL_ML = 2500;
+export const DEFAULT_WATER_PORTION_ML = 250;
+
+/** Szybkie porcje przy dodawaniu wody. */
+export const WATER_PORTIONS = [
+  { ml: 200, label: "Szklanka", icon: "🥛" },
+  { ml: 330, label: "Puszka", icon: "🥤" },
+  { ml: 500, label: "Butelka", icon: "🍶" },
+  { ml: 750, label: "Bidon", icon: "🚰" },
+] as const;
+
+export function waterLabel(ml: number): string {
+  return ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 === 0 ? 0 : 1)} l` : `${ml} ml`;
+}

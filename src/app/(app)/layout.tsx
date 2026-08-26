@@ -1,14 +1,60 @@
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { Reminders, type WaterReminder } from "@/components/reminders/Reminders";
 import { isSupabaseConfigured } from "@/lib/env";
-import { getUser } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/SetupNotice";
+import { DEFAULT_WATER_GOAL_ML, habitDueOn } from "@/lib/constants";
+import { todayISO } from "@/lib/format";
+import type { Habit } from "@/lib/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!isSupabaseConfigured()) return <SetupNotice />;
 
   const user = await getUser();
   if (!user) redirect("/login");
+
+  // Dane do przypomnień — na tyle małe, że nie warto ich rozdzielać na trasy.
+  const supabase = await createClient();
+  const today = todayISO();
+
+  const [{ data: habits }, { data: habitLogs }, { data: profile }, { data: water }] =
+    await Promise.all([
+      supabase
+        .from("habits")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_archived", false)
+        .not("reminder_at", "is", null),
+      supabase.from("habit_logs").select("habit_id, count").eq("user_id", user.id).eq("date", today),
+      supabase
+        .from("profiles")
+        .select("daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
+    ]);
+
+  const doneToday = new Map((habitLogs ?? []).map((l) => [l.habit_id, l.count]));
+  const habitReminders = ((habits ?? []) as Habit[])
+    .filter((h) => habitDueOn(h.days_of_week, today))
+    .map((h) => ({
+      id: h.id,
+      name: h.name,
+      icon: h.icon,
+      at: h.reminder_at ?? "",
+      due: (doneToday.get(h.id) ?? 0) < h.target_per_day,
+    }));
+
+  const drunk = (water ?? []).reduce((sum, w) => sum + w.ml, 0);
+  const waterReminder: WaterReminder = profile?.water_reminder_every_min
+    ? {
+        from: profile.water_reminder_from,
+        to: profile.water_reminder_to,
+        everyMin: profile.water_reminder_every_min,
+        behind: drunk < (profile.daily_water_ml ?? DEFAULT_WATER_GOAL_ML),
+      }
+    : null;
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
@@ -21,6 +67,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <BottomNav />
+      <Reminders habits={habitReminders} water={waterReminder} />
     </div>
   );
 }

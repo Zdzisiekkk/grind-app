@@ -114,9 +114,37 @@ check("/kontuzje pokazuje dodaną kontuzję",
   kontuzje.status === 200 && kontuzjeText.includes("Lewe kolano"),
   kontuzje.status !== 200 ? `status ${kontuzje.status}` : "");
 
+// 7c. Nawyki i woda
+const habit = await (await fetch(`${SB}/rest/v1/habits`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, name: "Kreatyna", icon: "💊", target_per_day: 2, reminder_at: "09:00" }) })).json();
+check("dodanie nawyku", Array.isArray(habit) && habit[0]?.id);
+
+const hlog = await (await fetch(`${SB}/rest/v1/habit_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, habit_id: habit[0].id, date: new Date().toISOString().slice(0,10), count: 2 }) })).json();
+check("odhaczenie nawyku 2/2", Array.isArray(hlog) && hlog[0]?.count === 2);
+
+for (const ml of [500, 330]) {
+  await fetch(`${SB}/rest/v1/water_logs`, { method:"POST", headers:H,
+    body: JSON.stringify({ user_id: li.user.id, date: new Date().toISOString().slice(0,10), ml }) });
+}
+const wsum = await (await fetch(`${SB}/rest/v1/v_daily_water?select=ml`, { headers: H })).json();
+check("suma wody 830 ml", wsum?.[0]?.ml === 830, `ml=${wsum?.[0]?.ml}`);
+
+const nawyki = await fetch(APP + "/nawyki", { headers: { cookie }, redirect: "manual" });
+const nawykiText = nawyki.status === 200 ? text(await nawyki.text()) : "";
+check("/nawyki pokazuje dodany nawyk", nawyki.status === 200 && nawykiText.includes("Kreatyna"),
+  nawyki.status !== 200 ? `status ${nawyki.status}` : "");
+
+const dieta2 = await fetch(APP + "/dieta", { headers: { cookie }, redirect: "manual" });
+const dietaText = dieta2.status === 200 ? text(await dieta2.text()) : "";
+check("/dieta pokazuje nawodnienie", dieta2.status === 200 && dietaText.includes("Nawodnienie"));
+
 const summ = await (await fetch(`${SB}/rest/v1/rpc/period_summary`, { method:"POST", headers:H,
   body: JSON.stringify({ p_from: new Date(Date.now()-7*864e5).toISOString().slice(0,10), p_to: new Date().toISOString().slice(0,10) }) })).json();
 check("podsumowanie liczy objętość 480 kg", summ?.volume_kg === 480, `volume_kg=${summ?.volume_kg}`);
+check("podsumowanie zna wodę i nawyki",
+  summ?.avg_water_ml === 830 && summ?.habit_days_done === 1,
+  `woda=${summ?.avg_water_ml} nawyki=${summ?.habit_days_done}`);
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 

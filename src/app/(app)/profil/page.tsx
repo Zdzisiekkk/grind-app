@@ -1,8 +1,10 @@
 import { Button, Card, Chip, Field, Input } from "@/components/ui";
 import { BodyWeightChart } from "@/components/charts/Charts";
+import { NotificationSettings } from "@/components/reminders/NotificationSettings";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile, signOut } from "./actions";
 import { addDaysISO, num, todayISO } from "@/lib/format";
+import { DEFAULT_WATER_GOAL_ML, DEFAULT_WATER_PORTION_ML } from "@/lib/constants";
 
 export const metadata = { title: "Profil" };
 
@@ -70,10 +72,56 @@ export default async function ProfilPage() {
           </div>
         </Card>
 
+        <Card
+          title="Nawodnienie"
+          subtitle="Cel dnia i wielkość porcji przy przycisku „+” w zakładce Dieta."
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Cel dzienny (ml)">
+              <Input
+                name="daily_water_ml"
+                inputMode="numeric"
+                defaultValue={profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML}
+                placeholder="2500"
+              />
+            </Field>
+            <Field label="Porcja (ml)">
+              <Input
+                name="water_portion_ml"
+                inputMode="numeric"
+                defaultValue={profile?.water_portion_ml ?? DEFAULT_WATER_PORTION_ML}
+                placeholder="250"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <Field label="Od godziny">
+              <Input type="time" name="water_reminder_from" defaultValue={profile?.water_reminder_from?.slice(0, 5) ?? "08:00"} />
+            </Field>
+            <Field label="Do godziny">
+              <Input type="time" name="water_reminder_to" defaultValue={profile?.water_reminder_to?.slice(0, 5) ?? "22:00"} />
+            </Field>
+            <Field label="Co ile minut">
+              <Input
+                name="water_reminder_every_min"
+                inputMode="numeric"
+                defaultValue={profile?.water_reminder_every_min ?? ""}
+                placeholder="90"
+              />
+            </Field>
+          </div>
+          <p className="mt-1 text-[12px] text-faint">
+            Zostaw „co ile minut” puste, żeby wyłączyć przypomnienia o wodzie.
+          </p>
+        </Card>
+
         <Button type="submit" variant="primary" size="lg" block>
           Zapisz zmiany
         </Button>
       </form>
+
+      <NotificationSettings />
 
       <Card
         title="Waga ciała"

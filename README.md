@@ -34,6 +34,9 @@ przełącza się automatycznie za ustawieniem systemu.
 - Dziennik: Śniadanie / Obiad / Kolacja / Przekąska; wpisujesz gramy albo
   wybierasz gotową porcję, makro liczy sama baza.
 - Podsumowanie dnia zestawione z celami z profilu.
+- **Nawodnienie** — szybkie porcje (szklanka, puszka, butelka, bidon) albo własna
+  wielkość, pasek postępu względem celu i cofnięcie ostatniego wpisu. Opcjonalne
+  przypomnienia co ustaloną liczbę minut w wybranym oknie godzinowym.
 
 ### 3. Aktywności
 - Ręczne wpisy: typ, data, czas, dystans, kalorie, notatka.
@@ -56,6 +59,13 @@ przełącza się automatycznie za ustawieniem systemu.
   model układa plan, który przed zapisaniem można obejrzeć i poprawić.
   Działa po dodaniu `ANTHROPIC_API_KEY`; bez klucza reszta aplikacji działa
   normalnie.
+- **Nawyki** — lista rzeczy do robienia regularnie (suplementy, sen, rozciąganie).
+  Cel dzienny większy niż jeden, wybrane dni tygodnia, seria („🔥 12 dni"), podgląd
+  ostatnich siedmiu dni i opcjonalna godzina przypomnienia.
+- **Przypomnienia** — powiadomienia przeglądarki o nawykach i wodzie. Docierają,
+  gdy aplikacja jest otwarta (na iPhonie po dodaniu do ekranu głównego); zaległe
+  rzeczy widać też zawsze na ekranie „Dziś”. Prawdziwe powiadomienia w tle
+  wymagają Web Push z serwerem wysyłkowym — schemat jest na to gotowy.
 - **PWA** — manifest i ikony, aplikację można dodać do ekranu głównego.
 
 ---
@@ -84,6 +94,8 @@ zapytanie:
 | `0004_seed_catalog.sql` | 41 ćwiczeń w katalogu, po polsku, z opisem i wskazówkami |
 | `0005_seed_plan_template.sql` | plan „Kolano + MMA” jako publiczny szablon (7 dni, 41 pozycji) |
 | `0006_injuries.sql` | kontuzje i oceny bólu (zastępują wcześniejszy „ból kolana”) |
+| `0007_plan_wlasciciela.sql` | plan treningowy właściciela, wygenerowany z `plan_treningowy.json` |
+| `0008_habits_water.sql` | nawyki, odhaczenia i nawodnienie |
 
 Każdy plik jest idempotentny (`if not exists`, `on conflict do nothing`) —
 ponowne uruchomienie niczego nie zepsuje.
@@ -164,7 +176,7 @@ e-mailem — profil, cele makro i rola tworzą się automatycznie.
 
 ## Struktura bazy
 
-16 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
+19 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
 ćwiczeń i publicznymi szablonami planów **każdy widzi wyłącznie własne dane** —
 sprawdza to zestaw testów (`npm run test:db`).
 
@@ -209,6 +221,9 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | Tabela | Zawartość |
 |---|---|
 | `activities` | aktywność: typ, czas, dystans, kalorie, `source` (`manual` / `strava`) |
+| `habits` | nawyk: nazwa, ikona, cel dzienny, dni tygodnia, godzina przypomnienia |
+| `habit_logs` | odhaczenie nawyku — jeden wiersz na nawyk i dzień, z licznikiem |
+| `water_logs` | pojedynczy wpis wody w ml (osobne wpisy, żeby dało się cofnąć jeden) |
 | `ai_plan_requests` | historia zapytań do AI-trenera wraz z wygenerowanym planem |
 
 ### Funkcje i widoki
@@ -222,6 +237,7 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | `v_daily_nutrition` | makro zsumowane per dzień |
 | `v_daily_volume` | objętość i liczba serii per dzień |
 | `v_exercise_prs` | rekordy dla każdego ćwiczenia |
+| `v_daily_water` | wypite mililitry per dzień |
 
 Widoki mają `security_invoker = on`, więc **nie omijają** Row Level Security.
 
@@ -270,6 +286,7 @@ uruchomić ponownie. Po imporcie **usuń service role key z `.env.local`**.
 | `npm run test:db` | 15 testów schematu i Row Level Security: izolacja danych między kontami, rola admina, kopiowanie planu, liczenie makro, podsumowania |
 | `npm run db:push` | uruchamia wszystkie migracje na zdalnym projekcie Supabase (wymaga `SUPABASE_ACCESS_TOKEN` i `SUPABASE_PROJECT_REF`) |
 | `npm run test:live` | test end-to-end na żywym wdrożeniu: rejestracja, logowanie, wszystkie ekrany, skopiowanie planu, zapis serii, podsumowanie — z posprzątaniem po sobie |
+| `npm run verify:plan` | sprawdza, czy plan w bazie zgadza się co do znaku z `plan_treningowy.json` |
 | `npm run import:wger` | import katalogu z wger (wymaga service role key) |
 | `npm run icons` | generuje ikony PWA do `public/icons/` |
 
