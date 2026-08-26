@@ -99,14 +99,35 @@ const log = await (await fetch(`${SB}/rest/v1/workout_logs`, { method:"POST", he
     set_number: 1, weight_kg: 60, reps: 8 }) })).json();
 check("zapis serii 60 kg x 8", Array.isArray(log) && log[0]?.id);
 
+// 7b. Kontuzje: dodanie, ocena bólu, obecność w podsumowaniu
+const inj = await (await fetch(`${SB}/rest/v1/injuries`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, name: "Lewe kolano", body_part: "knee", side: "left" }) })).json();
+check("dodanie kontuzji", Array.isArray(inj) && inj[0]?.id);
+
+const pain = await (await fetch(`${SB}/rest/v1/pain_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, injury_id: inj[0].id, date: new Date().toISOString().slice(0,10), level: 4 }) })).json();
+check("ocena bólu 4/10", Array.isArray(pain) && pain[0]?.level === 4);
+
+const kontuzje = await fetch(APP + "/kontuzje", { headers: { cookie }, redirect: "manual" });
+const kontuzjeText = kontuzje.status === 200 ? text(await kontuzje.text()) : "";
+check("/kontuzje pokazuje dodaną kontuzję",
+  kontuzje.status === 200 && kontuzjeText.includes("Lewe kolano"),
+  kontuzje.status !== 200 ? `status ${kontuzje.status}` : "");
+
 const summ = await (await fetch(`${SB}/rest/v1/rpc/period_summary`, { method:"POST", headers:H,
   body: JSON.stringify({ p_from: new Date(Date.now()-7*864e5).toISOString().slice(0,10), p_to: new Date().toISOString().slice(0,10) }) })).json();
 check("podsumowanie liczy objętość 480 kg", summ?.volume_kg === 480, `volume_kg=${summ?.volume_kg}`);
+check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
+  `avg_pain=${summ?.avg_pain}`);
 
 // 8. Sprzątanie
 await fetch(`${SB}/auth/v1/admin/users/${li.user.id}`, { method:"DELETE", headers:{ apikey: SR, Authorization:`Bearer ${SR}` } });
 const left = await (await fetch(`${SB}/auth/v1/admin/users`, { headers:{ apikey: SR, Authorization:`Bearer ${SR}` } })).json();
-check("konto testowe usunięte, baza pusta", (left.users || []).length === 0, `${(left.users||[]).length} kont`);
+// Sprawdzamy tylko własne konto testowe — na żywej bazie są prawdziwi użytkownicy
+// i ich obecność nie jest błędem.
+const stillThere = (left.users || []).some((u) => u.id === li.user.id);
+check("konto testowe posprzątane", !stillThere,
+  `w bazie zostaje ${(left.users || []).length} prawdziwych kont`);
 
 console.log(fails === 0 ? "\n  WSZYSTKO PRZESZŁO" : `\n  BŁĘDÓW: ${fails}`);
 process.exit(fails ? 1 : 0);
