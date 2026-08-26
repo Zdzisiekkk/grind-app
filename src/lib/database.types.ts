@@ -1,0 +1,362 @@
+/**
+ * Typy bazy danych Grind.
+ *
+ * Pisane ręcznie i utrzymywane razem z migracjami w supabase/migrations/.
+ * Jeśli podłączysz Supabase CLI, ten plik można wygenerować automatycznie:
+ *   supabase gen types typescript --project-id <id> > src/lib/database.types.ts
+ */
+
+/** Insert: `Req` to kolumny obowiązkowe, reszta ma wartości domyślne w bazie. */
+type Tbl<Row, Req extends keyof Row = never> = {
+  Row: Row;
+  Insert: Pick<Row, Req> & Partial<Omit<Row, Req>>;
+  Update: Partial<Row>;
+  Relationships: [];
+};
+
+export type ExerciseMetric = "weight_reps" | "reps" | "time" | "distance" | "rounds";
+export type DayType = "gym" | "conditioning" | "mobility" | "mma" | "other";
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type ActivityType =
+  | "running"
+  | "cycling"
+  | "swimming"
+  | "mma_sparring"
+  | "mma_training"
+  | "walking"
+  | "rowing"
+  | "hiking"
+  | "climbing"
+  | "other";
+
+export type Profile = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  role: "user" | "admin";
+  daily_kcal: number | null;
+  daily_protein_g: number | null;
+  daily_carbs_g: number | null;
+  daily_fat_g: number | null;
+  height_cm: number | null;
+  birth_year: number | null;
+  sex: "m" | "f" | "other" | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CatalogExercise = {
+  id: string;
+  user_id: string | null;
+  slug: string | null;
+  name: string;
+  name_en: string | null;
+  aliases: string[];
+  description: string | null;
+  cues: string[];
+  mistakes: string[];
+  category: string | null;
+  muscle_group: string | null;
+  muscles: string[];
+  muscles_secondary: string[];
+  equipment: string[];
+  image_url: string | null;
+  image_thumb_url: string | null;
+  muscle_image_urls: string[];
+  metric: ExerciseMetric;
+  source: "curated" | "wger" | "user";
+  source_id: string | null;
+  license: string | null;
+  license_author: string | null;
+  license_url: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Plan = {
+  id: string;
+  user_id: string | null;
+  name: string;
+  description: string | null;
+  goal: string | null;
+  is_template: boolean;
+  is_public: boolean;
+  is_active: boolean;
+  source: "manual" | "template" | "ai";
+  created_at: string;
+  updated_at: string;
+};
+
+export type Phase = {
+  id: string;
+  plan_id: string;
+  name: string;
+  description: string | null;
+  frequency: string | null;
+  order_index: number;
+  created_at: string;
+};
+
+export type WorkoutDay = {
+  id: string;
+  phase_id: string;
+  name: string;
+  short_label: string | null;
+  description: string | null;
+  day_type: DayType;
+  tracks_knee_pain: boolean;
+  order_index: number;
+  created_at: string;
+};
+
+export type WorkoutExercise = {
+  id: string;
+  workout_day_id: string;
+  catalog_exercise_id: string | null;
+  name_override: string | null;
+  muscle_group: string | null;
+  target_sets: number | null;
+  target_reps: string | null;
+  target_note: string | null;
+  technique_notes: string | null;
+  rest_seconds: number | null;
+  order_index: number;
+  created_at: string;
+};
+
+export type WorkoutSession = {
+  id: string;
+  user_id: string;
+  workout_day_id: string | null;
+  day_label: string | null;
+  date: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_min: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type WorkoutLog = {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  workout_exercise_id: string | null;
+  catalog_exercise_id: string | null;
+  exercise_name: string;
+  date: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps: number | null;
+  duration_seconds: number | null;
+  distance_m: number | null;
+  rpe: number | null;
+  is_warmup: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
+export type KneePainLog = {
+  id: string;
+  user_id: string;
+  session_id: string | null;
+  date: string;
+  level: number;
+  side: "left" | "right" | "both";
+  note: string | null;
+  created_at: string;
+};
+
+export type BodyWeightLog = {
+  id: string;
+  user_id: string;
+  date: string;
+  weight_kg: number;
+  body_fat_pct: number | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type Food = {
+  id: string;
+  user_id: string | null;
+  source: "off" | "custom";
+  off_id: string | null;
+  name: string;
+  brand: string | null;
+  image_url: string | null;
+  kcal_100g: number;
+  protein_100g: number;
+  carbs_100g: number;
+  fat_100g: number;
+  fiber_100g: number | null;
+  sugar_100g: number | null;
+  salt_100g: number | null;
+  serving_size_g: number | null;
+  serving_label: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Meal = {
+  id: string;
+  user_id: string;
+  date: string;
+  meal_type: MealType;
+  note: string | null;
+  created_at: string;
+};
+
+export type MealEntry = {
+  id: string;
+  user_id: string;
+  meal_id: string;
+  food_id: string | null;
+  food_name: string;
+  grams: number;
+  kcal_100g: number;
+  protein_100g: number;
+  carbs_100g: number;
+  fat_100g: number;
+  created_at: string;
+  /** kolumny wyliczane w bazie — tylko do odczytu */
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+export type Activity = {
+  id: string;
+  user_id: string;
+  type: ActivityType;
+  custom_type: string | null;
+  date: string;
+  started_at: string | null;
+  duration_min: number | null;
+  distance_km: number | null;
+  kcal: number | null;
+  avg_hr: number | null;
+  notes: string | null;
+  source: "manual" | "strava";
+  external_id: string | null;
+  raw: unknown | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiPlanRequest = {
+  id: string;
+  user_id: string;
+  input: unknown;
+  output: unknown | null;
+  plan_id: string | null;
+  model: string | null;
+  status: "pending" | "ok" | "error";
+  error: string | null;
+  created_at: string;
+};
+
+export type DailyNutrition = {
+  user_id: string;
+  date: string;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  entries: number;
+};
+
+export type DailyVolume = {
+  user_id: string;
+  date: string;
+  sets: number;
+  reps: number;
+  volume_kg: number;
+  exercises: number;
+};
+
+export type ExercisePr = {
+  user_id: string;
+  exercise_key: string;
+  catalog_exercise_id: string | null;
+  exercise_name: string;
+  best_weight_kg: number | null;
+  best_e1rm_kg: number | null;
+  last_done: string;
+  total_sets: number;
+};
+
+export type PeriodSummary = {
+  from: string;
+  to: string;
+  workouts: number;
+  sets: number;
+  volume_kg: number;
+  avg_kcal: number;
+  days_logged_food: number;
+  activities: number;
+  activity_minutes: number;
+  avg_knee_pain: number | null;
+  weight_start: number | null;
+  weight_end: number | null;
+};
+
+export type LastExerciseSet = {
+  date: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps: number | null;
+  rpe: number | null;
+  duration_seconds: number | null;
+};
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: Tbl<Profile, "id">;
+      exercise_catalog: Tbl<CatalogExercise, "name">;
+      plans: Tbl<Plan, "name">;
+      phases: Tbl<Phase, "plan_id" | "name">;
+      workout_days: Tbl<WorkoutDay, "phase_id" | "name">;
+      workout_exercises: Tbl<WorkoutExercise, "workout_day_id">;
+      workout_sessions: Tbl<WorkoutSession, "user_id">;
+      workout_logs: Tbl<WorkoutLog, "user_id" | "exercise_name" | "set_number">;
+      knee_pain_logs: Tbl<KneePainLog, "user_id" | "level">;
+      body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
+      foods: Tbl<Food, "name" | "kcal_100g">;
+      meals: Tbl<Meal, "user_id" | "meal_type">;
+      meal_entries: Tbl<
+        Omit<MealEntry, "kcal" | "protein" | "carbs" | "fat">,
+        "user_id" | "meal_id" | "food_name" | "grams" | "kcal_100g"
+      > & { Row: MealEntry };
+      activities: Tbl<Activity, "user_id" | "type">;
+      ai_plan_requests: Tbl<AiPlanRequest, "user_id" | "input">;
+    };
+    Views: {
+      v_daily_nutrition: { Row: DailyNutrition; Relationships: [] };
+      v_daily_volume: { Row: DailyVolume; Relationships: [] };
+      v_exercise_prs: { Row: ExercisePr; Relationships: [] };
+    };
+    Functions: {
+      clone_plan: {
+        Args: { p_source_plan_id: string; p_new_name?: string | null; p_activate?: boolean };
+        Returns: string;
+      };
+      set_active_plan: { Args: { p_plan_id: string }; Returns: undefined };
+      last_exercise_sets: {
+        Args: {
+          p_catalog_exercise_id: string | null;
+          p_exercise_name?: string | null;
+          p_before_date?: string;
+        };
+        Returns: LastExerciseSet[];
+      };
+      period_summary: { Args: { p_from: string; p_to: string }; Returns: PeriodSummary };
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};

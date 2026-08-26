@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   Grind — system kolorów
+   Motyw idzie za ustawieniem systemowym telefonu.
+   Każdy kolor ma definicję w :root (jasny) i nadpisanie w dark.
+   ============================================================ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --surface-3: #e4e9ef;
+  --border: #dde3ea;
+  --text: #10141a;
+  --text-muted: #5d6875;
+  --text-faint: #8a94a2;
+
+  --accent: #f2600c;
+  --accent-hover: #d95309;
+  --accent-fg: #ffffff;
+  --accent-soft: #fdece2;
+
+  --success: #12855a;
+  --success-soft: #e2f5ec;
+  --warn: #b7791f;
+  --warn-soft: #fdf3e0;
+  --danger: #c8352b;
+  --danger-soft: #fceceb;
+  --info: #1d6fd0;
+  --info-soft: #e6f0fc;
+
+  --chart-1: #f2600c;
+  --chart-2: #1d6fd0;
+  --chart-3: #12855a;
+  --chart-4: #8b5cf6;
+  --chart-5: #b7791f;
+
+  --shadow: 0 1px 2px rgb(16 20 26 / 0.06), 0 4px 16px rgb(16 20 26 / 0.05);
+  --radius: 14px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0a0c10;
+    --surface: #14181f;
+    --surface-2: #1b2029;
+    --surface-3: #232935;
+    --border: #2a313d;
+    --text: #e9edf3;
+    --text-muted: #98a3b3;
+    --text-faint: #6b7686;
+
+    --accent: #ff7a33;
+    --accent-hover: #ff8d4d;
+    --accent-fg: #1a0d04;
+    --accent-soft: #2e1a0d;
+
+    --success: #34d399;
+    --success-soft: #10281f;
+    --warn: #fbbf24;
+    --warn-soft: #2b220c;
+    --danger: #f87171;
+    --danger-soft: #2c1414;
+    --info: #60a5fa;
+    --info-soft: #101f33;
+
+    --chart-1: #ff7a33;
+    --chart-2: #60a5fa;
+    --chart-3: #34d399;
+    --chart-4: #a78bfa;
+    --chart-5: #fbbf24;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 14px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--bg);
+  /* iOS: nie odbijaj całej strony, ale pozwól scrollować treść */
+  overscroll-behavior-y: none;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-app), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* iOS zoomuje pole przy focusie, jeśli font < 16px — nigdy tego nie chcemy */
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+  font-family: inherit;
+}
+
+/* Liczby w tabelach wyników mają się równać w kolumnach */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ukryj strzałki w polach liczbowych — mamy własne przyciski +/- */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
