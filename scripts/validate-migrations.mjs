@@ -62,10 +62,10 @@ if (!failed) {
   console.table(counts.rows);
 
   const days = await db.query(`
-    select d.name, d.day_type, d.tracks_knee_pain, count(we.id)::int as cwiczen
+    select d.name, d.day_type, d.tracks_pain, count(we.id)::int as cwiczen
     from public.workout_days d
     left join public.workout_exercises we on we.workout_day_id = d.id
-    group by d.id, d.name, d.day_type, d.tracks_knee_pain, d.order_index
+    group by d.id, d.name, d.day_type, d.tracks_pain, d.order_index
     order by d.order_index`);
   console.table(days.rows);
 }

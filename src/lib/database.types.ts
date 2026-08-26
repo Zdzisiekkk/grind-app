@@ -105,7 +105,7 @@ export type WorkoutDay = {
   short_label: string | null;
   description: string | null;
   day_type: DayType;
-  tracks_knee_pain: boolean;
+  tracks_pain: boolean;
   order_index: number;
   created_at: string;
 };
@@ -157,13 +157,32 @@ export type WorkoutLog = {
   created_at: string;
 };
 
-export type KneePainLog = {
+export type InjuryStatus = "active" | "monitoring" | "healed";
+export type InjurySide = "left" | "right" | "both" | "none";
+
+export type Injury = {
   id: string;
   user_id: string;
+  name: string;
+  body_part: string;
+  side: InjurySide;
+  status: InjuryStatus;
+  started_at: string | null;
+  healed_at: string | null;
+  note: string | null;
+  track_pain: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PainLog = {
+  id: string;
+  user_id: string;
+  injury_id: string;
   session_id: string | null;
   date: string;
   level: number;
-  side: "left" | "right" | "both";
   note: string | null;
   created_at: string;
 };
@@ -298,7 +317,15 @@ export type PeriodSummary = {
   days_logged_food: number;
   activities: number;
   activity_minutes: number;
-  avg_knee_pain: number | null;
+  avg_pain: number | null;
+  pain_by_injury: {
+    id: string;
+    name: string;
+    body_part: string;
+    avg_level: number;
+    max_level: number;
+    entries: number;
+  }[];
   weight_start: number | null;
   weight_end: number | null;
 };
@@ -323,7 +350,8 @@ export type Database = {
       workout_exercises: Tbl<WorkoutExercise, "workout_day_id">;
       workout_sessions: Tbl<WorkoutSession, "user_id">;
       workout_logs: Tbl<WorkoutLog, "user_id" | "exercise_name" | "set_number">;
-      knee_pain_logs: Tbl<KneePainLog, "user_id" | "level">;
+      injuries: Tbl<Injury, "user_id" | "name">;
+      pain_logs: Tbl<PainLog, "user_id" | "injury_id" | "level">;
       body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
       foods: Tbl<Food, "name" | "kcal_100g">;
       meals: Tbl<Meal, "user_id" | "meal_type">;

@@ -101,7 +101,7 @@ export async function POST(request: Request) {
           short_label: day.short_label?.slice(0, 4) || null,
           description: day.description || null,
           day_type: day.day_type,
-          tracks_knee_pain: day.tracks_knee_pain,
+          tracks_pain: day.tracks_pain,
           order_index: dayIndex + 1,
         })
         .select("id")

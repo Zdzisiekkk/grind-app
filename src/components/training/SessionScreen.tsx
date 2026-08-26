@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Button, Chip, Sheet } from "@/components/ui";
 import { ExerciseCard, type NewSet } from "@/components/training/ExerciseCard";
 import { RestTimer } from "@/components/training/RestTimer";
-import { KneePainPicker } from "@/components/training/KneePainPicker";
+import { PainPicker } from "@/components/injuries/PainPicker";
 import { ExercisePicker } from "@/components/training/ExercisePicker";
 import type { SessionExercise, SessionInfo } from "@/components/training/types";
-import type { CatalogExercise, WorkoutLog } from "@/lib/database.types";
+import type { CatalogExercise, Injury, WorkoutLog } from "@/lib/database.types";
 import { DEFAULT_REST_SECONDS, DEFAULT_WEIGHT_STEP } from "@/lib/constants";
 import { useLocalNumber } from "@/lib/localSetting";
 import { createClient } from "@/lib/supabase/client";
@@ -34,13 +34,17 @@ export function SessionScreen({
   exercises: initialExercises,
   initialLogs,
   userId,
-  hasKneePainToday,
+  injuries,
+  painToday,
 }: {
   session: SessionInfo;
   exercises: SessionExercise[];
   initialLogs: WorkoutLog[];
   userId: string;
-  hasKneePainToday: boolean;
+  /** Kontuzje, o które pytamy po treningu (śledzone i niewyleczone). */
+  injuries: Injury[];
+  /** Oceny już wpisane dzisiaj — klucz to id kontuzji. */
+  painToday: Record<string, number>;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -200,7 +204,9 @@ export function SessionScreen({
   }
 
   async function finishSession() {
-    if (session.tracksKneePain && !hasKneePainToday) {
+    // Pytamy tylko o te kontuzje, których dziś jeszcze nie oceniono.
+    const pending = injuries.filter((i) => painToday[i.id] === undefined);
+    if (session.tracksPain && injuries.length > 0 && pending.length > 0) {
       setPainOpen(true);
       return;
     }
@@ -280,9 +286,12 @@ export function SessionScreen({
         + Dodaj ćwiczenie spoza planu
       </Button>
 
-      {session.tracksKneePain && (
+      {injuries.length > 0 && (
         <Button variant="secondary" block onClick={() => setPainOpen(true)}>
-          🦵 {hasKneePainToday ? "Zmień ocenę bólu kolana" : "Oceń ból kolana"}
+          🩹{" "}
+          {Object.keys(painToday).length > 0
+            ? "Zmień ocenę bólu"
+            : `Oceń ból (${injuries.length})`}
         </Button>
       )}
 
@@ -307,11 +316,13 @@ export function SessionScreen({
         <ExercisePicker onPick={addAdHocExercise} />
       </Sheet>
 
-      <Sheet open={painOpen} onClose={() => setPainOpen(false)} title="Ból kolana po treningu">
-        <KneePainPicker
+      <Sheet open={painOpen} onClose={() => setPainOpen(false)} title="Jak się trzymają kontuzje?">
+        <PainPicker
           userId={userId}
           date={session.date}
           sessionId={session.id}
+          injuries={injuries}
+          initial={painToday}
           onSaved={async () => {
             setPainOpen(false);
             if (!session.finishedAt) await closeSession();

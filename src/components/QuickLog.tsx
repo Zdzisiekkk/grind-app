@@ -4,17 +4,23 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Field, Sheet } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
-import { KneePainPicker } from "@/components/training/KneePainPicker";
+import { PainPicker } from "@/components/injuries/PainPicker";
 import { createClient } from "@/lib/supabase/client";
 import { todayISO } from "@/lib/format";
+import type { Injury } from "@/lib/database.types";
 
-/** Dwa najczęstsze szybkie wpisy z pulpitu: waga i ból kolana. */
+/** Dwa najczęstsze szybkie wpisy z pulpitu: waga i ból śledzonych kontuzji. */
 export function QuickLog({
   userId,
   lastWeightKg,
+  injuries,
+  painToday,
 }: {
   userId: string;
   lastWeightKg: number | null;
+  /** Kontuzje, o które apka pyta — puste, gdy użytkownik żadnej nie śledzi. */
+  injuries: Injury[];
+  painToday?: Record<string, number>;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState<"weight" | "pain" | null>(null);
@@ -49,8 +55,8 @@ export function QuickLog({
         <Button variant="secondary" onClick={() => setOpen("weight")}>
           ⚖️ Waga
         </Button>
-        <Button variant="secondary" onClick={() => setOpen("pain")}>
-          🦵 Ból kolana
+        <Button variant="secondary" onClick={() => setOpen("pain")} disabled={injuries.length === 0}>
+          🩹 {injuries.length === 0 ? "Brak kontuzji" : "Ból"}
         </Button>
       </div>
 
@@ -76,10 +82,12 @@ export function QuickLog({
         </div>
       </Sheet>
 
-      <Sheet open={open === "pain"} onClose={() => setOpen(null)} title="Ból kolana">
-        <KneePainPicker
+      <Sheet open={open === "pain"} onClose={() => setOpen(null)} title="Jak dziś boli?">
+        <PainPicker
           userId={userId}
           date={todayISO()}
+          injuries={injuries}
+          initial={painToday}
           onSaved={() => {
             setOpen(null);
             router.refresh();

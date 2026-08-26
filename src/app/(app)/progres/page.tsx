@@ -26,7 +26,7 @@ export default async function ProgresPage() {
   const today = todayISO();
   const twelveWeeksAgo = addDaysISO(today, -84);
 
-  const [prsRes, weightRes, painRes, volumeRes, weekRes, monthRes] = await Promise.all([
+  const [prsRes, weightRes, painRes, injuryRes, volumeRes, weekRes, monthRes] = await Promise.all([
     supabase
       .from("v_exercise_prs")
       .select("*")
@@ -40,11 +40,17 @@ export default async function ProgresPage() {
       .gte("date", addDaysISO(today, -180))
       .order("date"),
     supabase
-      .from("knee_pain_logs")
-      .select("date, level")
+      .from("pain_logs")
+      .select("injury_id, date, level")
       .eq("user_id", user.id)
       .gte("date", addDaysISO(today, -90))
       .order("date"),
+    supabase
+      .from("injuries")
+      .select("id, name, body_part, side, status, order_index")
+      .eq("user_id", user.id)
+      .order("status")
+      .order("order_index"),
     supabase
       .from("v_daily_volume")
       .select("*")
@@ -74,12 +80,31 @@ export default async function ProgresPage() {
     ...v,
   }));
 
+  // Każda kontuzja dostaje własny wykres — ból to stan, a stany różnych kontuzji
+  // nie sumują się w jedną serię.
+  const pointsByInjury = new Map<string, { date: string; level: number }[]>();
+  for (const log of painRes.data ?? []) {
+    const list = pointsByInjury.get(log.injury_id) ?? [];
+    list.push({ date: log.date, level: log.level });
+    pointsByInjury.set(log.injury_id, list);
+  }
+
+  const painByInjury = (injuryRes.data ?? [])
+    .map((injury) => ({
+      id: injury.id,
+      name: injury.name,
+      bodyPart: injury.body_part,
+      side: injury.side,
+      points: pointsByInjury.get(injury.id) ?? [],
+    }))
+    .filter((injury) => injury.points.length > 0);
+
   return (
     <ProgressScreen
       userId={user.id}
       prs={(prsRes.data ?? []) as ExercisePr[]}
       bodyWeight={(weightRes.data ?? []).map((w) => ({ date: w.date, weight: Number(w.weight_kg) }))}
-      kneePain={(painRes.data ?? []).map((p) => ({ date: p.date, level: p.level }))}
+      painByInjury={painByInjury}
       weeklyVolume={weeklyVolume}
       summaries={{
         week: weekRes.data as PeriodSummary,

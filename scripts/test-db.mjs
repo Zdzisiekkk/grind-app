@@ -88,15 +88,26 @@ await asUser(A, () => db.exec(`
   insert into public.workout_sessions (user_id, date, day_label) values ('${A}', current_date, 'Dzień A');
   insert into public.workout_logs (user_id, exercise_name, date, set_number, weight_kg, reps)
     values ('${A}', 'Wyciskanie sztangi', current_date, 1, 80, 8);
-  insert into public.knee_pain_logs (user_id, date, level) values ('${A}', current_date, 3);
+  insert into public.injuries (user_id, name, body_part, side) values ('${A}', 'Lewe kolano', 'knee', 'left');
+  insert into public.pain_logs (user_id, injury_id, date, level)
+    select '${A}', id, current_date, 3 from public.injuries where user_id = '${A}';
   insert into public.body_weight_logs (user_id, date, weight_kg) values ('${A}', current_date, 84.5);
 `));
 const bSeesLogs = await asUser(B, async () => (await db.query(
   `select (select count(*) from public.workout_logs)::int l,
-          (select count(*) from public.knee_pain_logs)::int k,
+          (select count(*) from public.pain_logs)::int k,
+          (select count(*) from public.injuries)::int i,
           (select count(*) from public.body_weight_logs)::int w`)).rows[0]);
-check('B nie widzi logów / bólu kolana / wagi użytkownika A',
-      bSeesLogs.l === 0 && bSeesLogs.k === 0 && bSeesLogs.w === 0, JSON.stringify(bSeesLogs));
+check('B nie widzi logów / kontuzji / bólu / wagi użytkownika A',
+      bSeesLogs.l === 0 && bSeesLogs.k === 0 && bSeesLogs.i === 0 && bSeesLogs.w === 0,
+      JSON.stringify(bSeesLogs));
+
+// 5b. ocena bólu nie może wskazywać na cudzą kontuzję
+const injuryOfA = await asUser(A, async () =>
+  (await db.query(`select id from public.injuries where user_id = '${A}' limit 1`)).rows[0].id);
+check('B nie podepnie oceny bólu pod kontuzję użytkownika A',
+      await expectFail(B, `insert into public.pain_logs (user_id, injury_id, date, level)
+                           values ('${B}', '${injuryOfA}', current_date, 5)`));
 
 // 6. B nie może podszyć się pod A przy zapisie
 check('B nie może zapisać loga z cudzym user_id',

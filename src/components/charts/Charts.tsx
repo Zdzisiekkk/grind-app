@@ -198,13 +198,13 @@ export function BodyWeightChart({ data }: { data: { date: string; weight: number
   );
 }
 
-/* ----------------------------- Ból kolana --------------------------------- */
+/* -------------------------------- Ból ------------------------------------- */
 
 /**
  * Ból to stan (dobrze → krytycznie), nie zwykła wielkość, więc słupki noszą
  * kolory palety statusów — zawsze z legendą opisową obok, nigdy sam kolor.
  */
-export function KneePainChart({ data }: { data: { date: string; level: number }[] }) {
+export function PainChart({ data }: { data: { date: string; level: number }[] }) {
   const c = useVizColors();
   const tipRows: TooltipRows = (p) => {
     const level = Number(p.level);
@@ -218,8 +218,8 @@ export function KneePainChart({ data }: { data: { date: string; level: number }[
     <div className="flex flex-col gap-2">
       <ChartFrame
         isEmpty={data.length < 1}
-        emptyTitle="Brak ocen bólu kolana"
-        emptyDescription="Po treningu nóg apka poprosi Cię o ocenę w skali 0–10."
+        emptyTitle="Brak ocen bólu"
+        emptyDescription="Po treningu apka poprosi Cię o ocenę w skali 0–10."
       >
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -28 }} barCategoryGap="20%">
           <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />

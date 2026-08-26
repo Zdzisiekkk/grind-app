@@ -64,8 +64,8 @@ export default async function KalendarzPage({
       .gte("date", monthStart)
       .lte("date", monthEnd),
     supabase
-      .from("knee_pain_logs")
-      .select("date, level, side, note")
+      .from("pain_logs")
+      .select("date, level, note, injury_id")
       .eq("user_id", user.id)
       .gte("date", monthStart)
       .lte("date", monthEnd),
@@ -90,6 +90,13 @@ export default async function KalendarzPage({
   const daySessions = (sessions.data ?? []).filter((s) => s.date === selected);
   const dayActivities = (activities.data ?? []).filter((a) => a.date === selected);
   const dayNutrition = (nutrition.data ?? []).find((n) => n.date === selected);
+  // Nazwy kontuzji dociągamy osobno — ręcznie pisane typy nie opisują relacji,
+  // a jedno dodatkowe zapytanie jest tańsze niż walka ze złączeniem.
+  const injuryNames = new Map(
+    ((await supabase.from("injuries").select("id, name").eq("user_id", user.id)).data ?? []).map(
+      (i) => [i.id, i.name],
+    ),
+  );
   const dayPain = (pain.data ?? []).filter((p) => p.date === selected);
   const dayWeight = (weights.data ?? []).find((w) => w.date === selected);
   const dayVolume = logs.data;
@@ -250,18 +257,18 @@ export default async function KalendarzPage({
                 <div className="flex flex-wrap gap-1.5">
                   {dayWeight && <Chip>⚖️ {num(dayWeight.weight_kg, 1)} kg</Chip>}
                   {dayPain.map((p) => (
-                    <Chip key={p.side}>
+                    <Chip key={p.injury_id}>
                       <span aria-hidden style={{ color: painStatus(p.level).color }}>
                         {painStatus(p.level).icon}
                       </span>
-                      Kolano {p.level}/10 · {painStatus(p.level).label}
+                      {injuryNames.get(p.injury_id) ?? "Ból"} {p.level}/10 · {painStatus(p.level).label}
                     </Chip>
                   ))}
                 </div>
                 {dayPain.map((p) =>
                   p.note ? (
-                    <p key={`${p.side}-note`} className="mt-1 text-[12px] text-muted">
-                      {p.note}
+                    <p key={`${p.injury_id}-note`} className="mt-1 text-[12px] text-muted">
+                      <span className="font-medium">{injuryNames.get(p.injury_id)}:</span> {p.note}
                     </p>
                   ) : null,
                 )}

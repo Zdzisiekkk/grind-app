@@ -253,7 +253,7 @@ export function PlanEditor({
                     </span>
                     <span className="block text-[12px] text-muted">
                       {day.exercises.length} ćwiczeń · {DAY_TYPE_LABEL[day.day_type]}
-                      {day.tracks_knee_pain && " · ocena kolana"}
+                      {day.tracks_pain && " · ocena bólu"}
                     </span>
                   </span>
                   <span className="text-faint" aria-hidden>
@@ -417,7 +417,7 @@ type DayFormValues = {
   short_label: string | null;
   description: string | null;
   day_type: DayType;
-  tracks_knee_pain: boolean;
+  tracks_pain: boolean;
 };
 
 function DayForm({ day, onSave }: { day: EditorDay | null; onSave: (v: DayFormValues) => void }) {
@@ -426,7 +426,7 @@ function DayForm({ day, onSave }: { day: EditorDay | null; onSave: (v: DayFormVa
     short_label: day?.short_label ?? "",
     description: day?.description ?? "",
     day_type: day?.day_type ?? "gym",
-    tracks_knee_pain: day?.tracks_knee_pain ?? false,
+    tracks_pain: day?.tracks_pain ?? false,
   });
 
   const upd = (patch: Partial<DayFormValues>) => setValues((v) => ({ ...v, ...patch }));
@@ -466,18 +466,18 @@ function DayForm({ day, onSave }: { day: EditorDay | null; onSave: (v: DayFormVa
 
       <button
         type="button"
-        onClick={() => upd({ tracks_knee_pain: !values.tracks_knee_pain })}
+        onClick={() => upd({ tracks_pain: !values.tracks_pain })}
         className={clsx(
           "flex items-center justify-between rounded-xl border px-3 py-3 text-left",
-          values.tracks_knee_pain ? "border-accent bg-accent-soft" : "border-border bg-surface-2",
+          values.tracks_pain ? "border-accent bg-accent-soft" : "border-border bg-surface-2",
         )}
       >
         <span className="min-w-0">
-          <span className="block text-[14px] font-medium">Pytaj o ból kolana</span>
-          <span className="block text-[12px] text-muted">Po treningu tego dnia pojawi się skala 0–10.</span>
+          <span className="block text-[14px] font-medium">Pytaj o ból kontuzji</span>
+          <span className="block text-[12px] text-muted">Po treningu tego dnia apka poprosi o ocenę śledzonych kontuzji.</span>
         </span>
         <span className="text-lg" aria-hidden>
-          {values.tracks_knee_pain ? "✅" : "⬜"}
+          {values.tracks_pain ? "✅" : "⬜"}
         </span>
       </button>
 

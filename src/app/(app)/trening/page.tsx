@@ -146,7 +146,7 @@ export default async function TreningPage() {
                         </span>
                         <span className="mt-0.5 block text-[12px] text-muted">
                           {exerciseCounts.get(day.id) ?? 0} ćwiczeń · {DAY_TYPE_LABEL[day.day_type]}
-                          {day.tracks_knee_pain && " · ocena kolana"}
+                          {day.tracks_pain && " · ocena bólu"}
                         </span>
                       </span>
                       <span className="text-accent" aria-hidden>

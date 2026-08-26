@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { SessionScreen } from "@/components/training/SessionScreen";
 import type { SessionExercise } from "@/components/training/types";
-import type { CatalogExercise, LastExerciseSet, WorkoutLog } from "@/lib/database.types";
+import type { CatalogExercise, Injury, LastExerciseSet, WorkoutLog } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Trening" };
@@ -46,7 +46,7 @@ export default async function SessionPage({
   if (!session) notFound();
 
   // --- Ćwiczenia zaplanowane na ten dzień ---
-  let day: { description: string | null; tracks_knee_pain: boolean } | null = null;
+  let day: { description: string | null; tracks_pain: boolean } | null = null;
   let planned: {
     id: string;
     catalog_exercise_id: string | null;
@@ -63,7 +63,7 @@ export default async function SessionPage({
     const [dayRes, exRes] = await Promise.all([
       supabase
         .from("workout_days")
-        .select("description, tracks_knee_pain")
+        .select("description, tracks_pain")
         .eq("id", session.workout_day_id)
         .maybeSingle(),
       supabase
@@ -190,12 +190,22 @@ export default async function SessionPage({
     });
   }
 
-  const { data: pain } = await supabase
-    .from("knee_pain_logs")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("date", session.date)
-    .limit(1);
+  // Kontuzje, o które apka pyta po treningu, plus dzisiejsze oceny — żeby
+  // powtórne wejście w arkusz pokazywało to, co już wpisane.
+  const [{ data: injuries }, { data: painToday }] = await Promise.all([
+    supabase
+      .from("injuries")
+      .select("*")
+      .eq("user_id", user.id)
+      .neq("status", "healed")
+      .eq("track_pain", true)
+      .order("order_index"),
+    supabase
+      .from("pain_logs")
+      .select("injury_id, level")
+      .eq("user_id", user.id)
+      .eq("date", session.date),
+  ]);
 
   return (
     <SessionScreen
@@ -204,14 +214,15 @@ export default async function SessionPage({
         date: session.date,
         dayLabel: session.day_label,
         dayDescription: day?.description ?? null,
-        tracksKneePain: day?.tracks_knee_pain ?? false,
+        tracksPain: day?.tracks_pain ?? false,
         finishedAt: session.finished_at,
         notes: session.notes,
       }}
       exercises={exercises}
       initialLogs={logs}
       userId={user.id}
-      hasKneePainToday={Boolean(pain?.length)}
+      injuries={(injuries ?? []) as Injury[]}
+      painToday={Object.fromEntries((painToday ?? []).map((p) => [p.injury_id, p.level]))}
     />
   );
 }

@@ -45,6 +45,7 @@ create table if not exists public.profiles (
   updated_at      timestamptz not null default now()
 );
 
+drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
@@ -83,6 +84,7 @@ begin
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
@@ -149,6 +151,7 @@ create index if not exists exercise_catalog_user_idx on public.exercise_catalog 
 create index if not exists exercise_catalog_muscle_idx on public.exercise_catalog (muscle_group);
 create index if not exists exercise_catalog_name_trgm_idx on public.exercise_catalog (lower(name));
 
+drop trigger if exists exercise_catalog_set_updated_at on public.exercise_catalog;
 create trigger exercise_catalog_set_updated_at
   before update on public.exercise_catalog
   for each row execute function public.set_updated_at();
@@ -178,6 +181,7 @@ create index if not exists plans_user_idx on public.plans (user_id);
 create unique index if not exists plans_one_active_per_user_uidx
   on public.plans (user_id) where is_active and user_id is not null;
 
+drop trigger if exists plans_set_updated_at on public.plans;
 create trigger plans_set_updated_at
   before update on public.plans
   for each row execute function public.set_updated_at();
@@ -335,6 +339,7 @@ create unique index if not exists foods_off_uidx on public.foods (off_id) where 
 create index if not exists foods_user_idx on public.foods (user_id);
 create index if not exists foods_name_idx on public.foods (lower(name));
 
+drop trigger if exists foods_set_updated_at on public.foods;
 create trigger foods_set_updated_at
   before update on public.foods
   for each row execute function public.set_updated_at();
@@ -406,6 +411,7 @@ create unique index if not exists activities_external_uidx
   on public.activities (user_id, source, external_id) where external_id is not null;
 create index if not exists activities_user_date_idx on public.activities (user_id, date desc);
 
+drop trigger if exists activities_set_updated_at on public.activities;
 create trigger activities_set_updated_at
   before update on public.activities
   for each row execute function public.set_updated_at();

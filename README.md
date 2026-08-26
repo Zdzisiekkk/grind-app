@@ -22,8 +22,10 @@ przełącza się automatycznie za ustawieniem systemu.
   2,5 / 5 / 10 kg) i zapamiętywany między treningami.
 - Timer przerwy startuje sam po zapisaniu serii.
 - Ćwiczenie spoza planu można dorzucić w trakcie sesji.
-- **Ból kolana 0–10** — po dniu nóg aplikacja prosi o ocenę; historia trafia na
-  wykres.
+- **Kontuzje** — prowadzisz listę tego, co Cię boli (kolano, bark, plecy,
+  cokolwiek), a po treningach oznaczonych w planie aplikacja prosi o ocenę bólu
+  w skali 0–10. Każda kontuzja ma własny wykres i status: aktywna, obserwacja
+  albo wyleczona.
 
 ### 2. Dieta
 - Wyszukiwarka produktów w **Open Food Facts** (przez własny endpoint, więc
@@ -40,7 +42,7 @@ przełącza się automatycznie za ustawieniem systemu.
 
 ### 4. Postępy
 - Wykres siły dla wybranego ćwiczenia (najcięższa seria albo szacowany 1RM).
-- Waga ciała, ból kolana, objętość tygodniowa (ciężar × powtórzenia).
+- Waga ciała, ból każdej kontuzji osobno, objętość tygodniowa (ciężar × powtórzenia).
 - Podsumowanie 7 / 30 dni: treningi, serie, objętość, średnie kcal, aktywności.
 - Kalendarz łączący w jednym dniu trening + dietę + aktywność.
 
@@ -76,11 +78,12 @@ zapytanie:
 
 | Plik | Co robi |
 |---|---|
-| `0001_schema.sql` | 15 tabel, indeksy, triggery, funkcja nadająca rolę admina |
+| `0001_schema.sql` | tabele, indeksy, triggery, funkcja nadająca rolę admina |
 | `0002_rls.sql` | Row Level Security — polityki dostępu dla każdej tabeli |
 | `0003_functions.sql` | `clone_plan`, `set_active_plan`, widoki i podsumowania |
 | `0004_seed_catalog.sql` | 41 ćwiczeń w katalogu, po polsku, z opisem i wskazówkami |
 | `0005_seed_plan_template.sql` | plan „Kolano + MMA” jako publiczny szablon (7 dni, 41 pozycji) |
+| `0006_injuries.sql` | kontuzje i oceny bólu (zastępują wcześniejszy „ból kolana”) |
 
 Każdy plik jest idempotentny (`if not exists`, `on conflict do nothing`) —
 ponowne uruchomienie niczego nie zepsuje.
@@ -161,7 +164,7 @@ e-mailem — profil, cele makro i rola tworzą się automatycznie.
 
 ## Struktura bazy
 
-15 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
+16 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
 ćwiczeń i publicznymi szablonami planów **każdy widzi wyłącznie własne dane** —
 sprawdza to zestaw testów (`npm run test:db`).
 
@@ -180,7 +183,7 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 |---|---|
 | `plans` | plan użytkownika; `is_template` + `is_public` oznaczają szablon do skopiowania |
 | `phases` | faza planu (np. „Faza 1 — rehab kolana”), kolejność, opis |
-| `workout_days` | dzień treningowy: `day_type`, `tracks_knee_pain` |
+| `workout_days` | dzień treningowy: `day_type`, `tracks_pain` (czy po nim pytać o kontuzje) |
 | `workout_exercises` | pozycja w dniu: ćwiczenie z katalogu, serie, powtórzenia, przerwa, uwagi |
 
 ### Zapisy treningu
@@ -189,7 +192,8 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 |---|---|
 | `workout_sessions` | pojedynczy trening: data, dzień planu, start, koniec, czas trwania |
 | `workout_logs` | **seria**: data, ćwiczenie, numer serii, ciężar, powtórzenia, czas, dystans, RPE, rozgrzewkowa czy robocza |
-| `knee_pain_logs` | ocena bólu kolana 0–10 z notatką |
+| `injuries` | kontuzja: nazwa, część ciała, strona, status (aktywna / obserwacja / wyleczona), od kiedy, notatka, czy pytać o ból po treningu |
+| `pain_logs` | ocena bólu 0–10 dla konkretnej kontuzji, z notatką — jedna na kontuzję i dzień |
 | `body_weight_logs` | pomiar wagi ciała |
 
 ### Dieta
@@ -214,7 +218,7 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | `clone_plan(plan_id, nazwa, aktywuj)` | kopiuje cały plan z fazami, dniami i ćwiczeniami na konto wywołującego |
 | `set_active_plan(plan_id)` | ustawia jeden plan jako aktywny |
 | `last_exercise_sets(...)` | serie z ostatniego treningu danego ćwiczenia — to, co widać obok pól wpisywania |
-| `period_summary(od, do)` | podsumowanie okresu: treningi, serie, objętość, kcal, aktywności, waga, ból kolana |
+| `period_summary(od, do)` | podsumowanie okresu: treningi, serie, objętość, kcal, aktywności, waga, ból (średnia i rozbicie na kontuzje) |
 | `v_daily_nutrition` | makro zsumowane per dzień |
 | `v_daily_volume` | objętość i liczba serii per dzień |
 | `v_exercise_prs` | rekordy dla każdego ćwiczenia |

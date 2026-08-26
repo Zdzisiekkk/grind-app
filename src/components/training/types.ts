@@ -23,7 +23,7 @@ export type SessionInfo = {
   date: string;
   dayLabel: string | null;
   dayDescription: string | null;
-  tracksKneePain: boolean;
+  tracksPain: boolean;
   finishedAt: string | null;
   notes: string | null;
 };

@@ -81,7 +81,62 @@ export const DEFAULT_WEIGHT_STEP = 2.5;
 export const DEFAULT_REST_SECONDS = 90;
 
 /**
- * Skala bólu kolana 0–10.
+ * Części ciała dla kontuzji. Klucz trafia do bazy, reszta służy tylko widokom —
+ * dzięki temu zmiana etykiety nie wymaga migracji.
+ */
+export const BODY_PARTS = [
+  { value: "knee", label: "Kolano", icon: "🦵" },
+  { value: "shoulder", label: "Bark", icon: "💪" },
+  { value: "elbow", label: "Łokieć", icon: "🦾" },
+  { value: "wrist", label: "Nadgarstek", icon: "🤚" },
+  { value: "hand", label: "Dłoń / palce", icon: "✋" },
+  { value: "hip", label: "Biodro", icon: "🕺" },
+  { value: "ankle", label: "Kostka", icon: "🦶" },
+  { value: "foot", label: "Stopa", icon: "👣" },
+  { value: "lower_back", label: "Dolny odcinek pleców", icon: "🔻" },
+  { value: "upper_back", label: "Górny odcinek pleców", icon: "🔺" },
+  { value: "neck", label: "Szyja", icon: "🧣" },
+  { value: "groin", label: "Pachwina", icon: "🔗" },
+  { value: "hamstring", label: "Dwugłowy uda", icon: "🍖" },
+  { value: "calf", label: "Łydka", icon: "🦿" },
+  { value: "achilles", label: "Ścięgno Achillesa", icon: "🩹" },
+  { value: "ribs", label: "Żebra / klatka", icon: "🫁" },
+  { value: "head", label: "Głowa", icon: "🧠" },
+  { value: "other", label: "Inne", icon: "❓" },
+] as const;
+
+export type BodyPart = (typeof BODY_PARTS)[number]["value"];
+
+export function bodyPart(value: string) {
+  return BODY_PARTS.find((b) => b.value === value) ?? BODY_PARTS[BODY_PARTS.length - 1];
+}
+
+export const INJURY_SIDES = [
+  { value: "left", label: "Lewa" },
+  { value: "right", label: "Prawa" },
+  { value: "both", label: "Obie" },
+  { value: "none", label: "Nie dotyczy" },
+] as const;
+
+export const INJURY_STATUSES = [
+  { value: "active", label: "Aktywna", hint: "Boli, pilnujemy jej po treningach." },
+  { value: "monitoring", label: "Obserwacja", hint: "Prawie zeszła, ale warto patrzeć." },
+  { value: "healed", label: "Wyleczona", hint: "Zostaje w historii, nie pyta o ocenę." },
+] as const;
+
+export function injuryStatusTone(status: string): "success" | "accent" | "warn" {
+  if (status === "healed") return "success";
+  if (status === "monitoring") return "warn";
+  return "accent";
+}
+
+/** Krótki opis kontuzji do nagłówków: „Lewe kolano · Kolano". */
+export function injurySideLabel(side: string): string | null {
+  return INJURY_SIDES.find((s) => s.value === side && s.value !== "none")?.label ?? null;
+}
+
+/**
+ * Skala bólu 0–10.
  * Kolory i progi pochodzą z palety statusów w lib/viz.ts — trzymamy je w jednym
  * miejscu, żeby suwak w formularzu i wykres w postępach mówiły to samo.
  */

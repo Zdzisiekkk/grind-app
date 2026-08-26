@@ -3,10 +3,10 @@ import { Button, Card, Chip, Stat } from "@/components/ui";
 import { MacroSummary } from "@/components/diet/MacroSummary";
 import { QuickLog } from "@/components/QuickLog";
 import { createClient } from "@/lib/supabase/server";
-import { ACTIVITY_ICON, ACTIVITY_LABEL } from "@/lib/constants";
+import { ACTIVITY_ICON, ACTIVITY_LABEL, bodyPart } from "@/lib/constants";
 import { painStatus } from "@/lib/viz";
 import { addDaysISO, duration, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
-import type { PeriodSummary } from "@/lib/database.types";
+import type { Injury, PeriodSummary } from "@/lib/database.types";
 
 export const metadata = { title: "Dziś" };
 
@@ -26,6 +26,7 @@ export default async function DashboardPage() {
     { data: activities },
     { data: weights },
     { data: pain },
+    { data: injuries },
     { data: weekSummary },
     { data: activePlan },
   ] = await Promise.all([
@@ -49,7 +50,17 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("date", { ascending: false })
       .limit(1),
-    supabase.from("knee_pain_logs").select("level, side").eq("user_id", user.id).eq("date", today),
+    supabase
+      .from("pain_logs")
+      .select("injury_id, level")
+      .eq("user_id", user.id)
+      .eq("date", today),
+    supabase
+      .from("injuries")
+      .select("*")
+      .eq("user_id", user.id)
+      .neq("status", "healed")
+      .order("order_index"),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -6), p_to: today }),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
   ]);
@@ -57,7 +68,10 @@ export default async function DashboardPage() {
   const summary = weekSummary as PeriodSummary | null;
   const openSession = (sessions ?? []).find((s) => !s.finished_at);
   const lastWeight = weights?.[0]?.weight_kg ?? null;
-  const todayPain = pain?.[0];
+  const trackedInjuries = ((injuries ?? []) as Injury[]).filter((i) => i.track_pain);
+  const painToday = new Map((pain ?? []).map((p) => [p.injury_id, p.level]));
+  const ratedToday = trackedInjuries.filter((i) => painToday.has(i.id));
+  const unratedToday = trackedInjuries.filter((i) => !painToday.has(i.id));
   const greeting = profile?.display_name ? `Cześć, ${profile.display_name}` : "Cześć";
 
   return (
@@ -141,20 +155,53 @@ export default async function DashboardPage() {
         />
       </Card>
 
+      {/* --- Kontuzje bez dzisiejszej oceny --- */}
+      {unratedToday.length > 0 && (
+        <Card
+          title="Jak się dziś trzymają?"
+          subtitle={`${unratedToday.length} ${
+            unratedToday.length === 1 ? "kontuzja czeka" : "kontuzje czekają"
+          } na ocenę`}
+          action={
+            <Link href="/kontuzje" className="text-[13px] font-medium text-accent">
+              Zarządzaj
+            </Link>
+          }
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {unratedToday.map((injury) => (
+              <Chip key={injury.id}>
+                <span aria-hidden>{bodyPart(injury.body_part).icon}</span>
+                {injury.name}
+              </Chip>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* --- Szybkie wpisy --- */}
       <div className="flex flex-col gap-2">
-        <QuickLog userId={user.id} lastWeightKg={lastWeight} />
-        {(lastWeight != null || todayPain) && (
+        <QuickLog
+          userId={user.id}
+          lastWeightKg={lastWeight}
+          injuries={trackedInjuries}
+          painToday={Object.fromEntries(painToday)}
+        />
+        {(lastWeight != null || ratedToday.length > 0) && (
           <div className="flex flex-wrap gap-1.5 px-1">
             {lastWeight != null && <Chip>Ostatnia waga: {num(lastWeight, 1)} kg</Chip>}
-            {todayPain && (
-              <Chip>
-                <span aria-hidden style={{ color: painStatus(todayPain.level).color }}>
-                  {painStatus(todayPain.level).icon}
-                </span>
-                Kolano dziś: {todayPain.level}/10 · {painStatus(todayPain.level).label}
-              </Chip>
-            )}
+            {ratedToday.map((injury) => {
+              const level = painToday.get(injury.id) as number;
+              const status = painStatus(level);
+              return (
+                <Chip key={injury.id}>
+                  <span aria-hidden style={{ color: status.color }}>
+                    {status.icon}
+                  </span>
+                  {injury.name}: {level}/10
+                </Chip>
+              );
+            })}
           </div>
         )}
       </div>

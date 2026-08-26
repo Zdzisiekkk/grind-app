@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BodyWeightChart, KneePainChart, StrengthChart, VolumeChart, type StrengthPoint } from "@/components/charts/Charts";
+import { BodyWeightChart, PainChart, StrengthChart, VolumeChart, type StrengthPoint } from "@/components/charts/Charts";
 import { Card, Chip, EmptyState, SegmentedControl, Select, Spinner, Stat } from "@/components/ui";
 import type { ExercisePr, PeriodSummary, WorkoutLog } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 import { e1rm, num, volume as fmtVolume, workouts as fmtWorkouts } from "@/lib/format";
+import { bodyPart, injurySideLabel } from "@/lib/constants";
 
 const EMPTY_POINTS: StrengthPoint[] = [];
 
@@ -13,14 +14,20 @@ export function ProgressScreen({
   userId,
   prs,
   bodyWeight,
-  kneePain,
+  painByInjury,
   weeklyVolume,
   summaries,
 }: {
   userId: string;
   prs: ExercisePr[];
   bodyWeight: { date: string; weight: number }[];
-  kneePain: { date: string; level: number }[];
+  painByInjury: {
+    id: string;
+    name: string;
+    bodyPart: string;
+    side: string;
+    points: { date: string; level: number }[];
+  }[];
   weeklyVolume: { label: string; volume: number; sets: number; workouts: number }[];
   summaries: { week: PeriodSummary; month: PeriodSummary };
 }) {
@@ -128,10 +135,14 @@ export function ProgressScreen({
             sub={summary.activity_minutes ? `${summary.activity_minutes} min` : undefined}
           />
           <Stat
-            label="Ból kolana"
-            value={summary.avg_knee_pain ?? "–"}
-            sub="średnia z ocen"
-            tone={summary.avg_knee_pain != null && summary.avg_knee_pain >= 5 ? "danger" : undefined}
+            label="Ból (średnia)"
+            value={summary.avg_pain ?? "–"}
+            sub={
+              summary.pain_by_injury?.length
+                ? `${summary.pain_by_injury.length} kontuzje w okresie`
+                : "brak ocen"
+            }
+            tone={summary.avg_pain != null && summary.avg_pain >= 5 ? "danger" : undefined}
           />
           <Stat
             label="Waga"
@@ -205,9 +216,42 @@ export function ProgressScreen({
         </p>
       </Card>
 
-      <Card title="Ból kolana w czasie" subtitle="Skala 0–10 po treningach nóg">
-        <KneePainChart data={kneePain} />
-      </Card>
+      {painByInjury.length === 0 ? (
+        <Card title="Ból kontuzji" subtitle="Skala 0–10">
+          <EmptyState
+            icon="🩹"
+            title="Nie śledzisz jeszcze żadnej kontuzji"
+            description="Dodaj kontuzję, a po treningach apka zapyta o ból i narysuje tu przebieg."
+          />
+        </Card>
+      ) : (
+        painByInjury.map((injury) => {
+          const part = bodyPart(injury.bodyPart);
+          const side = injurySideLabel(injury.side);
+          const last = injury.points.at(-1);
+          return (
+            <Card
+              key={injury.id}
+              title={
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden>{part.icon}</span>
+                  {injury.name}
+                </span>
+              }
+              subtitle={[side, "skala 0–10"].filter(Boolean).join(" · ")}
+              action={
+                last ? (
+                  <Chip tone={last.level >= 5 ? "danger" : last.level >= 3 ? "warn" : "success"}>
+                    ostatnio {last.level}/10
+                  </Chip>
+                ) : undefined
+              }
+            >
+              <PainChart data={injury.points} />
+            </Card>
+          );
+        })
+      )}
 
       <Card title="Waga ciała">
         <BodyWeightChart data={bodyWeight} />

@@ -348,3 +348,35 @@ export function Alert({
     </div>
   );
 }
+
+/* ------------------------------- Szkielety -------------------------------- */
+
+/**
+ * Prostokąt-zastępnik na czas ładowania. Ma stały rozmiar, więc treść nie
+ * podskakuje, gdy dane dojadą.
+ */
+export function Skeleton({ className }: { className?: string }) {
+  return <div aria-hidden className={clsx("animate-pulse rounded-lg bg-surface-2", className)} />;
+}
+
+/** Zastępnik całego ekranu — nagłówek i kilka kart. */
+export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
+  return (
+    <div className="flex flex-col gap-4" role="status" aria-label="Wczytywanie">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-4 w-56" />
+      </div>
+      {Array.from({ length: cards }, (_, i) => (
+        <div
+          key={i}
+          className="rounded-[var(--radius)] border border-border bg-surface p-4 shadow-[var(--shadow)]"
+        >
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="mt-3 h-20 w-full" />
+        </div>
+      ))}
+      <span className="sr-only">Wczytywanie…</span>
+    </div>
+  );
+}

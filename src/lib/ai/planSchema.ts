@@ -27,9 +27,9 @@ export const AiDaySchema = z.object({
   short_label: z.string().describe('Skrót do 4 znaków, np. "A".'),
   description: z.string().describe("Jedno zdanie o celu tego dnia."),
   day_type: z.enum(["gym", "conditioning", "mobility", "mma", "other"]),
-  tracks_knee_pain: z
+  tracks_pain: z
     .boolean()
-    .describe("true dla dni obciążających kolano, jeśli użytkownik zgłosił problem z kolanem."),
+    .describe("true dla dni obciążających miejsce zgłoszonej kontuzji — wtedy apka poprosi po treningu o ocenę bólu."),
   exercises: z.array(AiExerciseSchema).min(1).max(12),
 });
 
