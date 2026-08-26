@@ -95,10 +95,17 @@ SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=twoj-ref npm run db:push
 
 ### Krok 3 — włącz logowanie e-mailem
 
-**Authentication → Providers → Email**: zostaw włączone.
-Na czas testów wygodnie jest wyłączyć **Confirm email**
-(*Authentication → Sign In / Providers → Email → Confirm email*), żeby konto
-działało od razu po rejestracji.
+**Authentication → Providers → Email**: zostaw włączone i **wyłącz Confirm email**
+(*Authentication → Sign In / Providers → Email → Confirm email*).
+
+To nie jest skrót na skróty — wbudowany mailer Supabase wysyła najwyżej 2 wiadomości
+na godzinę i tylko na adres właściciela organizacji, więc rejestracja oparta o link
+potwierdzający po prostu nie działa bez własnego SMTP. Z wyłączonym potwierdzaniem
+konto jest aktywne od razu po rejestracji, bez udziału poczty.
+
+Jeśli kiedyś podepniesz własny SMTP (*Project Settings → Authentication → SMTP Settings*,
+np. Resend albo Postmark), możesz potwierdzanie włączyć z powrotem — wtedy zadziała
+też resetowanie hasła, które jako jedyne nadal wymaga poczty.
 
 ### Krok 4 — skonfiguruj aplikację lokalnie
 
@@ -258,11 +265,23 @@ uruchomić ponownie. Po imporcie **usuń service role key z `.env.local`**.
 | `npm run validate:sql` | uruchamia wszystkie migracje w PGlite (Postgres w WASM) — łapie błędy SQL bez stawiania bazy |
 | `npm run test:db` | 15 testów schematu i Row Level Security: izolacja danych między kontami, rola admina, kopiowanie planu, liczenie makro, podsumowania |
 | `npm run db:push` | uruchamia wszystkie migracje na zdalnym projekcie Supabase (wymaga `SUPABASE_ACCESS_TOKEN` i `SUPABASE_PROJECT_REF`) |
+| `npm run test:live` | test end-to-end na żywym wdrożeniu: rejestracja, logowanie, wszystkie ekrany, skopiowanie planu, zapis serii, podsumowanie — z posprzątaniem po sobie |
 | `npm run import:wger` | import katalogu z wger (wymaga service role key) |
 | `npm run icons` | generuje ikony PWA do `public/icons/` |
 
 `validate:sql` i `test:db` nie potrzebują Dockera ani zainstalowanego Postgresa —
 działają na PGlite.
+
+`test:live` uderza w prawdziwe wdrożenie — zakłada konto testowe, przechodzi całą
+ścieżkę użytkownika i kasuje je na końcu:
+
+```bash
+GRIND_URL=https://twoja-apka.vercel.app \
+NEXT_PUBLIC_SUPABASE_URL=https://twoj-ref.supabase.co \
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_... \
+SUPABASE_SERVICE_ROLE_KEY=... \
+npm run test:live
+```
 
 ---
 

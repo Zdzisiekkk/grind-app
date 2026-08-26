@@ -11,7 +11,8 @@
     "validate:sql": "node scripts/validate-migrations.mjs",
     "import:wger": "node scripts/import-wger.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "db:push": "node scripts/run-migrations.mjs"
+    "db:push": "node scripts/run-migrations.mjs",
+    "test:live": "node scripts/test-live.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",
