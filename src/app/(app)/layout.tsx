@@ -12,7 +12,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
-      <main className="flex-1 px-4 pb-[calc(72px+env(safe-area-inset-bottom))] pt-4">{children}</main>
+      {/*
+        Aplikacja rysuje pod paskiem stanu (viewport-fit=cover + black-translucent),
+        więc górny odstęp musi uwzględniać wcięcie notcha. Bez tego na iPhonie
+        nagłówek ekranu ląduje pod zegarkiem.
+      */}
+      <main className="safe-top flex-1 px-4 pb-[calc(72px+env(safe-area-inset-bottom))]">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

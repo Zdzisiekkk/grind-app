@@ -152,3 +152,30 @@ input[type="number"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   Bezpieczne obszary ekranu
+
+   Aplikacja deklaruje viewport-fit=cover, więc treść może wejść pod
+   pasek stanu, notch i dolny pasek gestów. Te klasy dokładają odstęp
+   dokładnie takiej wysokości, jakiej wymaga dane urządzenie — na
+   sprzęcie bez wcięć env() zwraca 0 i nic się nie zmienia.
+   ------------------------------------------------------------------ */
+.safe-top {
+  padding-top: calc(1rem + env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* Pasek przyklejony do góry — tło sięga aż pod zegarek, żeby tekst
+   pod spodem nie prześwitywał podczas przewijania. */
+.safe-sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding-top: calc(0.5rem + env(safe-area-inset-top));
+  margin-top: calc(-1rem - env(safe-area-inset-top));
+  background: var(--surface);
+}

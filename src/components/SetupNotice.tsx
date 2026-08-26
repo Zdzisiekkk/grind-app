@@ -1,7 +1,7 @@
 /** Ekran zastępczy, gdy projekt nie ma jeszcze podpiętego Supabase. */
 export function SetupNotice() {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 p-6">
+    <div className="safe-top safe-bottom mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-6">
       <h1 className="text-2xl font-bold">Grind — jeszcze jeden krok</h1>
       <p className="text-[15px] text-muted">
         Aplikacja nie ma podpiętej bazy. Utwórz projekt na{" "}

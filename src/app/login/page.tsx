@@ -9,7 +9,7 @@ export default function LoginPage() {
   if (!isSupabaseConfigured()) return <SetupNotice />;
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 p-6">
+    <div className="safe-top safe-bottom mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 px-6">
       <header className="text-center">
         <div className="text-5xl" aria-hidden>
           🏋️

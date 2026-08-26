@@ -12,7 +12,8 @@
     "import:wger": "node scripts/import-wger.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "db:push": "node scripts/run-migrations.mjs",
-    "test:live": "node scripts/test-live.mjs"
+    "test:live": "node scripts/test-live.mjs",
+    "verify:plan": "node scripts/verify-plan-import.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",
