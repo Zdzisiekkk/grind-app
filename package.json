@@ -10,7 +10,8 @@
     "test:db": "node scripts/test-db.mjs",
     "validate:sql": "node scripts/validate-migrations.mjs",
     "import:wger": "node scripts/import-wger.mjs",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "db:push": "node scripts/run-migrations.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

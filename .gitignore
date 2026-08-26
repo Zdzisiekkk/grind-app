@@ -42,3 +42,7 @@ next-env.d.ts
 
 # ...ale szablon zmiennych ma być w repo
 !.env.example
+
+# supabase / vercel CLI
+supabase/.temp/
+.vercel

@@ -85,6 +85,14 @@ zapytanie:
 Każdy plik jest idempotentny (`if not exists`, `on conflict do nothing`) —
 ponowne uruchomienie niczego nie zepsuje.
 
+Zamiast klikać w panelu można puścić wszystko jedną komendą — potrzebny jest
+[Personal Access Token](https://supabase.com/dashboard/account/tokens) i `ref`
+projektu (widoczny w adresie panelu):
+
+```bash
+SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=twoj-ref npm run db:push
+```
+
 ### Krok 3 — włącz logowanie e-mailem
 
 **Authentication → Providers → Email**: zostaw włączone.
@@ -249,6 +257,7 @@ uruchomić ponownie. Po imporcie **usuń service role key z `.env.local`**.
 | `npm run lint` | ESLint + reguły React Compilera |
 | `npm run validate:sql` | uruchamia wszystkie migracje w PGlite (Postgres w WASM) — łapie błędy SQL bez stawiania bazy |
 | `npm run test:db` | 15 testów schematu i Row Level Security: izolacja danych między kontami, rola admina, kopiowanie planu, liczenie makro, podsumowania |
+| `npm run db:push` | uruchamia wszystkie migracje na zdalnym projekcie Supabase (wymaga `SUPABASE_ACCESS_TOKEN` i `SUPABASE_PROJECT_REF`) |
 | `npm run import:wger` | import katalogu z wger (wymaga service role key) |
 | `npm run icons` | generuje ikony PWA do `public/icons/` |
 
