@@ -86,7 +86,10 @@ const planId = await (await fetch(`${SB}/rest/v1/rpc/clone_plan`, { method:"POST
 check("skopiowanie szablonu planu", typeof planId === "string");
 
 const days = await (await fetch(`${SB}/rest/v1/workout_days?select=id,name,phases!inner(plan_id)&phases.plan_id=eq.${planId}`, { headers: H })).json();
-check("kopia ma 7 dni", days.length === 7, `${days.length} dni`);
+// Liczbę dni bierzemy z szablonu, nie z głowy — plan bywa zmieniany.
+const tplDays = await (await fetch(`${SB}/rest/v1/workout_days?select=id,phases!inner(plan_id)&phases.plan_id=eq.${tpl.id}`, { headers: H })).json();
+check("kopia ma tyle dni co szablon", days.length === tplDays.length && days.length > 0,
+  `kopia ${days.length}, szablon ${tplDays.length}`);
 
 const ex = await (await fetch(`${SB}/rest/v1/workout_exercises?select=id,catalog_exercise_id&workout_day_id=eq.${days[0].id}&limit=1`, { headers: H })).json();
 const sess = await (await fetch(`${SB}/rest/v1/workout_sessions`, { method:"POST", headers:{...H, Prefer:"return=representation"},
