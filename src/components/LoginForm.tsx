@@ -41,6 +41,16 @@ export function LoginForm() {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+
+        // Na rejestrację istniejącego adresu Supabase odpowiada udawanym sukcesem
+        // (żeby nie dało się sprawdzać, kto ma konto) — poznajemy to po pustej
+        // liście tożsamości. Bez tego kazalibyśmy czekać na maila, którego nikt
+        // nie wysłał.
+        if (data.user && data.user.identities?.length === 0) {
+          setMode("signin");
+          throw new Error("Konto z tym adresem już istnieje. Zaloguj się.");
+        }
+
         // Gdy w projekcie włączone jest potwierdzanie e-maila, sesji jeszcze nie ma.
         if (!data.session) {
           setInfo("Konto założone. Kliknij link potwierdzający, który wysłaliśmy na Twój e-mail.");
