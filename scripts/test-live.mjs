@@ -286,9 +286,25 @@ const noCalls = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { head
 check("odrzucone zapytanie nie zużywa limitu",
   Array.isArray(noCalls) && noCalls.length === 0, JSON.stringify(noCalls));
 
-// Licznik musi być nietykalny — skasowanie go zerowałoby limit dzienny.
-const wipe = await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"DELETE", headers:H });
-check("nie można skasować własnego licznika zapytań", wipe.status >= 400, `status ${wipe.status}`);
+// Licznik musi być nietykalny — skasowanie albo wyzerowanie go zdejmowałoby
+// dzienny limit. Najpierw tworzymy wiersz (przez tę samą funkcję, której używa
+// aplikacja), bo kasowanie nieistniejącego wiersza „udaje się" zawsze.
+await fetch(`${SB}/rest/v1/rpc/consume_ai_call`, { method:"POST", headers:H,
+  body: JSON.stringify({ p_limit: 5 }) });
+
+await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"DELETE", headers:H });
+await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"PATCH", headers:H,
+  body: JSON.stringify({ calls: 0 }) });
+
+const stillThere = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { headers: H })).json();
+check("licznika zapytań nie da się skasować ani wyzerować",
+  Array.isArray(stillThere) && stillThere[0]?.calls === 1, JSON.stringify(stillThere));
+
+// Uprawnienia tabelowe w Supabase są szerokie z definicji — całą ochronę
+// niesie RLS. Tabela dodana bez niego jest otwarta dla niezalogowanych.
+const noRls = await (await fetch(`${SB}/rest/v1/rpc/tables_without_rls`, { method:"POST", headers:H, body:"{}" })).json();
+check("każda tabela ma włączone RLS", Array.isArray(noRls) && noRls.length === 0,
+  Array.isArray(noRls) && noRls.length ? `bez RLS: ${noRls.join(", ")}` : "");
 
 const trener = await fetch(APP + "/trener", { headers: { cookie }, redirect: "manual" });
 const trenerText = trener.status === 200 ? text(await trener.text()) : "";

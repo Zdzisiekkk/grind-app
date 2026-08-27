@@ -601,6 +601,8 @@ export type Database = {
       has_pro: { Args: { p_user?: string }; Returns: boolean };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
+      /** Tabele w public bez RLS. Pusta tablica to jedyny poprawny wynik. */
+      tables_without_rls: { Args: Record<string, never>; Returns: string[] };
       /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
       apply_subscription: {
         Args: {
