@@ -64,6 +64,12 @@ export type Profile = {
   weekly_workouts: number | null;
   /** Puste = kreator jeszcze nie przeszedł. */
   onboarded_at: string | null;
+  /* --- Zgody (RODO) --- */
+  /** Wersja regulaminu, na którą wyrażono zgodę. */
+  terms_version: number | null;
+  terms_accepted_at: string | null;
+  /** Osobna zgoda na dane o zdrowiu — art. 9 RODO wymaga odrębnej. */
+  health_consent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -662,6 +668,8 @@ export type Database = {
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Tabele w public bez RLS. Pusta tablica to jedyny poprawny wynik. */
       tables_without_rls: { Args: Record<string, never>; Returns: string[] };
+      /** Trwałe usunięcie własnego konta. Działa tylko na koncie wywołującego. */
+      delete_my_account: { Args: Record<string, never>; Returns: undefined };
       /* Wysyłka powiadomień — chronione sekretem, wołane tylko przez cron. */
       push_due: { Args: { p_secret: string }; Returns: unknown };
       push_ok: { Args: { p_secret: string; p_endpoint: string }; Returns: undefined };

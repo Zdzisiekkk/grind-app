@@ -30,6 +30,14 @@ function useClearedOfflineCache() {
   }, []);
 }
 
+/**
+ * Wersja regulaminu, na którą zgadza się nowe konto.
+ *
+ * Numer, a nie samo „tak": przy zmianie dokumentów trzeba wiedzieć, kto widział
+ * którą wersję i kogo zapytać ponownie.
+ */
+const TERMS_VERSION = 1;
+
 export function LoginForm() {
   useClearedOfflineCache();
 
@@ -43,6 +51,8 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedHealth, setAcceptedHealth] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,6 +73,19 @@ export function LoginForm() {
         if (data.user && data.user.identities?.length === 0) {
           setMode("signin");
           throw new Error("Konto z tym adresem już istnieje. Zaloguj się.");
+        }
+
+        // Zgody zapisujemy dopiero po założeniu konta, bo wcześniej nie ma
+        // profilu, do którego dałoby się je wpisać.
+        if (data.session && data.user) {
+          await supabase
+            .from("profiles")
+            .update({
+              terms_version: TERMS_VERSION,
+              terms_accepted_at: new Date().toISOString(),
+              health_consent_at: acceptedHealth ? new Date().toISOString() : null,
+            })
+            .eq("id", data.user.id);
         }
 
         // Gdy w projekcie włączone jest potwierdzanie e-maila, sesji jeszcze nie ma.
@@ -110,10 +133,43 @@ export function LoginForm() {
         />
       </Field>
 
+      {mode === "signup" && (
+        <div className="flex flex-col gap-2.5">
+          <Consent checked={acceptedTerms} onChange={setAcceptedTerms} required>
+            Akceptuję{" "}
+            <a className="underline" href="/regulamin" target="_blank" rel="noreferrer">
+              regulamin
+            </a>{" "}
+            i{" "}
+            <a className="underline" href="/prywatnosc" target="_blank" rel="noreferrer">
+              politykę prywatności
+            </a>
+            .
+          </Consent>
+
+          {/*
+            Osobna zgoda, bo sen, ból, kontuzje i waga to dane szczególnej
+            kategorii (art. 9 RODO) — nie wolno ich schować w akceptacji
+            regulaminu. Bez niej apka działa dalej, tylko bez tych dzienników.
+          */}
+          <Consent checked={acceptedHealth} onChange={setAcceptedHealth}>
+            Zgadzam się na zapisywanie moich danych o zdrowiu: snu, bólu, kontuzji i wagi.
+            Bez tego reszta aplikacji działa normalnie, a zgodę mogę cofnąć w profilu.
+          </Consent>
+        </div>
+      )}
+
       {error && <Alert>{error}</Alert>}
       {info && <Alert tone="success">{info}</Alert>}
 
-      <Button type="submit" variant="primary" size="lg" block loading={loading}>
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        block
+        loading={loading}
+        disabled={mode === "signup" && !acceptedTerms}
+      >
         {mode === "signin" ? "Zaloguj się" : "Załóż konto"}
       </Button>
 
@@ -129,5 +185,39 @@ export function LoginForm() {
         {mode === "signin" ? "Nie masz konta? Załóż nowe" : "Masz już konto? Zaloguj się"}
       </button>
     </form>
+  );
+}
+
+/**
+ * Pojedyncza zgoda.
+ *
+ * Cały wiersz jest klikalny, a pole ma 20 px — zgoda musi być łatwa do
+ * zaznaczenia świadomie i trudna do zaznaczenia przypadkiem, dlatego nic tu
+ * nie jest domyślnie włączone.
+ */
+function Consent({
+  checked,
+  onChange,
+  required,
+  children,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]"
+      />
+      <span className="min-w-0 flex-1 text-muted">
+        {children}
+        {required && <span className="ml-1 font-semibold text-danger">wymagane</span>}
+      </span>
+    </label>
   );
 }

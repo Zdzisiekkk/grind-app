@@ -1,6 +1,8 @@
 import { Button, Card, Chip, Field, Input } from "@/components/ui";
 import { BodyWeightChart } from "@/components/charts/Charts";
 import { NotificationSettings } from "@/components/reminders/NotificationSettings";
+import { DataControls } from "@/components/legal/DataControls";
+import { getAccess } from "@/lib/subscription";
 import { DEFAULT_SLEEP_GOAL_MIN } from "@/lib/sleep";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile, signOut } from "./actions";
@@ -16,7 +18,7 @@ export default async function ProfilPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: weights }] = await Promise.all([
+  const [{ data: profile }, { data: weights }, access] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
       .from("body_weight_logs")
@@ -24,6 +26,7 @@ export default async function ProfilPage() {
       .eq("user_id", user.id)
       .gte("date", addDaysISO(todayISO(), -365))
       .order("date"),
+    getAccess(),
   ]);
 
   const weightData = (weights ?? []).map((w) => ({ date: w.date, weight: Number(w.weight_kg) }));
@@ -167,6 +170,21 @@ export default async function ProfilPage() {
           Wagę dodajesz jednym tapnięciem z ekranu „Dziś”.
         </p>
       </Card>
+
+      <DataControls
+        hasSubscription={access.pro && !access.viaAdmin}
+        healthConsentAt={profile?.health_consent_at ?? null}
+      />
+
+      <p className="px-1 text-[12px] text-faint">
+        <a className="underline" href="/regulamin">
+          Regulamin
+        </a>{" "}
+        ·{" "}
+        <a className="underline" href="/prywatnosc">
+          Polityka prywatności
+        </a>
+      </p>
 
       <form action={signOut}>
         <Button type="submit" variant="danger" block>

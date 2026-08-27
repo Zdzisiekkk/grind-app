@@ -21,6 +21,10 @@ const PUBLIC_PATHS = [
   "/offline",
   "/api/stripe/webhook",
   "/api/push/send",
+  // Regulamin i polityka prywatności muszą być czytelne PRZED założeniem konta —
+  // inaczej zgoda przy rejestracji byłaby zgodą na coś, czego nie dało się zobaczyć.
+  "/regulamin",
+  "/prywatnosc",
 ];
 
 /**

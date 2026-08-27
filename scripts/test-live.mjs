@@ -297,7 +297,34 @@ const offRows = await (await fetch(`${SB}/rest/v1/foods?select=id&off_id=eq.${of
 check("w cache'u zostaje jeden wiersz, nie dwa",
   Array.isArray(offRows) && offRows.length === 1, `wierszy: ${offRows?.length}`);
 
-// 7h. Czytanie i gotowe dania
+// 7h. Prawa użytkownika — muszą działać, a nie być obietnicą w regulaminie
+const regulamin = await fetch(APP + "/regulamin", { redirect: "manual" });
+const regulaminText = regulamin.status === 200 ? text(await regulamin.text()) : "";
+check("regulamin czytelny BEZ logowania",
+  regulamin.status === 200 && regulaminText.includes("nie zastępuje lekarza"),
+  `status ${regulamin.status}`);
+
+const prywatnosc = await fetch(APP + "/prywatnosc", { redirect: "manual" });
+const prywatnoscText = prywatnosc.status === 200 ? text(await prywatnosc.text()) : "";
+check("polityka prywatności czytelna BEZ logowania",
+  prywatnosc.status === 200 && prywatnoscText.includes("art. 9"), `status ${prywatnosc.status}`);
+
+const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
+const eksportBody = eksport.status === 200 ? await eksport.json() : null;
+check("eksport danych oddaje plik do pobrania",
+  eksport.status === 200 && (eksport.headers.get("content-disposition") || "").includes("attachment"),
+  `status ${eksport.status}`);
+check("w eksporcie są dane ze wszystkich dzienników",
+  eksportBody?.dane?.workout_logs?.length > 0 &&
+  eksportBody?.dane?.sleep_logs?.length > 0 &&
+  eksportBody?.dane?.books?.length > 0,
+  eksportBody ? `tabel: ${Object.keys(eksportBody.dane).length}` : "");
+
+const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" });
+check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200,
+  `status ${eksportAnon.status}`);
+
+// 7i. Czytanie i gotowe dania
 const dishes = await (await fetch(`${SB}/rest/v1/foods?select=name,serving_size_g&kind=eq.dish&user_id=is.null&limit=200`, { headers: H })).json();
 check("gotowe dania są dostępne dla każdego", Array.isArray(dishes) && dishes.length >= 40,
   `${dishes.length ?? 0} dań`);
@@ -331,7 +358,7 @@ check("/nawyki/ksiazki pokazuje książkę i notatkę",
   ksiazki.status === 200 && ksiazkiText.includes("Atomowe nawyki"),
   ksiazki.status !== 200 ? `status ${ksiazki.status}` : "");
 
-// 7i. Trener AI — bramka i limit
+// 7j. Trener AI — bramka i limit
 const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
   body: JSON.stringify({ mode: "analyze" }) });
 const coachBody = await coach.json().catch(() => ({}));
@@ -371,7 +398,7 @@ check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
   trener.status === 200 && trenerText.includes("wersji płatnej"),
   trener.status !== 200 ? `status ${trener.status}` : "");
 
-// 7j. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7k. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -407,7 +434,7 @@ const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method:
 check("kolejka powiadomień milczy przy złym sekrecie",
   Array.isArray(pushBadSecret) && pushBadSecret.length === 0, JSON.stringify(pushBadSecret).slice(0, 80));
 
-// 7k. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7l. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;
@@ -428,6 +455,14 @@ check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
   `habit_days_due=${summ?.habit_days_due}`);
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
+
+// 7m. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
+const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
+check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
+
+const afterDelete = await (await fetch(`${SB}/rest/v1/workout_logs?select=id`, { headers: H })).json();
+check("po usunięciu konta znikają też jego dane",
+  !Array.isArray(afterDelete) || afterDelete.length === 0, JSON.stringify(afterDelete).slice(0, 80));
 
 // 8. Sprzątanie
 await fetch(`${SB}/auth/v1/admin/users/${li.user.id}`, { method:"DELETE", headers:{ apikey: SR, Authorization:`Bearer ${SR}` } });

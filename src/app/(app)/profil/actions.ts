@@ -65,3 +65,55 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+/**
+ * Trwałe usunięcie konta.
+ *
+ * Kasowanie robi funkcja w bazie, bo do auth.users zwykły użytkownik nie ma
+ * dostępu — ale kasuje wyłącznie auth.uid(), więc nie da się nią ruszyć
+ * cudzego konta. Kaskady zabierają dziennik, plany, notatki i subskrypcję.
+ *
+ * Uwaga: to NIE anuluje subskrypcji w Stripe. Płatności trzeba wypowiedzieć
+ * osobno, w panelu — dlatego ekran mówi o tym wprost, zamiast zostawiać
+ * człowieka z kartą obciążaną za nieistniejące konto.
+ */
+export async function deleteAccount(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("delete_my_account", {});
+  if (error) throw new Error(`Nie udało się usunąć konta: ${error.message}`);
+
+  await supabase.auth.signOut();
+  redirect("/login?usuniete=1");
+}
+
+/**
+ * Wycofanie zgody na przetwarzanie danych o zdrowiu.
+ *
+ * Zgodę można cofnąć w każdej chwili — i cofnięcie musi coś realnie znaczyć,
+ * więc razem z nią znikają dane, których dotyczyła. Reszta aplikacji
+ * (trening, plany, zadania) działa dalej.
+ */
+export async function withdrawHealthConsent(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  for (const table of ["sleep_logs", "pain_logs", "injuries", "body_weight_logs"] as const) {
+    await supabase.from(table).delete().eq("user_id", user.id);
+  }
+
+  await supabase
+    .from("profiles")
+    .update({ health_consent_at: null, height_cm: null, birth_year: null, sex: null })
+    .eq("id", user.id);
+
+  revalidatePath("/", "layout");
+  redirect("/profil");
+}
