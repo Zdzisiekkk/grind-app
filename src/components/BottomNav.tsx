@@ -9,13 +9,17 @@ import { clsx } from "@/lib/clsx";
  * są krótkie („Sen", nie „Sleep score"). W nawigacji siedzą rzeczy, które
  * uzupełnia się codziennie. Ekrany przeglądowe (Postępy, Kalendarz, Kontuzje)
  * zostają w „Więcej" i na pulpicie.
+ *
+ * `line2` to druga linijka etykiety. Na pasek szerokości jednej siódmej ekranu
+ * „Nawyki i nałogi" nie wchodzi w jednej linii — a ucięte „Nawyki i na…"
+ * jest gorsze niż dwie krótkie linijki.
  */
 const ITEMS = [
   { href: "/", label: "Dziś", icon: "🏠" },
   { href: "/trening", label: "Trening", icon: "🏋️" },
   { href: "/dieta", label: "Dieta", icon: "🍽️" },
   { href: "/sen", label: "Sen", icon: "😴" },
-  { href: "/nawyki", label: "Nawyki", icon: "🔥" },
+  { href: "/nawyki", label: "Nawyki", line2: "i nałogi", icon: "🔥" },
   { href: "/zadania", label: "Zadania", icon: "☑️" },
   { href: "/wiecej", label: "Więcej", icon: "⚙️" },
 ] as const;
@@ -67,7 +71,14 @@ export function BottomNav() {
                 <span className="text-[18px] leading-none" aria-hidden>
                   {item.icon}
                 </span>
-                <span className="w-full truncate">{item.label}</span>
+                {/* Stała wysokość dla wszystkich zakładek, żeby kropki pod
+                    etykietami stały w jednej linii mimo dwóch linijek tekstu. */}
+                <span className="flex h-[21px] w-full flex-col justify-center leading-[10px]">
+                  <span className="w-full truncate">{item.label}</span>
+                  {"line2" in item && (
+                    <span className="w-full truncate">{item.line2}</span>
+                  )}
+                </span>
                 <TabIndicator active={active} />
               </Link>
             </li>

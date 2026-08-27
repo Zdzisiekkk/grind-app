@@ -161,7 +161,7 @@ export function HabitsScreen({
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
-        <h1 className="text-2xl font-bold">Nawyki</h1>
+        <h1 className="text-2xl font-bold">Nawyki i nałogi</h1>
         <Button variant="primary" onClick={openNew}>
           + Dodaj
         </Button>

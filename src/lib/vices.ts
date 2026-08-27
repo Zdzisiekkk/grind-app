@@ -129,3 +129,91 @@ export function cleanBand(days: number): "start" | "week" | "month" | "solid" {
   if (days < 90) return "month";
   return "solid";
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Kamienie milowe                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Progi, po które się sięga.
+ *
+ * Gęste na początku, rzadsze później — pierwszy tydzień jest najtrudniejszy
+ * i to wtedy najbardziej potrzeba czegoś blisko. Przy 200 dniach nikt nie
+ * potrzebuje już celu na jutro.
+ */
+export const MILESTONES = [1, 3, 7, 14, 30, 60, 90, 180, 365] as const;
+
+export function nextMilestone(days: number): { target: number; remaining: number } | null {
+  const target = MILESTONES.find((m) => m > days);
+  return target === undefined ? null : { target, remaining: target - days };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Kalendarz                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type DayState = "before" | "clean" | "lapse";
+export type DayCell = { date: string; state: DayState };
+
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * Ostatnie `count` dni jako siatka.
+ *
+ * Passa policzona w jednej liczbie nie pokazuje kształtu — a kształt jest
+ * tym, co widać od razu: czy wpadki są rozrzucone, czy chodzą parami.
+ * Dni sprzed rzucenia zostają puste, żeby nie udawać sukcesu, którego
+ * wtedy nie było.
+ */
+export function dayCells(vice: ViceLike, events: ViceEventLike[], count = 90, now = new Date()): DayCell[] {
+  const started = isoDay(new Date(vice.started_at));
+
+  const lapsed = new Set(
+    events.filter((e) => e.kind === "lapse").map((e) => isoDay(new Date(e.occurred_at))),
+  );
+
+  return Array.from({ length: count }, (_, i) => {
+    const date = isoDay(new Date(now.getTime() - (count - 1 - i) * DAY_MS));
+    if (date < started) return { date, state: "before" as const };
+    return { date, state: lapsed.has(date) ? ("lapse" as const) : ("clean" as const) };
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Pora dnia                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Kiedy w ciągu doby przychodzą wpadki.
+ *
+ * Wyzwalacz mówi „co", to mówi „kiedy" — a plan da się zrobić tylko wtedy,
+ * gdy wiadomo, o której godzinie ma zadziałać.
+ */
+export function lapsesByPartOfDay(events: ViceEventLike[]): { label: string; count: number }[] {
+  const buckets = [
+    { label: "rano (6-12)", from: 6, to: 12, count: 0 },
+    { label: "popołudniu (12-18)", from: 12, to: 18, count: 0 },
+    { label: "wieczorem (18-24)", from: 18, to: 24, count: 0 },
+    { label: "w nocy (0-6)", from: 0, to: 6, count: 0 },
+  ];
+
+  for (const e of events) {
+    if (e.kind !== "lapse") continue;
+    const hour = new Date(e.occurred_at).getHours();
+    const bucket = buckets.find((b) => hour >= b.from && hour < b.to);
+    if (bucket) bucket.count++;
+  }
+
+  return buckets
+    .filter((b) => b.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .map(({ label, count }) => ({ label, count }));
+}
+
+/**
+ * Ile minut trwa fala chęci, zanim opadnie.
+ *
+ * Liczba jest przybliżona z założenia — chodzi o to, żeby dać jej koniec.
+ * „Przeczekaj" bez widocznego końca to nie jest instrukcja.
+ */
+export const URGE_SECONDS = 15 * 60;

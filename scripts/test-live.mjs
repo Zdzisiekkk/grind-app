@@ -522,6 +522,18 @@ const nalogiText = nalogiPage.status === 200 ? text(await nalogiPage.text()) : "
 check("/nawyki/nalogi pokazuje licznik czystych dni",
   nalogiPage.status === 200 && nalogiText.includes("Papierosy") && /3\s*dni czysto/.test(nalogiText),
   nalogiPage.status !== 200 ? `status ${nalogiPage.status}` : "");
+check("nałóg pokazuje kamień milowy i zaoszczędzone pieniądze",
+  /do 7/.test(nalogiText) && /60 z/.test(nalogiText),
+  nalogiText.slice(0, 0));
+check("nałóg pokazuje wyzwalacz i porę dnia",
+  nalogiText.includes("stres") && /Najczęściej/.test(nalogiText));
+check("jest wyjście awaryjne na moment, w którym się chce",
+  nalogiText.includes("Mam ochotę"));
+
+const nawykiNav = await fetch(APP + "/nawyki", { headers: { cookie }, redirect: "manual" });
+const nawykiNavText = nawykiNav.status === 200 ? text(await nawykiNav.text()) : "";
+check("nawigacja mówi o nawykach i nałogach",
+  nawykiNavText.includes("i nałogi"), nawykiNav.status !== 200 ? `status ${nawykiNav.status}` : "");
 
 // 7n. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
 const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });

@@ -5,7 +5,7 @@ import { habitDueOn } from "@/lib/constants";
 import type { Habit, HabitLog, Vice, ViceEvent } from "@/lib/database.types";
 import { daysClean } from "@/lib/vices";
 
-export const metadata = { title: "Nawyki" };
+export const metadata = { title: "Nawyki i nałogi" };
 
 const HISTORY_DAYS = 180;
 
