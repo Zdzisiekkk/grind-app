@@ -240,9 +240,11 @@ const selfGrant = await fetch(`${SB}/rest/v1/subscriptions`, { method:"POST", he
   body: JSON.stringify({ user_id: li.user.id, status: "active" }) });
 check("nie można sobie samemu wpisać subskrypcji", selfGrant.status >= 400, `status ${selfGrant.status}`);
 
-const selfPatch = await fetch(`${SB}/rest/v1/subscriptions?user_id=eq.${li.user.id}`, { method:"PATCH", headers:H,
-  body: JSON.stringify({ status: "active" }) });
-const patched = selfPatch.ok ? await selfPatch.json() : null;
+// return=representation, bo PostgREST na PATCH bez tego oddaje puste 204 —
+// i „udało się" nie da się odróżnić od „nic nie pasowało".
+const selfPatch = await fetch(`${SB}/rest/v1/subscriptions?user_id=eq.${li.user.id}`,
+  { method:"PATCH", headers:{...H, Prefer:"return=representation"}, body: JSON.stringify({ status: "active" }) });
+const patched = await selfPatch.json().catch(() => null);
 check("nie można podmienić cudzego ani własnego statusu",
   !selfPatch.ok || (Array.isArray(patched) && patched.length === 0), `status ${selfPatch.status}`);
 
@@ -257,9 +259,10 @@ const proAfter = await (await fetch(`${SB}/rest/v1/rpc/has_pro`, { method:"POST"
 check("po tych próbach nadal brak dostępu", proAfter === false, `has_pro=${proAfter}`);
 
 // Ustawienia cennika czyta każdy (ekran musi pokazać kwotę), ale zmienia tylko admin.
-const priceWrite = await fetch(`${SB}/rest/v1/app_settings?key=eq.pricing`, { method:"PATCH", headers:H,
-  body: JSON.stringify({ value: { amount: 1, currency: "PLN", enabled: true } }) });
-const priceRows = priceWrite.ok ? await priceWrite.json() : null;
+const priceWrite = await fetch(`${SB}/rest/v1/app_settings?key=eq.pricing`,
+  { method:"PATCH", headers:{...H, Prefer:"return=representation"},
+    body: JSON.stringify({ value: { amount: 1, currency: "PLN", enabled: true } }) });
+const priceRows = await priceWrite.json().catch(() => null);
 check("zwykły użytkownik nie zmieni cennika",
   !priceWrite.ok || (Array.isArray(priceRows) && priceRows.length === 0), `status ${priceWrite.status}`);
 
