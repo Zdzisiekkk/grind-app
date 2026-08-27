@@ -354,9 +354,9 @@ check("utworzenie własnego dania", Array.isArray(recipe) && recipe[0]?.id);
 
 // Ta sama nazwa drugi raz nie ma prawa przejść — inaczej lista zapełnia się
 // bliźniakami, których nie da się od siebie odróżnić.
-const dup = await fetch(`${SB}/rest/v1/recipes`, { method:"POST", headers:H,
+const dupRecipe = await fetch(`${SB}/rest/v1/recipes`, { method:"POST", headers:H,
   body: JSON.stringify({ user_id: li.user.id, name: "Owsianka testowa" }) });
-check("dwa dania o tej samej nazwie odrzucone", dup.status >= 400, `status ${dup.status}`);
+check("dwa dania o tej samej nazwie odrzucone", dupRecipe.status >= 400, `status ${dupRecipe.status}`);
 
 await fetch(`${SB}/rest/v1/recipe_items`, { method:"POST", headers:H,
   body: JSON.stringify([

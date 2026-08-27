@@ -24,6 +24,10 @@ jobs:
         run: npm run lint
       - name: Migracje w PGlite
         run: npm run validate:sql
+      # Skrypty testowe nie przechodzą przez tsc, więc literówkę w nich
+      # wyłapywał dopiero wywalony test na produkcji.
+      - name: Składnia skryptów
+        run: for f in scripts/*.mjs; do node --check "$f"; done
       - name: Testy jednostkowe
         run: |
           npm run test:offline
