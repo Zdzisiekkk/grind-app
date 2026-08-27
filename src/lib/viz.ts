@@ -1,6 +1,13 @@
-"use client";
-
-import { useSyncExternalStore } from "react";
+/*
+ * Moduł WSPÓŁDZIELONY — bez dyrektywy "use client" i bez hooków.
+ *
+ * Kolory i progi statusów czyta zarówno serwer (pulpit koloruje ikonkę oceny
+ * bólu przy renderze), jak i klient (wykresy). Gdyby ten plik był oznaczony
+ * jako kliencki, każdy jego eksport stałby się referencją klienta i wywołanie
+ * painStatus() na serwerze wysypywałoby stronę błędem „Attempted to call
+ * painStatus() from the server". Hook czytający motyw systemowy mieszka
+ * dlatego osobno, w useVizColors.ts.
+ */
 
 /**
  * Kolory wykresów.
@@ -43,29 +50,6 @@ export const STATUS = {
 } as const;
 
 export type VizColors = { [K in keyof (typeof VIZ)["light"]]: string };
-
-const DARK_QUERY = "(prefers-color-scheme: dark)";
-
-function subscribeToTheme(onChange: () => void) {
-  const mq = window.matchMedia(DARK_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-
-/**
- * Motyw systemowy czytamy przez useSyncExternalStore — matchMedia to zewnętrzne
- * źródło prawdy, więc nie synchronizujemy go efektem i stanem.
- * Na serwerze zakładamy jasny motyw (taki sam jak pierwszy render w przeglądarce).
- */
-export function useVizColors(): VizColors {
-  const dark = useSyncExternalStore(
-    subscribeToTheme,
-    () => window.matchMedia(DARK_QUERY).matches,
-    () => false,
-  );
-
-  return dark ? VIZ.dark : VIZ.light;
-}
 
 /** Kubełki bólu kolana: to stan, nie wielkość — stąd paleta statusów i opis słowny. */
 export function painStatus(level: number): { color: string; label: string; icon: string } {

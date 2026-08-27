@@ -192,6 +192,12 @@ const pulpitText = pulpit.status === 200 ? text(await pulpit.text()) : "";
 check("pulpit pokazuje Health Score", pulpit.status === 200 && pulpitText.includes("Health Score"),
   pulpit.status !== 200 ? `status ${pulpit.status}` : "");
 
+// Regresja: pulpit koloruje ikonkę oceny bólu po stronie serwera. Gdy paleta
+// statusów siedzi w module oznaczonym "use client", ten render wysypuje całą
+// stronę — a status i tak jest 200, więc sam kod odpowiedzi tego nie łapie.
+check("pulpit renderuje ocenę bólu z dzisiaj", pulpitText.includes("Lewe kolano: 4/10"),
+  pulpitText.length < 400 ? "strona zwróciła sam szkielet ładowania" : "");
+
 // 7f. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();

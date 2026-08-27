@@ -14,7 +14,8 @@ import {
   YAxis,
 } from "recharts";
 import type { ReactNode } from "react";
-import { PAIN_LEGEND, painStatus, useVizColors, type VizColors } from "@/lib/viz";
+import { PAIN_LEGEND, painStatus, type VizColors } from "@/lib/viz";
+import { useVizColors } from "@/lib/useVizColors";
 import { num, shortDate } from "@/lib/format";
 import { SLEEP_LEGEND, sleepBand, sleepDuration } from "@/lib/sleep";
 import { EmptyState } from "@/components/ui";
