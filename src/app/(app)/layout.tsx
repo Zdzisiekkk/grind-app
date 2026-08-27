@@ -32,12 +32,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase
         .from("profiles")
         .select(
-          "daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min",
+          "daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min, onboarded_at",
         )
         .eq("id", user.id)
         .maybeSingle(),
       supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
     ]);
+
+  // Nowa osoba nie ma prawa zobaczyć pustego pulpitu z napisem „wybierz plan".
+  // Kreator stoi poza tą grupą tras, więc przekierowanie się nie zapętli.
+  if (profile && !profile.onboarded_at) redirect("/start");
 
   const doneToday = new Map((habitLogs ?? []).map((l) => [l.habit_id, l.count]));
   const habitReminders = ((habits ?? []) as Habit[])

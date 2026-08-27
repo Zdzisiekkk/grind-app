@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, shortDate, todayISO } from "@/lib/format";
 import { DEFAULT_SLEEP_GOAL_MIN, type SleepNight } from "@/lib/sleep";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/constants";
+import { DEFAULT_WORKOUTS_PER_WEEK } from "@/lib/health";
 import type { ExercisePr, PeriodSummary } from "@/lib/database.types";
 
 export const metadata = { title: "Postępy" };
@@ -80,7 +81,7 @@ export default async function ProgresPage() {
       .order("date", { ascending: false }),
     supabase
       .from("profiles")
-      .select("sleep_goal_min, sleep_target_bedtime, daily_kcal, daily_water_ml")
+      .select("sleep_goal_min, sleep_target_bedtime, daily_kcal, daily_water_ml, weekly_workouts")
       .eq("id", user.id)
       .maybeSingle(),
   ]);
@@ -156,6 +157,7 @@ export default async function ProgresPage() {
       targetBedtime={profileRes.data?.sleep_target_bedtime ?? null}
       kcalGoal={profileRes.data?.daily_kcal ?? null}
       waterGoal={profileRes.data?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML}
+      workoutsPerWeek={profileRes.data?.weekly_workouts ?? DEFAULT_WORKOUTS_PER_WEEK}
     />
   );
 }

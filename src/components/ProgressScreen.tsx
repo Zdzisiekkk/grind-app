@@ -15,7 +15,7 @@ import type { ExercisePr, PeriodSummary, WorkoutLog } from "@/lib/database.types
 import { createClient } from "@/lib/supabase/client";
 import { addDaysISO, e1rm, num, volume as fmtVolume, workouts as fmtWorkouts } from "@/lib/format";
 import { bodyPart, injurySideLabel } from "@/lib/constants";
-import { DEFAULT_WORKOUTS_PER_WEEK, healthScore } from "@/lib/health";
+import { healthScore } from "@/lib/health";
 import { medianBedtime, scoreNight, sleepDuration, timeToMin, type SleepNight } from "@/lib/sleep";
 
 const EMPTY_POINTS: StrengthPoint[] = [];
@@ -33,6 +33,7 @@ export function ProgressScreen({
   targetBedtime,
   kcalGoal,
   waterGoal,
+  workoutsPerWeek,
 }: {
   userId: string;
   prs: ExercisePr[];
@@ -53,6 +54,8 @@ export function ProgressScreen({
   targetBedtime: string | null;
   kcalGoal: number | null;
   waterGoal: number;
+  /** Ile treningów tygodniowo to komplet — z profilu, ustawia to kreator. */
+  workoutsPerWeek: number;
 }) {
   const [period, setPeriod] = useState<"week" | "month">("week");
   const summary = summaries[period];
@@ -85,10 +88,10 @@ export function ProgressScreen({
         goals: {
           kcal: kcalGoal,
           waterMl: waterGoal,
-          workoutsPerWeek: DEFAULT_WORKOUTS_PER_WEEK,
+          workoutsPerWeek,
         },
       }),
-    [summary, sleepPoints, kcalGoal, waterGoal],
+    [summary, sleepPoints, kcalGoal, waterGoal, workoutsPerWeek],
   );
 
   const [exerciseId, setExerciseId] = useState<string>(prs[0]?.exercise_key ?? "");

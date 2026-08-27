@@ -53,6 +53,15 @@ export type Profile = {
   /** Godzina, o której chcesz gasić światło — punkt odniesienia regularności. */
   sleep_target_bedtime: string | null;
   sleep_reminder_at: string | null;
+  /* --- Wypełnia kreator startowy (/start) --- */
+  goal: "cut" | "maintain" | "bulk" | null;
+  activity_level: "sedentary" | "light" | "moderate" | "high" | "athlete" | null;
+  experience: "beginner" | "intermediate" | "advanced" | null;
+  equipment: "gym" | "minimal" | "home" | null;
+  /** Ile treningów tygodniowo to komplet — mianownik filaru treningowego. */
+  weekly_workouts: number | null;
+  /** Puste = kreator jeszcze nie przeszedł. */
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -96,6 +105,12 @@ export type Plan = {
   is_public: boolean;
   is_active: boolean;
   source: "manual" | "template" | "ai";
+  /* --- Opis szablonu: po tym kreator dobiera plan --- */
+  days_per_week: number | null;
+  level: "beginner" | "intermediate" | "advanced" | null;
+  /** 'gym' — siłownia, 'minimal' — hantle i drążek, 'home' — nic. */
+  equipment: "gym" | "minimal" | "home" | null;
+  tags: string[];
   created_at: string;
   updated_at: string;
 };

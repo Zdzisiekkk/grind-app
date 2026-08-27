@@ -67,7 +67,38 @@ const cookie = (enc.length <= C
   : Array.from({ length: Math.ceil(enc.length / C) }, (_, i) => `sb-${REF}-auth-token.${i}=${enc.slice(i*C,(i+1)*C)}`)
 ).join("; ");
 
+// Nagłówki do REST-a — potrzebne już przy sprawdzaniu kreatora.
+const H = { apikey: KEY, Authorization: `Bearer ${li.access_token}`, "Content-Type": "application/json" };
+
 const text = (h) => h.replace(/<script[\s\S]*?<\/script>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+
+// 5a. Świeże konto trafia najpierw do kreatora, a nie na pusty pulpit
+const firstVisit = await fetch(APP + "/", { headers: { cookie }, redirect: "manual" });
+check("nowe konto ląduje w kreatorze",
+  firstVisit.status === 307 && (firstVisit.headers.get("location") || "").includes("/start"),
+  `status ${firstVisit.status} → ${firstVisit.headers.get("location")}`);
+
+const startPage = await fetch(APP + "/start", { headers: { cookie }, redirect: "manual" });
+const startText = startPage.status === 200 ? text(await startPage.text()) : "";
+check("kreator pyta o cel i staż",
+  startPage.status === 200 && startText.includes("Zaczynamy") && startText.includes("Redukcja"),
+  startPage.status !== 200 ? `status ${startPage.status}` : "");
+
+// Gotowe plany muszą być widoczne dla każdego, nie tylko dla właściciela konta.
+const tpls = await (await fetch(
+  `${SB}/rest/v1/plans?select=name,days_per_week,level,equipment&is_template=eq.true&is_public=eq.true&user_id=is.null&order=days_per_week`,
+  { headers: H })).json();
+check("gotowe plany są do wyboru", Array.isArray(tpls) && tpls.length >= 5,
+  `${tpls.length ?? 0} szablonów: ${(tpls || []).map(p => p.name).join(", ")}`);
+check("każdy szablon mówi, ile dni i jaki sprzęt",
+  (tpls || []).every(p => p.days_per_week && p.equipment && p.level));
+check("jest plan bez sprzętu", (tpls || []).some(p => p.equipment === "home"));
+
+// Dalsza część testu udaje, że kreator został przeszedł — resztę aplikacji
+// sprawdzamy w stanie „konto już używane".
+await fetch(`${SB}/rest/v1/profiles?id=eq.${li.user.id}`, { method: "PATCH", headers: H,
+  body: JSON.stringify({ onboarded_at: new Date().toISOString(), weekly_workouts: 4 }) });
+
 for (const [path, expect] of [["/","Dziś"],["/trening","Trening"],["/dieta","Dieta"],["/progres","Postępy"],["/plan","Plany"],["/cwiczenia","Katalog"],["/kalendarz","Kalendarz"],["/profil","Profil"],["/aktywnosci","Aktywno"],["/sen","Sen"]]) {
   const r = await fetch(APP + path, { headers: { cookie }, redirect: "manual" });
   const t = r.status === 200 ? text(await r.text()) : "";
@@ -79,7 +110,6 @@ const anon = await fetch(APP + "/dieta", { redirect: "manual" });
 check("bez sesji przekierowanie na logowanie", anon.status === 307);
 
 // 7. Skopiowanie szablonu planu i zapis serii — najważniejsza ścieżka aplikacji
-const H = { apikey: KEY, Authorization: `Bearer ${li.access_token}`, "Content-Type": "application/json" };
 const [tpl] = await (await fetch(`${SB}/rest/v1/plans?select=id&is_template=eq.true`, { headers: H })).json();
 const planId = await (await fetch(`${SB}/rest/v1/rpc/clone_plan`, { method:"POST", headers:H,
   body: JSON.stringify({ p_source_plan_id: tpl.id, p_new_name: "Mój plan", p_activate: true }) })).json();

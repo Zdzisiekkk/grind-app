@@ -169,7 +169,7 @@ export default async function DashboardPage() {
   const goals = {
     kcal: profile?.daily_kcal ?? null,
     waterMl: waterGoal,
-    workoutsPerWeek: DEFAULT_WORKOUTS_PER_WEEK,
+    workoutsPerWeek: profile?.weekly_workouts ?? DEFAULT_WORKOUTS_PER_WEEK,
   };
 
   const health = summary ? healthScore({ summary, sleepScores: weekNightScores, goals }) : null;
