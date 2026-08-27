@@ -230,7 +230,46 @@ check("pulpit pokazuje Health Score", pulpit.status === 200 && pulpitText.includ
 check("pulpit renderuje ocenę bólu z dzisiaj", /Lewe kolano\s*:\s*4\s*\/\s*10/.test(pulpitText),
   pulpitText.length < 400 ? "strona zwróciła sam szkielet ładowania" : "");
 
-// 7f. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7f. Paywall — najważniejsze jest to, czego NIE da się zrobić
+const proBefore = await (await fetch(`${SB}/rest/v1/rpc/has_pro`, { method:"POST", headers:H, body:"{}" })).json();
+check("nowe konto nie ma dostępu do funkcji płatnych", proBefore === false, `has_pro=${proBefore}`);
+
+// Gdyby to przeszło, każdy przyznałby sobie subskrypcję jednym żądaniem
+// z konsoli przeglądarki.
+const selfGrant = await fetch(`${SB}/rest/v1/subscriptions`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, status: "active" }) });
+check("nie można sobie samemu wpisać subskrypcji", selfGrant.status >= 400, `status ${selfGrant.status}`);
+
+const selfPatch = await fetch(`${SB}/rest/v1/subscriptions?user_id=eq.${li.user.id}`, { method:"PATCH", headers:H,
+  body: JSON.stringify({ status: "active" }) });
+const patched = selfPatch.ok ? await selfPatch.json() : null;
+check("nie można podmienić cudzego ani własnego statusu",
+  !selfPatch.ok || (Array.isArray(patched) && patched.length === 0), `status ${selfPatch.status}`);
+
+// Furtka webhooka bez sekretu musi milczeć.
+const badSecret = await (await fetch(`${SB}/rest/v1/rpc/apply_subscription`, { method:"POST", headers:H,
+  body: JSON.stringify({ p_secret: "zgaduje", p_user_id: li.user.id, p_status: "active",
+    p_customer_id: null, p_subscription_id: null, p_price_id: null,
+    p_period_end: null, p_cancel_at_period_end: false, p_trial_end: null }) })).json();
+check("furtka webhooka odrzuca zły sekret", badSecret === false, `zwróciło ${JSON.stringify(badSecret)}`);
+
+const proAfter = await (await fetch(`${SB}/rest/v1/rpc/has_pro`, { method:"POST", headers:H, body:"{}" })).json();
+check("po tych próbach nadal brak dostępu", proAfter === false, `has_pro=${proAfter}`);
+
+// Ustawienia cennika czyta każdy (ekran musi pokazać kwotę), ale zmienia tylko admin.
+const priceWrite = await fetch(`${SB}/rest/v1/app_settings?key=eq.pricing`, { method:"PATCH", headers:H,
+  body: JSON.stringify({ value: { amount: 1, currency: "PLN", enabled: true } }) });
+const priceRows = priceWrite.ok ? await priceWrite.json() : null;
+check("zwykły użytkownik nie zmieni cennika",
+  !priceWrite.ok || (Array.isArray(priceRows) && priceRows.length === 0), `status ${priceWrite.status}`);
+
+const sub = await fetch(APP + "/subskrypcja", { headers: { cookie }, redirect: "manual" });
+const subText = sub.status === 200 ? text(await sub.text()) : "";
+check("/subskrypcja mówi, co jest darmowe, a co nie",
+  sub.status === 200 && subText.includes("Darmowe na zawsze") && subText.includes("wersja darmowa"),
+  sub.status !== 200 ? `status ${sub.status}` : "");
+
+// 7g. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -246,7 +285,7 @@ const offlineText = offlinePage.status === 200 ? text(await offlinePage.text()) 
 check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);
 
-// 7g. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7h. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;

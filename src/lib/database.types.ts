@@ -293,6 +293,32 @@ export type SleepView = {
   note: string | null;
 };
 
+export type SubscriptionStatus =
+  | "none" | "trialing" | "active" | "past_due" | "canceled" | "incomplete";
+
+/**
+ * Lokalna kopia stanu ze Stripe'a — źródłem prawdy jest Stripe, a ten wiersz
+ * wypełnia wyłącznie webhook kluczem serwisowym. Użytkownik ma tu tylko odczyt.
+ */
+export type Subscription = {
+  user_id: string;
+  status: SubscriptionStatus;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  price_id: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  trial_end: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AppSetting = {
+  key: string;
+  value: unknown;
+  updated_at: string;
+};
+
 export type InjuryStatus = "active" | "monitoring" | "healed";
 export type InjurySide = "left" | "right" | "both" | "none";
 
@@ -505,6 +531,8 @@ export type Database = {
       water_logs: Tbl<WaterLog, "user_id" | "ml">;
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
+      subscriptions: Tbl<Subscription, "user_id">;
+      app_settings: Tbl<AppSetting, "key" | "value">;
       sleep_logs: Tbl<
         Omit<SleepLog, "time_in_bed_min">,
         "user_id" | "bedtime" | "wake_time" | "quality"
@@ -542,6 +570,22 @@ export type Database = {
       };
       period_summary: { Args: { p_from: string; p_to: string }; Returns: PeriodSummary };
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      has_pro: { Args: { p_user?: string }; Returns: boolean };
+      /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
+      apply_subscription: {
+        Args: {
+          p_secret: string;
+          p_user_id: string;
+          p_status: string;
+          p_customer_id: string | null;
+          p_subscription_id: string | null;
+          p_price_id: string | null;
+          p_period_end: string | null;
+          p_cancel_at_period_end: boolean;
+          p_trial_end: string | null;
+        };
+        Returns: boolean;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
