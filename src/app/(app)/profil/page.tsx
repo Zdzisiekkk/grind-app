@@ -156,7 +156,7 @@ export default async function ProfilPage() {
         </Button>
       </form>
 
-      <NotificationSettings />
+      <NotificationSettings vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
 
       <Card
         title="Waga ciała"

@@ -272,7 +272,32 @@ check("/subskrypcja mówi, co jest darmowe, a co nie",
   sub.status === 200 && subText.includes("Darmowe na zawsze") && subText.includes("wersja darmowa"),
   sub.status !== 200 ? `status ${sub.status}` : "");
 
-// 7g. Trener AI — bramka i limit
+// 7g. Zapis produktu z Open Food Facts do wspólnego cache'u
+// Regresja: indeks na off_id był częściowy, więc ON CONFLICT nie miał go jak
+// dopasować i KAŻDE dodanie produktu z OFF do posiłku kończyło się błędem.
+const offCode = `test-${Date.now()}`;
+const cacheOff = () => fetch(`${SB}/rest/v1/foods?on_conflict=off_id`, {
+  method: "POST",
+  headers: { ...H, Prefer: "resolution=merge-duplicates,return=representation" },
+  body: JSON.stringify({ user_id: null, source: "off", off_id: offCode,
+    name: "Masło testowe", kcal_100g: 750, protein_100g: 0.5, carbs_100g: 0.5, fat_100g: 82 }),
+});
+
+const off1 = await cacheOff();
+const off1Body = await off1.json().catch(() => null);
+check("produkt z OFF zapisuje się do cache'u", off1.ok,
+  off1.ok ? "" : JSON.stringify(off1Body).slice(0, 160));
+
+// Drugie dodanie tego samego kodu — tak wygląda wpisanie tego produktu jutro.
+const off2 = await cacheOff();
+check("ten sam produkt drugi raz nie wywala błędu", off2.ok,
+  off2.ok ? "" : JSON.stringify(await off2.json().catch(() => null)).slice(0, 160));
+
+const offRows = await (await fetch(`${SB}/rest/v1/foods?select=id&off_id=eq.${offCode}`, { headers: H })).json();
+check("w cache'u zostaje jeden wiersz, nie dwa",
+  Array.isArray(offRows) && offRows.length === 1, `wierszy: ${offRows?.length}`);
+
+// 7h. Trener AI — bramka i limit
 const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
   body: JSON.stringify({ mode: "analyze" }) });
 const coachBody = await coach.json().catch(() => ({}));
@@ -312,23 +337,35 @@ check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
   trener.status === 200 && trenerText.includes("wersji płatnej"),
   trener.status !== 200 ? `status ${trener.status}` : "");
 
-// 7h. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7i. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
 const sw = await fetch(APP + "/sw.js", { redirect: "manual" });
 const swBody = sw.status === 200 ? await sw.text() : "";
-check("service worker jest serwowany", sw.status === 200 && swBody.includes("grind-v1"),
+check("service worker jest serwowany", sw.status === 200 && swBody.includes("grind-v"),
   `status ${sw.status}`);
 check("service worker nie cache'uje danych ani sesji",
   swBody.includes("/rest/v1/") && swBody.includes("/auth/v1/") && swBody.includes("isNetworkOnly"));
+check("service worker obsługuje powiadomienia w tle",
+  swBody.includes("addEventListener(\"push\"") && swBody.includes("notificationclick"));
 
 const offlinePage = await fetch(APP + "/offline", { redirect: "manual" });
 const offlineText = offlinePage.status === 200 ? text(await offlinePage.text()) : "";
 check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);
 
-// 7i. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// Wysyłka powiadomień jest chroniona sekretem — bez niego ani rusz.
+const pushNoSecret = await fetch(APP + "/api/push/send", { method: "POST" });
+check("wysyłka powiadomień bez sekretu odrzucona", pushNoSecret.status === 401,
+  `status ${pushNoSecret.status}`);
+
+const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method: "POST", headers: H,
+  body: JSON.stringify({ p_secret: "zgaduje" }) })).json();
+check("kolejka powiadomień milczy przy złym sekrecie",
+  Array.isArray(pushBadSecret) && pushBadSecret.length === 0, JSON.stringify(pushBadSecret).slice(0, 80));
+
+// 7j. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;

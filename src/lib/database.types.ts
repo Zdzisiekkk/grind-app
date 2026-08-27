@@ -53,6 +53,8 @@ export type Profile = {
   /** Godzina, o której chcesz gasić światło — punkt odniesienia regularności. */
   sleep_target_bedtime: string | null;
   sleep_reminder_at: string | null;
+  /** Strefa czasowa urządzenia — bez niej push o 22:00 przyszedłby o północy. */
+  timezone: string;
   /* --- Wypełnia kreator startowy (/start) --- */
   goal: "cut" | "maintain" | "bulk" | null;
   activity_level: "sedentary" | "light" | "moderate" | "high" | "athlete" | null;
@@ -318,6 +320,18 @@ export type CoachMessage = {
 
 export type AiUsage = { user_id: string; date: string; calls: number };
 
+export type PushSubscription = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  label: string | null;
+  last_ok_at: string | null;
+  failures: number;
+  created_at: string;
+};
+
 export type SubscriptionStatus =
   | "none" | "trialing" | "active" | "past_due" | "canceled" | "incomplete";
 
@@ -560,6 +574,7 @@ export type Database = {
       coach_proposals: Tbl<CoachProposal, "user_id" | "kind" | "title" | "rationale">;
       coach_messages: Tbl<CoachMessage, "user_id" | "role" | "content">;
       ai_usage: Tbl<AiUsage, "user_id">;
+      push_subscriptions: Tbl<PushSubscription, "user_id" | "endpoint" | "p256dh" | "auth">;
       app_settings: Tbl<AppSetting, "key" | "value">;
       sleep_logs: Tbl<
         Omit<SleepLog, "time_in_bed_min">,
@@ -603,6 +618,13 @@ export type Database = {
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Tabele w public bez RLS. Pusta tablica to jedyny poprawny wynik. */
       tables_without_rls: { Args: Record<string, never>; Returns: string[] };
+      /* Wysyłka powiadomień — chronione sekretem, wołane tylko przez cron. */
+      push_due: { Args: { p_secret: string }; Returns: unknown };
+      push_ok: { Args: { p_secret: string; p_endpoint: string }; Returns: undefined };
+      push_failed: {
+        Args: { p_secret: string; p_endpoint: string; p_gone: boolean };
+        Returns: undefined;
+      };
       /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
       apply_subscription: {
         Args: {

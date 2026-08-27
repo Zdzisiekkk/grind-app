@@ -9,7 +9,7 @@
  * aplikacji u ludzi, którzy już ją mają zainstalowaną.
  */
 
-const VERSION = "grind-v1";
+const VERSION = "grind-v2";
 const SHELL = `${VERSION}-shell`;
 const PAGES = `${VERSION}-pages`;
 
@@ -100,4 +100,53 @@ self.addEventListener("fetch", (event) => {
         ),
     );
   }
+});
+
+/* ------------------------- Powiadomienia w tle ---------------------------- */
+
+/*
+ * Push dociera nawet przy zamkniętej aplikacji — na iPhonie pod warunkiem,
+ * że apka została dodana do ekranu głównego. Tego ograniczenia nie da się
+ * obejść, to decyzja Apple.
+ */
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { title: "Grind", body: event.data ? event.data.text() : "" };
+  }
+
+  const title = payload.title || "Grind";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      // Tag sprawia, że powtórka tego samego przypomnienia podmienia
+      // poprzednie zamiast układać stos powiadomień.
+      tag: payload.key || title,
+      data: { url: payload.url || "/" },
+      renotify: false,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/", self.location.origin).href;
+
+  // Jeśli apka jest już gdzieś otwarta, przenosimy tam widok zamiast
+  // otwierać drugą kartę.
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });
