@@ -7,8 +7,21 @@ import { createServerClient } from "@supabase/ssr";
  * „/offline" musi tu być, bo service worker pokazuje ją dokładnie wtedy, gdy
  * nie ma jak sprawdzić sesji — przekierowanie na logowanie dawałoby wtedy
  * ekran, którego też nie da się pobrać.
+ *
+ * Dwie trasy API sprawdzają tożsamość SAME i z definicji przychodzą bez
+ * ciasteczka: webhook Stripe'a (podpis zdarzenia) i wysyłka powiadomień
+ * (sekret budzika). Bez tego wyjątku ich żądania POST lądowały na /login,
+ * gdzie nie ma obsługi POST — czyli opłacona subskrypcja nigdy nie zostałaby
+ * zapisana, a powiadomienia nigdy nie wyszły. Obie usterki są niewidoczne
+ * z poziomu aplikacji, bo nic w niej nie klika w te adresy.
  */
-const PUBLIC_PATHS = ["/login", "/auth", "/offline"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth",
+  "/offline",
+  "/api/stripe/webhook",
+  "/api/push/send",
+];
 
 /**
  * Odświeża sesję Supabase przy każdym żądaniu i pilnuje, żeby niezalogowany

@@ -356,9 +356,17 @@ check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);
 
 // Wysyłka powiadomień jest chroniona sekretem — bez niego ani rusz.
-const pushNoSecret = await fetch(APP + "/api/push/send", { method: "POST" });
-check("wysyłka powiadomień bez sekretu odrzucona", pushNoSecret.status === 401,
-  `status ${pushNoSecret.status}`);
+// redirect:"manual", bo 307 na /login udaje sukces: fetch podąża za nim,
+// POST trafia na stronę logowania i wraca 405 zamiast oczekiwanego 401.
+const pushNoSecret = await fetch(APP + "/api/push/send", { method: "POST", redirect: "manual" });
+check("wysyłka powiadomień odrzuca brak sekretu, a nie przekierowuje na logowanie",
+  pushNoSecret.status === 401, `status ${pushNoSecret.status}`);
+
+// Webhook Stripe'a przychodzi bez ciasteczka i sam sprawdza podpis — musi
+// dojść do trasy, a nie na ekran logowania. Bez podpisu ma odpowiedzieć 400.
+const hook = await fetch(APP + "/api/stripe/webhook", { method: "POST", redirect: "manual", body: "{}" });
+check("webhook Stripe'a dociera do trasy, a nie na logowanie",
+  hook.status !== 307 && hook.status !== 405, `status ${hook.status}`);
 
 const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method: "POST", headers: H,
   body: JSON.stringify({ p_secret: "zgaduje" }) })).json();
