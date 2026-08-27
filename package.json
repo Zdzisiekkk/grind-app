@@ -15,7 +15,8 @@
     "test:live": "node scripts/test-live.mjs",
     "test:offline": "node --no-warnings scripts/test-offline.mjs",
     "verify:plan": "node scripts/verify-plan-import.mjs",
-    "test:analysis": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-analysis.mjs"
+    "test:analysis": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-analysis.mjs",
+    "test:vices": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-vices.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

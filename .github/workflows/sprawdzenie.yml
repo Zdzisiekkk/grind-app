@@ -32,6 +32,7 @@ jobs:
         run: |
           npm run test:offline
           npm run test:analysis
+          npm run test:vices
       - name: Budowanie
         run: npm run build
         env:
