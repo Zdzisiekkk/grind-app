@@ -297,7 +297,41 @@ const offRows = await (await fetch(`${SB}/rest/v1/foods?select=id&off_id=eq.${of
 check("w cache'u zostaje jeden wiersz, nie dwa",
   Array.isArray(offRows) && offRows.length === 1, `wierszy: ${offRows?.length}`);
 
-// 7h. Trener AI — bramka i limit
+// 7h. Czytanie i gotowe dania
+const dishes = await (await fetch(`${SB}/rest/v1/foods?select=name,serving_size_g&kind=eq.dish&user_id=is.null&limit=200`, { headers: H })).json();
+check("gotowe dania są dostępne dla każdego", Array.isArray(dishes) && dishes.length >= 40,
+  `${dishes.length ?? 0} dań`);
+check("każde danie ma typową porcję", (dishes || []).every((d) => d.serving_size_g > 0));
+check("są dania, których nie ma w Open Food Facts",
+  (dishes || []).some((d) => /schabowy/i.test(d.name)) && (dishes || []).some((d) => /bigos/i.test(d.name)));
+
+const book = await (await fetch(`${SB}/rest/v1/books`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, title: "Atomowe nawyki", author: "James Clear",
+    status: "reading", pages: 320, current_page: 40 }) })).json();
+check("dodanie książki", Array.isArray(book) && book[0]?.id);
+
+const bookNote = await (await fetch(`${SB}/rest/v1/book_notes`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, book_id: book[0].id, page: 37,
+    quote: "Nie wznosisz się do poziomu celów, spadasz do poziomu systemów.", note: "To samo co z planem treningowym." }) })).json();
+check("notatka z cytatem i stroną", Array.isArray(bookNote) && bookNote[0]?.page === 37);
+
+// Notatka bez treści nie ma sensu — baza tego pilnuje.
+const emptyNote = await fetch(`${SB}/rest/v1/book_notes`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, book_id: book[0].id, page: 10 }) });
+check("pusta notatka odrzucona", emptyNote.status >= 400, `status ${emptyNote.status}`);
+
+// Postęp nie może przekroczyć liczby stron.
+const tooFar = await fetch(`${SB}/rest/v1/books?id=eq.${book[0].id}`, { method:"PATCH", headers:H,
+  body: JSON.stringify({ current_page: 999 }) });
+check("nie da się być na stronie 999 w książce o 320 stronach", tooFar.status >= 400, `status ${tooFar.status}`);
+
+const ksiazki = await fetch(APP + "/nawyki/ksiazki", { headers: { cookie }, redirect: "manual" });
+const ksiazkiText = ksiazki.status === 200 ? text(await ksiazki.text()) : "";
+check("/nawyki/ksiazki pokazuje książkę i notatkę",
+  ksiazki.status === 200 && ksiazkiText.includes("Atomowe nawyki"),
+  ksiazki.status !== 200 ? `status ${ksiazki.status}` : "");
+
+// 7i. Trener AI — bramka i limit
 const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
   body: JSON.stringify({ mode: "analyze" }) });
 const coachBody = await coach.json().catch(() => ({}));
@@ -337,7 +371,7 @@ check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
   trener.status === 200 && trenerText.includes("wersji płatnej"),
   trener.status !== 200 ? `status ${trener.status}` : "");
 
-// 7i. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7j. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -373,7 +407,7 @@ const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method:
 check("kolejka powiadomień milczy przy złym sekrecie",
   Array.isArray(pushBadSecret) && pushBadSecret.length === 0, JSON.stringify(pushBadSecret).slice(0, 80));
 
-// 7j. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7k. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, ProgressRing, Sheet, Textarea } from "@/components/ui";
@@ -37,12 +38,15 @@ export function HabitsScreen({
   habits,
   today,
   perfectStreak,
+  reading,
 }: {
   userId: string;
   habits: HabitWithToday[];
   today: string;
   /** Ile dni z rzędu domknięte zostało wszystko, co było na liście. */
   perfectStreak: number;
+  /** Książka w trakcie — skrót do podstrony z czytaniem. */
+  reading: { id: string; title: string; current_page: number; pages: number | null } | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -184,6 +188,29 @@ export function HabitsScreen({
           </div>
         </Card>
       )}
+
+      {/* Czytanie mieszka tu, ale ma własny ekran — nie da się go odhaczyć
+          ptaszkiem, bo ma tytuł, strony i notatki. */}
+      <Link href="/nawyki/ksiazki" className="block">
+        <Card className="transition-colors active:bg-surface-2">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
+              📚
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold leading-tight">Czytanie</p>
+              <p className="truncate text-[13px] text-muted">
+                {reading
+                  ? `${reading.title} · s. ${reading.current_page}${reading.pages ? ` z ${reading.pages}` : ""}`
+                  : "Książki, postęp, cytaty i notatki"}
+              </p>
+            </div>
+            <span className="text-faint" aria-hidden>
+              ›
+            </span>
+          </div>
+        </Card>
+      </Link>
 
       {error && <Alert>{error}</Alert>}
 

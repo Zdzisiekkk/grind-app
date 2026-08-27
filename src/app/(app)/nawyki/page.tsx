@@ -130,12 +130,23 @@ export default async function HabitsPage() {
     };
   });
 
+  // Czytanie ma własną podstronę, bo książka to nie ptaszek: ma tytuł,
+  // postęp w stronach, cytaty i ocenę na koniec.
+  const { data: reading } = await supabase
+    .from("books")
+    .select("id, title, current_page, pages")
+    .eq("user_id", user.id)
+    .eq("status", "reading")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
   return (
     <HabitsScreen
       userId={user.id}
       habits={withToday}
       today={today}
       perfectStreak={perfectDayStreak((habits ?? []) as Habit[], byHabit, today)}
+      reading={reading?.[0] ?? null}
     />
   );
 }

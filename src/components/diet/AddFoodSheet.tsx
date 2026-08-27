@@ -53,7 +53,7 @@ export function AddFoodSheet({
   onAdded: (entry: MealEntry) => void;
 }) {
   const supabase = createClient();
-  const [tab, setTab] = useState<"search" | "custom">("search");
+  const [tab, setTab] = useState<"search" | "dishes" | "custom">("search");
   const [query, setQuery] = useState("");
   const [mine, setMine] = useState<Food[]>([]);
   const [offRaw, setOffRaw] = useState<OffProduct[]>([]);
@@ -61,6 +61,32 @@ export function AddFoodSheet({
   const [offError, setOffError] = useState<string | null>(null);
   const [picked, setPicked] = useState<Candidate | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dishes, setDishes] = useState<Food[]>([]);
+
+  /*
+   * Gotowe dania.
+   *
+   * Open Food Facts to baza produktów z kodem kreskowym — nie ma w niej
+   * schabowego ani rosołu, a to jest to, co ludzie jedzą na obiad. Dlatego
+   * osobna, kuratorowana lista, którą da się przejrzeć bez wpisywania.
+   */
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("foods")
+        .select("*")
+        .eq("kind", "dish")
+        .is("user_id", null)
+        .order("name")
+        .limit(200);
+      if (!cancelled) setDishes((data ?? []) as Food[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, supabase]);
 
   // Lokalne produkty (własne + wcześniej zapisany cache OFF) — szybkie, działa od razu.
   useEffect(() => {
@@ -140,11 +166,19 @@ export function AddFoodSheet({
             onChange={setTab}
             options={[
               { value: "search", label: "Szukaj" },
-              { value: "custom", label: "Własny produkt" },
+              { value: "dishes", label: "Dania" },
+              { value: "custom", label: "Własne" },
             ]}
           />
 
-          {tab === "custom" ? (
+          {tab === "dishes" ? (
+            <DishList
+              dishes={dishes}
+              query={query}
+              onQuery={setQuery}
+              onPick={(food) => setPicked({ kind: "food", food })}
+            />
+          ) : tab === "custom" ? (
             <CustomFoodForm
               userId={userId}
               onCreated={(food) => setPicked({ kind: "food", food })}
@@ -450,5 +484,81 @@ function CustomFoodForm({
         Zapisz i wybierz gramaturę
       </Button>
     </form>
+  );
+}
+
+/* --------------------------------- Dania ---------------------------------- */
+
+/**
+ * Przeglądarka gotowych dań.
+ *
+ * Świadomie BEZ wymogu wpisywania: obiad wybiera się wzrokiem z listy, a nie
+ * przez zgadywanie, jak dana potrawa nazywa się w bazie. Pole tekstowe jest
+ * dla tych, którzy wiedzą, czego szukają.
+ */
+function DishList({
+  dishes,
+  query,
+  onQuery,
+  onPick,
+}: {
+  dishes: Food[];
+  query: string;
+  onQuery: (value: string) => void;
+  onPick: (food: Food) => void;
+}) {
+  const phrase = query.trim().toLowerCase();
+  const shown = phrase ? dishes.filter((d) => d.name.toLowerCase().includes(phrase)) : dishes;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Input
+        value={query}
+        onChange={(e) => onQuery(e.target.value)}
+        placeholder="Filtruj dania…"
+        aria-label="Filtruj dania"
+      />
+
+      {shown.length === 0 ? (
+        <EmptyState
+          icon="🍲"
+          title="Nie ma takiego dania"
+          description="Wpisz je raz jako własny produkt — zostanie u Ciebie na stałe i następnym razem znajdziesz je od ręki."
+        />
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {shown.map((dish) => (
+            <li key={dish.id}>
+              <button
+                type="button"
+                onClick={() => onPick(dish)}
+                className="flex w-full items-center gap-3 py-2.5 text-left active:bg-surface-2"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-medium leading-tight">
+                    {dish.name}
+                  </span>
+                  <span className="tabular block text-[12px] text-muted">
+                    {Math.round(Number(dish.kcal_100g))} kcal / 100 g
+                    {dish.serving_size_g
+                      ? ` · ${dish.serving_label ?? "porcja"} ${Math.round(Number(dish.serving_size_g))} g`
+                      : ""}
+                  </span>
+                </span>
+                <span className="text-faint" aria-hidden>
+                  ›
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-[11px] leading-relaxed text-faint">
+        Wartości są przeciętne — talerz u babci będzie inny niż w barze. Traktuj je jako
+        przybliżenie, a nie pomiar. Jeśli gotujesz coś regularnie, wpisz to raz jako własny
+        produkt z prawdziwymi wartościami.
+      </p>
+    </div>
   );
 }

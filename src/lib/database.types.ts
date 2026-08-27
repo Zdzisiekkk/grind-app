@@ -332,6 +332,45 @@ export type PushSubscription = {
   created_at: string;
 };
 
+export type BookStatus = "want" | "reading" | "read" | "abandoned";
+
+export type Book = {
+  id: string;
+  user_id: string;
+  title: string;
+  author: string | null;
+  status: BookStatus;
+  pages: number | null;
+  current_page: number;
+  rating: number | null;
+  summary: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BookNote = {
+  id: string;
+  user_id: string;
+  book_id: string;
+  page: number | null;
+  /** Cytat z książki — trzymany oddzielnie od własnego komentarza. */
+  quote: string | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type ReadingLog = {
+  id: string;
+  user_id: string;
+  book_id: string | null;
+  date: string;
+  minutes: number | null;
+  pages_read: number;
+  created_at: string;
+};
+
 export type SubscriptionStatus =
   | "none" | "trialing" | "active" | "past_due" | "canceled" | "incomplete";
 
@@ -401,8 +440,10 @@ export type BodyWeightLog = {
 export type Food = {
   id: string;
   user_id: string | null;
-  source: "off" | "custom";
+  source: "off" | "custom" | "curated";
   off_id: string | null;
+  /** Produkt z opakowania czy gotowe danie z talerza. */
+  kind: "product" | "dish";
   name: string;
   brand: string | null;
   image_url: string | null;
@@ -576,6 +617,9 @@ export type Database = {
       ai_usage: Tbl<AiUsage, "user_id">;
       push_subscriptions: Tbl<PushSubscription, "user_id" | "endpoint" | "p256dh" | "auth">;
       app_settings: Tbl<AppSetting, "key" | "value">;
+      books: Tbl<Book, "user_id" | "title">;
+      book_notes: Tbl<BookNote, "user_id" | "book_id">;
+      reading_logs: Tbl<ReadingLog, "user_id">;
       sleep_logs: Tbl<
         Omit<SleepLog, "time_in_bed_min">,
         "user_id" | "bedtime" | "wake_time" | "quality"
