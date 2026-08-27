@@ -1,0 +1,35 @@
+# Sprawdzenie każdej zmiany przed wdrożeniem: typy, lint, budowanie.
+name: Sprawdzenie kodu
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sprawdz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typy
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Migracje w PGlite
+        run: npm run validate:sql
+      - name: Testy jednostkowe
+        run: |
+          npm run test:offline
+          npm run test:analysis
+      - name: Budowanie
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://przyklad.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: klucz-do-budowania

@@ -5,20 +5,19 @@
  *   GRIND_URL=https://... \
  *   NEXT_PUBLIC_SUPABASE_URL=https://....supabase.co \
  *   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_... \
- *   SUPABASE_SERVICE_ROLE_KEY=... \
  *   npm run test:live
  *
- * Service role key jest potrzebny wyłącznie do usunięcia konta testowego —
- * nigdy nie wrzucaj go do repozytorium ani na Vercela.
+ * ŻADNYCH kluczy prywatnych: konto testowe kasuje się samo, tą samą funkcją
+ * co prawdziwy użytkownik. Dzięki temu test może chodzić z GitHub Actions bez
+ * powierzania mu klucza serwisowego, który omija całe RLS.
  */
 
 const APP = process.env.GRIND_URL;
 const SB = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const SR = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!APP || !SB || !KEY || !SR) {
-  console.error("Brakuje zmiennych: GRIND_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY");
+if (!APP || !SB || !KEY) {
+  console.error("Brakuje zmiennych: GRIND_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY");
   process.exit(1);
 }
 
@@ -309,25 +308,15 @@ const prywatnoscText = prywatnosc.status === 200 ? text(await prywatnosc.text())
 check("polityka prywatności czytelna BEZ logowania",
   prywatnosc.status === 200 && prywatnoscText.includes("art. 9"), `status ${prywatnosc.status}`);
 
-const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
-const eksportBody = eksport.status === 200 ? await eksport.json() : null;
-check("eksport danych oddaje plik do pobrania",
-  eksport.status === 200 && (eksport.headers.get("content-disposition") || "").includes("attachment"),
-  `status ${eksport.status}`);
-check("w eksporcie są dane ze wszystkich dzienników",
-  eksportBody?.dane?.workout_logs?.length > 0 &&
-  eksportBody?.dane?.sleep_logs?.length > 0 &&
-  eksportBody?.dane?.books?.length > 0,
-  eksportBody ? `tabel: ${Object.keys(eksportBody.dane).length}` : "");
-
-const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" });
-check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200,
-  `status ${eksportAnon.status}`);
-
 // 7i. Czytanie i gotowe dania
 const dishes = await (await fetch(`${SB}/rest/v1/foods?select=name,serving_size_g&kind=eq.dish&user_id=is.null&limit=200`, { headers: H })).json();
 check("gotowe dania są dostępne dla każdego", Array.isArray(dishes) && dishes.length >= 40,
   `${dishes.length ?? 0} dań`);
+// Migracja seedująca musi być idempotentna — bez tego każde wdrożenie
+// dokładało komplet dań od nowa, a lista z duplikatami wygląda jak lista.
+check("dania nie są zdublowane",
+  new Set((dishes || []).map((d) => d.name.toLowerCase())).size === (dishes || []).length,
+  `${dishes.length} wpisów, ${new Set((dishes || []).map((d) => d.name.toLowerCase())).size} nazw`);
 check("każde danie ma typową porcję", (dishes || []).every((d) => d.serving_size_g > 0));
 check("są dania, których nie ma w Open Food Facts",
   (dishes || []).some((d) => /schabowy/i.test(d.name)) && (dishes || []).some((d) => /bigos/i.test(d.name)));
@@ -456,7 +445,24 @@ check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 
-// 7m. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
+// 7m. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
+const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
+const eksportBody = eksport.status === 200 ? await eksport.json() : null;
+check("eksport danych oddaje plik do pobrania",
+  eksport.status === 200 && (eksport.headers.get("content-disposition") || "").includes("attachment"),
+  `status ${eksport.status}`);
+check("w eksporcie są dane ze wszystkich dzienników",
+  eksportBody?.dane?.workout_logs?.length > 0 &&
+  eksportBody?.dane?.sleep_logs?.length > 0 &&
+  eksportBody?.dane?.books?.length > 0 &&
+  eksportBody?.dane?.todos?.length > 0,
+  eksportBody ? `tabel: ${Object.keys(eksportBody.dane).length}` : "");
+
+const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" });
+check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200,
+  `status ${eksportAnon.status}`);
+
+// 7n. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
 const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
 check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
 
@@ -465,13 +471,15 @@ check("po usunięciu konta znikają też jego dane",
   !Array.isArray(afterDelete) || afterDelete.length === 0, JSON.stringify(afterDelete).slice(0, 80));
 
 // 8. Sprzątanie
-await fetch(`${SB}/auth/v1/admin/users/${li.user.id}`, { method:"DELETE", headers:{ apikey: SR, Authorization:`Bearer ${SR}` } });
-const left = await (await fetch(`${SB}/auth/v1/admin/users`, { headers:{ apikey: SR, Authorization:`Bearer ${SR}` } })).json();
-// Sprawdzamy tylko własne konto testowe — na żywej bazie są prawdziwi użytkownicy
-// i ich obecność nie jest błędem.
-const stillThere = (left.users || []).some((u) => u.id === li.user.id);
-check("konto testowe posprzątane", !stillThere,
-  `w bazie zostaje ${(left.users || []).length} prawdziwych kont`);
+// Konto testowe kasuje się SAMO, tą samą funkcją co prawdziwy użytkownik.
+// Dzięki temu test nie potrzebuje klucza serwisowego Supabase i można go
+// bezpiecznie uruchamiać z GitHub Actions — a przy okazji sprzątanie jest
+// dowodem, że prawo do usunięcia konta faktycznie działa.
+const relog = await (await fetch(`${SB}/auth/v1/token?grant_type=password`, {
+  method:"POST", headers:{ apikey: KEY, "Content-Type":"application/json" },
+  body: JSON.stringify({ email: EMAIL, password: PASS }) })).json();
+check("po usunięciu nie da się już zalogować na to konto", !relog.access_token,
+  relog.access_token ? "konto wciąż istnieje" : (relog.error_description || relog.msg || ""));
 
 console.log(fails === 0 ? "\n  WSZYSTKO PRZESZŁO" : `\n  BŁĘDÓW: ${fails}`);
 process.exit(fails ? 1 : 0);

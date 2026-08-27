@@ -1,0 +1,53 @@
+# Codzienne sprawdzenie żywego wdrożenia.
+#
+# Sens jest jeden: usterki takie jak martwy webhook Stripe'a albo powiadomienia
+# lądujące na ekranie logowania NIE WIDAĆ z poziomu aplikacji. Nic w niej nie
+# klika w te adresy, więc bez testu wykrycie zależy od tego, czy akurat ktoś
+# patrzył. Raz dziennie wystarczy, żeby najgorszy przypadek trwał jedną noc,
+# a nie miesiąc.
+#
+# Test nie dostaje ŻADNEGO klucza prywatnego — konto testowe kasuje się samo
+# tą samą funkcją, co prawdziwy użytkownik.
+
+name: Test na produkcji
+
+on:
+  schedule:
+    # 06:00 czasu polskiego latem, 07:00 zimą. Wynik czeka na poranną kawę.
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Testy na żywym wdrożeniu
+        env:
+          GRIND_URL: ${{ vars.GRIND_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: node scripts/test-live.mjs
+
+  # Testy jednostkowe nie ruszają sieci, więc chodzą przy każdej zmianie
+  # w kodzie, nie tylko raz dziennie.
+  jednostkowe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run test:offline
+      - run: npm run test:analysis
+      - run: npm run validate:sql

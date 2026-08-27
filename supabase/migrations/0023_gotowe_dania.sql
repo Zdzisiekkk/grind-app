@@ -25,6 +25,21 @@ alter table public.foods
 
 create index if not exists foods_kind_idx on public.foods (kind, lower(name));
 
+/*
+ * Idempotencja przez sprawdzenie, a nie przez ON CONFLICT.
+ *
+ * „on conflict do nothing" nic tu nie dawało: w tabeli nie ma ograniczenia
+ * unikalności na nazwę dania, więc konflikt nigdy nie zachodził i każde
+ * ponowne uruchomienie migracji dokładało 52 duplikaty. Wyszło to dopiero
+ * w teście, który policzył dania na produkcji.
+ */
+do $$
+begin
+if exists (select 1 from public.foods where source = 'curated' and kind = 'dish') then
+  raise notice 'Gotowe dania już są — pomijam.';
+  return;
+end if;
+
 -- Produkty własne i te z OFF zostają produktami; poniższe wpisy to dania.
 insert into public.foods
   (user_id, source, kind, name, kcal_100g, protein_100g, carbs_100g, fat_100g,
@@ -94,6 +109,5 @@ values
 (null, 'curated', 'dish', 'Szarlotka',                    250,  3.0, 38.0, 10.0, 120, 'kawałek'),
 (null, 'curated', 'dish', 'Odżywka białkowa na wodzie',    60, 12.0,  2.0,  0.5, 300, 'shaker'),
 (null, 'curated', 'dish', 'Baton proteinowy',             350, 30.0, 35.0, 10.0,  60, 'sztuka'),
-(null, 'curated', 'dish', 'Koktajl owocowy z bananem',     85,  2.0, 17.0,  1.0, 300, 'szklanka')
-
-on conflict do nothing;
+(null, 'curated', 'dish', 'Koktajl owocowy z bananem',     85,  2.0, 17.0,  1.0, 300, 'szklanka');
+end $$;
