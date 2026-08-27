@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, ProgressRing, Sheet, Textarea } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { HABIT_ICONS, WEEKDAYS, habitDueOn } from "@/lib/constants";
+import { useLocalBoolean } from "@/lib/localSetting";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
 import type { Habit } from "@/lib/database.types";
@@ -39,6 +40,7 @@ export function HabitsScreen({
   today,
   perfectStreak,
   reading,
+  vices,
 }: {
   userId: string;
   habits: HabitWithToday[];
@@ -47,6 +49,8 @@ export function HabitsScreen({
   perfectStreak: number;
   /** Książka w trakcie — skrót do podstrony z czytaniem. */
   reading: { id: string; title: string; current_page: number; pages: number | null } | null;
+  /** Ile nałogów i najdłuższa trwająca passa — skrót do podstrony z nałogami. */
+  vices: { count: number; bestDays: number };
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -57,6 +61,10 @@ export function HabitsScreen({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+
+  // Domyślnie zwinięte, ale wybór zostaje zapamiętany — kto raz rozwinie,
+  // nie musi tego robić codziennie przed odhaczeniem.
+  const [listOpen, setListOpen] = useLocalBoolean("grind:habits-open", false);
 
   const dueToday = habits.filter((h) => habitDueOn(h.days_of_week, today));
   const restToday = habits.filter((h) => !habitDueOn(h.days_of_week, today));
@@ -212,6 +220,29 @@ export function HabitsScreen({
         </Card>
       </Link>
 
+      {/* Nałóg to odwrócony nawyk — sukcesem jest dzień, w którym nic nie
+          zrobiłeś. Osobny ekran, bo passa liczy się tam w drugą stronę. */}
+      <Link href="/nawyki/nalogi" className="block">
+        <Card className="transition-colors active:bg-surface-2">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
+              🚭
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold leading-tight">Nałogi</p>
+              <p className="truncate text-[13px] text-muted">
+                {vices.count === 0
+                  ? "Walka ze złymi nawykami — licznik czystych dni"
+                  : `${vices.bestDays} ${dayWord(vices.bestDays)} czysto · ${viceWord(vices.count)}`}
+              </p>
+            </div>
+            <span className="text-faint" aria-hidden>
+              ›
+            </span>
+          </div>
+        </Card>
+      </Link>
+
       {error && <Alert>{error}</Alert>}
 
       {habits.length === 0 ? (
@@ -228,38 +259,70 @@ export function HabitsScreen({
           />
         </Card>
       ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            {dueToday.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                busy={busy === habit.id}
-                onBump={(d) => bump(habit, d)}
-                onEdit={() => openEdit(habit)}
-                onDelete={() => remove(habit)}
-              />
-            ))}
-          </div>
+        /* Wszystkie własne nawyki pod jednym nagłówkiem — po rozwinięciu
+           wyglądają dokładnie tak, jak wcześniej. */
+        <Card padded={false} className="overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setListOpen(!listOpen)}
+            aria-expanded={listOpen}
+            className="flex w-full items-center gap-3 p-4 text-left transition-colors active:bg-surface-2"
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
+              🔁
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold leading-tight">Moje nawyki</p>
+              <p className="truncate text-[13px] text-muted">
+                {viceOrHabitWord(habits.length)}
+                {dueToday.length > 0 && ` · ${doneToday}/${dueToday.length} dziś`}
+              </p>
+            </div>
+            <span
+              className={clsx(
+                "text-faint transition-transform",
+                listOpen ? "rotate-90" : "rotate-0",
+              )}
+              aria-hidden
+            >
+              ›
+            </span>
+          </button>
 
-          {restToday.length > 0 && (
-            <Card title="Nie na dziś" subtitle="Wróci w swoim dniu tygodnia">
-              <div className="flex flex-col gap-2">
-                {restToday.map((habit) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    muted
-                    busy={busy === habit.id}
-                    onBump={(d) => bump(habit, d)}
-                    onEdit={() => openEdit(habit)}
-                    onDelete={() => remove(habit)}
-                  />
-                ))}
-              </div>
-            </Card>
+          {listOpen && (
+            <div className="flex flex-col gap-2 border-t border-border p-3">
+              {dueToday.map((habit) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  busy={busy === habit.id}
+                  onBump={(d) => bump(habit, d)}
+                  onEdit={() => openEdit(habit)}
+                  onDelete={() => remove(habit)}
+                />
+              ))}
+
+              {restToday.length > 0 && (
+                <>
+                  <p className="mt-1 px-1 text-[12px] font-medium uppercase tracking-wide text-faint">
+                    Nie na dziś — wróci w swoim dniu tygodnia
+                  </p>
+                  {restToday.map((habit) => (
+                    <HabitCard
+                      key={habit.id}
+                      habit={habit}
+                      muted
+                      busy={busy === habit.id}
+                      onBump={(d) => bump(habit, d)}
+                      onEdit={() => openEdit(habit)}
+                      onDelete={() => remove(habit)}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
           )}
-        </>
+        </Card>
       )}
 
       <Sheet
@@ -483,4 +546,25 @@ function HabitCard({
 /** „1 dzień", „2 dni", „5 dni" — polska odmiana bez biblioteki. */
 function dayWord(n: number): string {
   return n === 1 ? "dzień" : "dni";
+}
+
+/**
+ * Polska odmiana po liczbie: 1 nawyk, 2-4 nawyki, 5+ nawyków — z wyjątkiem
+ * nastek (12 nawyków, nie „12 nawyki").
+ */
+function viceOrHabitWord(n: number): string {
+  const last = n % 10;
+  const lastTwo = n % 100;
+  if (n === 1) return "1 nawyk";
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return `${n} nawyki`;
+  return `${n} nawyków`;
+}
+
+/** To samo dla nałogów. */
+function viceWord(n: number): string {
+  const last = n % 10;
+  const lastTwo = n % 100;
+  if (n === 1) return "1 nałóg";
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return `${n} nałogi`;
+  return `${n} nałogów`;
 }

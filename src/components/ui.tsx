@@ -2,7 +2,7 @@
 
 import { clsx } from "@/lib/clsx";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ---------------------------------- Karta --------------------------------- */
 
@@ -345,6 +345,60 @@ export function Alert({
       )}
     >
       {children}
+    </div>
+  );
+}
+
+/* ---------------------------------- Toast --------------------------------- */
+
+/**
+ * Potwierdzenie „zapisano", które samo znika.
+ *
+ * Zapis, po którym nic się nie rusza, wygląda dokładnie tak samo jak zapis,
+ * który się nie udał — więc człowiek klika drugi raz albo wychodzi z ekranu
+ * niepewny, czy jego cele zostały zapamiętane. Ten pasek jest jedyną różnicą
+ * między tymi dwoma stanami.
+ *
+ * Montuj z kluczem (znacznikiem czasu zapisu), żeby każdy kolejny zapis
+ * pokazał go od nowa zamiast wygasnąć raz na zawsze.
+ */
+export function Toast({
+  children,
+  tone = "success",
+  ms = 3200,
+}: {
+  children: ReactNode;
+  tone?: "success" | "danger";
+  ms?: number;
+}) {
+  const [gone, setGone] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setGone(true), ms);
+    return () => clearTimeout(id);
+  }, [ms]);
+
+  if (gone) return null;
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-4"
+      // Nad dolną nawigacją (58 px) i nad paskiem gestów, żeby nie zasłaniać
+      // przycisków, do których zaraz się sięga.
+      style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+    >
+      <div
+        className={clsx(
+          "grind-toast flex items-center gap-2 rounded-full px-4 py-2.5 text-[14px] font-semibold shadow-[var(--shadow)]",
+          tone === "success" && "bg-success text-white",
+          tone === "danger" && "bg-danger text-white",
+        )}
+      >
+        <span aria-hidden>{tone === "success" ? "✓" : "!"}</span>
+        {children}
+      </div>
     </div>
   );
 }

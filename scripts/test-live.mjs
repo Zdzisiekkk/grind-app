@@ -479,6 +479,50 @@ check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 
+// 7m2. Nałogi — licznik, który liczy w drugą stronę niż nawyki
+const vice = await (await fetch(`${SB}/rest/v1/vices`, { method:"POST",
+  headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, name: "Papierosy", icon: "🚭",
+    daily_cost: 20, daily_minutes: 60,
+    started_at: new Date(Date.now() - 10*864e5).toISOString() }) })).json();
+const viceId = vice?.[0]?.id;
+check("nałóg zapisany", typeof viceId === "string", JSON.stringify(vice).slice(0, 120));
+
+// Wpadka sprzed trzech dni: licznik ma iść od zdarzenia, nie od chwili wpisania.
+await fetch(`${SB}/rest/v1/vice_events`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, vice_id: viceId, kind: "lapse", trigger: "stres",
+    occurred_at: new Date(Date.now() - 3*864e5).toISOString() }) });
+await fetch(`${SB}/rest/v1/vice_events`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, vice_id: viceId, kind: "urge" }) });
+
+const viceEvents = await (await fetch(
+  `${SB}/rest/v1/vice_events?select=kind,occurred_at,trigger&vice_id=eq.${viceId}`, { headers: H })).json();
+check("wpadka i pokonana chęć zapisane osobno",
+  viceEvents.filter(e => e.kind === "lapse").length === 1 &&
+  viceEvents.filter(e => e.kind === "urge").length === 1,
+  JSON.stringify(viceEvents.map(e => e.kind)));
+
+// Ta sama arytmetyka co w src/lib/vices.ts — passa startuje od ostatniej wpadki.
+const lastLapse = Math.max(...viceEvents.filter(e => e.kind === "lapse")
+  .map(e => new Date(e.occurred_at).getTime()));
+const viceDays = Math.floor((Date.now() - lastLapse) / 864e5);
+check("licznik liczy od wpadki, nie od rzucenia", viceDays === 3, `dni=${viceDays}`);
+
+// Cudzy nałóg jest nietykalny — RLS jest tu jedyną zaporą.
+const viceOthers = await (await fetch(`${SB}/rest/v1/vices?select=id`, { headers: H })).json();
+check("widać wyłącznie własne nałogi", viceOthers.length === 1, `wierszy: ${viceOthers.length}`);
+
+const viceBadOwner = await fetch(`${SB}/rest/v1/vice_events`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, vice_id: "00000000-0000-0000-0000-000000000000", kind: "lapse" }) });
+check("nie da się dopisać zdarzenia do cudzego nałogu", viceBadOwner.status >= 400,
+  `status ${viceBadOwner.status}`);
+
+const nalogiPage = await fetch(APP + "/nawyki/nalogi", { headers: { cookie }, redirect: "manual" });
+const nalogiText = nalogiPage.status === 200 ? text(await nalogiPage.text()) : "";
+check("/nawyki/nalogi pokazuje licznik czystych dni",
+  nalogiPage.status === 200 && nalogiText.includes("Papierosy") && /3\s*dni czysto/.test(nalogiText),
+  nalogiPage.status !== 200 ? `status ${nalogiPage.status}` : "");
+
 // 7n. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
 const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
 const eksportBody = eksport.status === 200 ? await eksport.json() : null;
@@ -489,7 +533,9 @@ check("w eksporcie są dane ze wszystkich dzienników",
   eksportBody?.dane?.workout_logs?.length > 0 &&
   eksportBody?.dane?.sleep_logs?.length > 0 &&
   eksportBody?.dane?.books?.length > 0 &&
-  eksportBody?.dane?.todos?.length > 0,
+  eksportBody?.dane?.todos?.length > 0 &&
+  eksportBody?.dane?.vices?.length > 0 &&
+  eksportBody?.dane?.recipes?.length > 0,
   eksportBody ? `tabel: ${Object.keys(eksportBody.dane).length}` : "");
 
 const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" });

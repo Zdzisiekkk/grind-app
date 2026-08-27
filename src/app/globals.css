@@ -179,3 +179,21 @@ input[type="number"] {
   margin-top: calc(-1rem - env(safe-area-inset-top));
   background: var(--surface);
 }
+
+/* Toast wjeżdża od dołu — ruch jest sygnałem „to się właśnie wydarzyło".
+   Przy prefers-reduced-motion reguła wyżej skraca czas do zera, więc pasek
+   po prostu pojawia się na miejscu, zamiast znikać razem z animacją. */
+@keyframes grind-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.grind-toast {
+  animation: grind-toast-in 0.18s ease-out both;
+}

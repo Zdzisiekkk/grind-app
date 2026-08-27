@@ -22,7 +22,18 @@ const sleepGoalMin = (value: FormDataEntryValue | null) => {
   return Math.min(720, Math.max(240, Math.round(h * 60)));
 };
 
-export async function saveProfile(formData: FormData) {
+/**
+ * Wynik zapisu profilu.
+ *
+ * `at` to znacznik czasu, nie ozdoba: bez niego dwa zapisy pod rząd dają ten
+ * sam obiekt stanu i potwierdzenie nie pokazuje się po raz drugi.
+ */
+export type SaveState =
+  | { ok: true; at: number }
+  | { ok: false; message: string }
+  | null;
+
+export async function saveProfile(_prev: SaveState, formData: FormData): Promise<SaveState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -50,7 +61,9 @@ export async function saveProfile(formData: FormData) {
     })
     .eq("id", user.id);
 
-  if (error) throw new Error(`Nie udało się zapisać profilu: ${error.message}`);
+  // Błąd wracamy jako stan, a nie wyjątek: wyjątek w akcji serwerowej gasi
+  // cały ekran, a tutaj chodzi o jedno pole, które się nie zapisało.
+  if (error) return { ok: false, message: `Nie udało się zapisać: ${error.message}` };
 
   revalidatePath("/profil");
   revalidatePath("/");
@@ -58,6 +71,8 @@ export async function saveProfile(formData: FormData) {
   revalidatePath("/nawyki");
   revalidatePath("/sen");
   revalidatePath("/progres");
+
+  return { ok: true, at: Date.now() };
 }
 
 export async function signOut() {

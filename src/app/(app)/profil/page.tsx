@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Field, Input } from "@/components/ui";
 import { BodyWeightChart } from "@/components/charts/Charts";
 import { NotificationSettings } from "@/components/reminders/NotificationSettings";
+import { ProfileForm } from "@/components/profile/ProfileForm";
 import { DataControls } from "@/components/legal/DataControls";
 import { getAccess } from "@/lib/subscription";
 import { DEFAULT_SLEEP_GOAL_MIN } from "@/lib/sleep";
@@ -39,7 +40,7 @@ export default async function ProfilPage() {
         {profile?.role === "admin" && <Chip tone="accent">administrator</Chip>}
       </header>
 
-      <form action={saveProfile} className="flex flex-col gap-4">
+      <ProfileForm action={saveProfile}>
         <Card title="O mnie">
           <div className="flex flex-col gap-3">
             <Field label="Imię">
@@ -154,10 +155,7 @@ export default async function ProfilPage() {
           </p>
         </Card>
 
-        <Button type="submit" variant="primary" size="lg" block>
-          Zapisz zmiany
-        </Button>
-      </form>
+      </ProfileForm>
 
       <NotificationSettings vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
 

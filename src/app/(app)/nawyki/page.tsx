@@ -2,7 +2,8 @@ import { HabitsScreen, type HabitWithToday } from "@/components/habits/HabitsScr
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { habitDueOn } from "@/lib/constants";
-import type { Habit, HabitLog } from "@/lib/database.types";
+import type { Habit, HabitLog, Vice, ViceEvent } from "@/lib/database.types";
+import { daysClean } from "@/lib/vices";
 
 export const metadata = { title: "Nawyki" };
 
@@ -140,6 +141,21 @@ export default async function HabitsPage() {
     .order("updated_at", { ascending: false })
     .limit(1);
 
+  // Nałogi mają własny ekran — tutaj potrzebny jest tylko skrót: ile ich jest
+  // i najdłuższa trwająca passa, żeby kafelek mówił coś konkretnego.
+  const [{ data: vices }, { data: viceEvents }] = await Promise.all([
+    supabase.from("vices").select("*").eq("user_id", user.id).eq("is_archived", false),
+    supabase.from("vice_events").select("*").eq("user_id", user.id),
+  ]);
+
+  const viceRows = (vices ?? []) as Vice[];
+  const eventRows = (viceEvents ?? []) as ViceEvent[];
+  const bestDays = viceRows.reduce(
+    (max, vice) =>
+      Math.max(max, daysClean(vice, eventRows.filter((e) => e.vice_id === vice.id))),
+    0,
+  );
+
   return (
     <HabitsScreen
       userId={user.id}
@@ -147,6 +163,7 @@ export default async function HabitsPage() {
       today={today}
       perfectStreak={perfectDayStreak((habits ?? []) as Habit[], byHabit, today)}
       reading={reading?.[0] ?? null}
+      vices={{ count: viceRows.length, bestDays }}
     />
   );
 }

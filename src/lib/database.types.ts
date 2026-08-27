@@ -391,6 +391,36 @@ export type RecipeTotals = {
 
 export type BookStatus = "want" | "reading" | "read" | "abandoned";
 
+export type Vice = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  /** Moment rzucenia — punkt zero licznika, dopóki nie ma wpadki. */
+  started_at: string;
+  daily_cost: number | null;
+  daily_minutes: number | null;
+  motivation: string | null;
+  is_archived: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** 'lapse' — wpadka (zeruje licznik), 'urge' — chęć, która minęła. */
+export type ViceEventKind = "lapse" | "urge";
+
+export type ViceEvent = {
+  id: string;
+  user_id: string;
+  vice_id: string;
+  kind: ViceEventKind;
+  occurred_at: string;
+  trigger: string | null;
+  note: string | null;
+  created_at: string;
+};
+
 export type Book = {
   id: string;
   user_id: string;
@@ -679,6 +709,8 @@ export type Database = {
         RecipeItem,
         "user_id" | "recipe_id" | "name" | "grams" | "kcal_100g"
       >;
+      vices: Tbl<Vice, "user_id" | "name">;
+      vice_events: Tbl<ViceEvent, "user_id" | "vice_id" | "kind">;
       books: Tbl<Book, "user_id" | "title">;
       book_notes: Tbl<BookNote, "user_id" | "book_id">;
       reading_logs: Tbl<ReadingLog, "user_id">;

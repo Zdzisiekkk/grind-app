@@ -45,3 +45,33 @@ export function useLocalNumber(
 
   return [value, set];
 }
+
+/**
+ * To samo dla przełącznika wł./wył. — np. czy sekcja jest rozwinięta.
+ *
+ * Serwer i pierwszy render w przeglądarce dostają `fallback`, więc hydracja
+ * się zgadza; zapamiętany wybór dochodzi w pierwszym przebiegu po niej.
+ */
+export function useLocalBoolean(
+  key: string,
+  fallback: boolean,
+): [boolean, (value: boolean) => void] {
+  const value = useSyncExternalStore(
+    subscribe,
+    () => {
+      const raw = window.localStorage.getItem(key);
+      return raw === null ? fallback : raw === "1";
+    },
+    () => fallback,
+  );
+
+  const set = useCallback(
+    (next: boolean) => {
+      window.localStorage.setItem(key, next ? "1" : "0");
+      window.dispatchEvent(new Event(EVENT));
+    },
+    [key],
+  );
+
+  return [value, set];
+}
