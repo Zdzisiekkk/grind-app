@@ -433,6 +433,10 @@ export type Book = {
   summary: string | null;
   started_at: string | null;
   finished_at: string | null;
+  /** ISBN-13 — tylko dla książek dodanych skanem. */
+  isbn: string | null;
+  /** Adres okładki u Open Library; sam obrazek zostaje u nich. */
+  cover_url: string | null;
   created_at: string;
   updated_at: string;
 };

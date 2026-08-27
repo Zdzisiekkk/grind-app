@@ -16,12 +16,15 @@
     "test:offline": "node --no-warnings scripts/test-offline.mjs",
     "verify:plan": "node scripts/verify-plan-import.mjs",
     "test:analysis": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-analysis.mjs",
-    "test:vices": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-vices.mjs"
+    "test:vices": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-vices.mjs",
+    "test:isbn": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-isbn.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
     "date-fns": "^4.4.0",
     "next": "16.3.3",
     "react": "19.2.8",

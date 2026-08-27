@@ -21,6 +21,8 @@ import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
 import { humanDate, plural, todayISO } from "@/lib/format";
 import type { Book, BookNote, BookStatus } from "@/lib/database.types";
+import { IsbnScanner } from "@/components/books/IsbnScanner";
+import type { IsbnBook } from "@/lib/isbn";
 
 const EMPTY = {
   title: "",
@@ -30,6 +32,8 @@ const EMPTY = {
   current_page: 0,
   rating: null as number | null,
   summary: "",
+  isbn: null as string | null,
+  cover_url: null as string | null,
 };
 
 export function BooksScreen({
@@ -57,6 +61,7 @@ export function BooksScreen({
   const [draft, setDraft] = useState(EMPTY);
   const [detail, setDetail] = useState<Book | null>(null);
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
@@ -85,6 +90,8 @@ export function BooksScreen({
       current_page: book.current_page,
       rating: book.rating,
       summary: book.summary ?? "",
+      isbn: book.isbn,
+      cover_url: book.cover_url,
     });
     setError(null);
     setFormOpen(true);
@@ -107,6 +114,8 @@ export function BooksScreen({
       current_page: draft.pages ? Math.min(draft.current_page, draft.pages) : draft.current_page,
       rating: draft.status === "read" ? draft.rating : null,
       summary: draft.summary.trim() || null,
+      isbn: draft.isbn,
+      cover_url: draft.cover_url,
       started_at: draft.status === "want" ? null : (editing?.started_at ?? today),
       finished_at: draft.status === "read" ? (editing?.finished_at ?? today) : null,
     };
@@ -117,7 +126,13 @@ export function BooksScreen({
 
     setSaving(false);
     if (error) {
-      setError(`Nie udało się zapisać: ${error.message}`);
+      // Indeks częściowy na (user_id, isbn) — ta sama książka nie wjeżdża
+      // na półkę dwa razy. Komunikat z bazy nic by tu nie powiedział.
+      setError(
+        error.code === "23505"
+          ? "Ta książka jest już na Twojej półce."
+          : `Nie udało się zapisać: ${error.message}`,
+      );
       return;
     }
     setFormOpen(false);
@@ -175,6 +190,29 @@ export function BooksScreen({
     router.refresh();
   }
 
+  /**
+   * Skan wypełnia formularz, a nie zapisuje książkę od razu.
+   *
+   * Open Library bywa niekompletne, a półka i liczba stron to i tak decyzja
+   * człowieka — więc kończymy tam, gdzie kończy się „+ Książka", tylko
+   * z wpisanym tytułem, autorem i okładką.
+   */
+  function fillFromScan(found: IsbnBook) {
+    setEditing(null);
+    setDraft({
+      ...EMPTY,
+      title: found.title,
+      author: found.author ?? "",
+      status: filter === "read" ? "read" : filter,
+      pages: found.pages,
+      isbn: found.isbn,
+      cover_url: found.coverUrl,
+    });
+    setScanning(false);
+    setError(null);
+    setFormOpen(true);
+  }
+
   async function remove(book: Book) {
     if (!confirm(`Usunąć „${book.title}" razem z notatkami?`)) return;
     const { error } = await supabase.from("books").delete().eq("id", book.id);
@@ -197,9 +235,14 @@ export function BooksScreen({
               : "Przeczytaj dziś choćby stronę, żeby zacząć passę."}
           </p>
         </div>
-        <Button variant="primary" onClick={openNew}>
-          + Książka
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" onClick={() => setScanning(true)} aria-label="Zeskanuj kod z okładki">
+            📷
+          </Button>
+          <Button variant="primary" onClick={openNew}>
+            + Książka
+          </Button>
+        </div>
       </header>
 
       {error && <Alert>{error}</Alert>}
@@ -216,9 +259,14 @@ export function BooksScreen({
                   onClick={() => setDetail(book)}
                   className="block w-full text-left"
                 >
-                  <p className="text-[16px] font-bold leading-tight">{book.title}</p>
-                  {book.author && <p className="text-[13px] text-muted">{book.author}</p>}
-                  <p className="tabular mt-1 text-[13px] text-muted">{pagesLabel(book)}</p>
+                  <div className="flex gap-3">
+                    <BookCover book={book} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] font-bold leading-tight">{book.title}</p>
+                      {book.author && <p className="text-[13px] text-muted">{book.author}</p>}
+                      <p className="tabular mt-1 text-[13px] text-muted">{pagesLabel(book)}</p>
+                    </div>
+                  </div>
 
                   {progress != null && (
                     <div
@@ -459,6 +507,12 @@ export function BooksScreen({
           </Field>
         </div>
       </Sheet>
+
+      <IsbnScanner
+        open={scanning}
+        onClose={() => setScanning(false)}
+        onFound={fillFromScan}
+      />
     </div>
   );
 }
@@ -618,5 +672,28 @@ function BookDetail({
         </div>
       )}
     </Sheet>
+  );
+}
+
+/**
+ * Miniatura okładki.
+ *
+ * Obrazek stoi u Open Library — nie kopiujemy cudzych skanów na swój serwer.
+ * Kiedy adres nie działa (a to się zdarza: rekordy bywają puste), pole po
+ * prostu znika, zamiast zostawiać połamaną ikonkę obok tytułu.
+ */
+function BookCover({ book }: { book: Book }) {
+  const [broken, setBroken] = useState(false);
+  if (!book.cover_url || broken) return null;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={book.cover_url}
+      alt=""
+      loading="lazy"
+      onError={() => setBroken(true)}
+      className="h-[68px] w-[46px] shrink-0 rounded-md bg-surface-2 object-cover"
+    />
   );
 }

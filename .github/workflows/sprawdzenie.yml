@@ -33,6 +33,7 @@ jobs:
           npm run test:offline
           npm run test:analysis
           npm run test:vices
+          npm run test:isbn
       - name: Budowanie
         run: npm run build
         env:

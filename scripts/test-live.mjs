@@ -341,6 +341,42 @@ const tooFar = await fetch(`${SB}/rest/v1/books?id=eq.${book[0].id}`, { method:"
   body: JSON.stringify({ current_page: 999 }) });
 check("nie da się być na stronie 999 w książce o 320 stronach", tooFar.status >= 400, `status ${tooFar.status}`);
 
+// Wyszukiwanie po ISBN — trasa bije do Open Library, więc sprawdzamy też,
+// czy nie stała się otwartym pośrednikiem pod naszą domeną.
+const isbnOk = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211292", { headers: { cookie } });
+const isbnBody = isbnOk.status === 200 ? await isbnOk.json() : null;
+check("ISBN znajduje książkę w Open Library",
+  isbnOk.status === 200 && typeof isbnBody?.title === "string" && isbnBody.title.length > 0,
+  isbnOk.status !== 200 ? `status ${isbnOk.status}` : isbnBody.title);
+
+const isbnZly = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211293", { headers: { cookie } });
+check("ISBN z błędną sumą kontrolną odrzucony przed zapytaniem",
+  isbnZly.status === 400, `status ${isbnZly.status}`);
+
+const isbnBrak = await fetch(APP + "/api/ksiazki/isbn?isbn=9790000000001", { headers: { cookie } });
+check("nieznany numer daje czytelny brak, nie awarię",
+  isbnBrak.status === 404 || isbnBrak.status === 200, `status ${isbnBrak.status}`);
+
+const isbnAnon = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211292", { redirect: "manual" });
+check("bez sesji ISBN nie działa jako otwarty pośrednik",
+  isbnAnon.status !== 200, `status ${isbnAnon.status}`);
+
+// Ta sama książka drugi raz — indeks częściowy na (user_id, isbn).
+await fetch(`${SB}/rest/v1/books`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, title: "Atomic Habits", status: "want",
+    isbn: "9780735211292" }) });
+const isbnDubel = await fetch(`${SB}/rest/v1/books`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, title: "Atomic Habits jeszcze raz", status: "want",
+    isbn: "9780735211292" }) });
+check("ta sama książka nie wjeżdża na półkę dwa razy", isbnDubel.status === 409,
+  `status ${isbnDubel.status}`);
+
+const isbnKrzywy = await fetch(`${SB}/rest/v1/books`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, title: "Zły numer", status: "want",
+    isbn: "123" }) });
+check("baza nie przyjmuje numeru, który nie jest ISBN-em", isbnKrzywy.status >= 400,
+  `status ${isbnKrzywy.status}`);
+
 const ksiazki = await fetch(APP + "/nawyki/ksiazki", { headers: { cookie }, redirect: "manual" });
 const ksiazkiText = ksiazki.status === 200 ? text(await ksiazki.text()) : "";
 check("/nawyki/ksiazki pokazuje książkę i notatkę",
