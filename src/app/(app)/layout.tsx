@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
+import { OfflineGate } from "@/components/offline/OfflineGate";
 import { Reminders, type SleepReminder, type WaterReminder } from "@/components/reminders/Reminders";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient, getUser } from "@/lib/supabase/server";
@@ -76,6 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="safe-top flex-1 px-4 pb-[calc(72px+env(safe-area-inset-bottom))]">
         {children}
       </main>
+      <OfflineGate />
       <BottomNav />
       <Reminders habits={habitReminders} water={waterReminder} sleep={sleepReminder} />
     </div>

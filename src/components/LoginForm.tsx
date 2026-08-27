@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,7 +18,21 @@ function translateError(message: string): string {
   return message;
 }
 
+/**
+ * Ekran logowania jest jedynym miejscem, do którego trafia się po wylogowaniu
+ * i po wygaśnięciu sesji — więc to tutaj czyścimy zapamiętane strony.
+ * Zostawały tam pulpity i dzienniki konkretnej osoby, a na telefon zagląda
+ * czasem ktoś jeszcze.
+ */
+function useClearedOfflineCache() {
+  useEffect(() => {
+    navigator.serviceWorker?.controller?.postMessage("grind:clear-cache");
+  }, []);
+}
+
 export function LoginForm() {
+  useClearedOfflineCache();
+
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";

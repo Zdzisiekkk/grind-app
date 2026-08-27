@@ -13,6 +13,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "db:push": "node scripts/run-migrations.mjs",
     "test:live": "node scripts/test-live.mjs",
+    "test:offline": "node --no-warnings scripts/test-offline.mjs",
     "verify:plan": "node scripts/verify-plan-import.mjs"
   },
   "dependencies": {
