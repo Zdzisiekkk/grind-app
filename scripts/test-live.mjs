@@ -231,14 +231,17 @@ check("pulpit renderuje ocenę bólu z dzisiaj", /Lewe kolano\s*:\s*4\s*\/\s*10/
   pulpitText.length < 400 ? "strona zwróciła sam szkielet ładowania" : "");
 
 // 7f. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
-const sw = await fetch(APP + "/sw.js");
+// Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
+// a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
+// redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
+const sw = await fetch(APP + "/sw.js", { redirect: "manual" });
 const swBody = sw.status === 200 ? await sw.text() : "";
 check("service worker jest serwowany", sw.status === 200 && swBody.includes("grind-v1"),
   `status ${sw.status}`);
 check("service worker nie cache'uje danych ani sesji",
   swBody.includes("/rest/v1/") && swBody.includes("/auth/v1/") && swBody.includes("isNetworkOnly"));
 
-const offlinePage = await fetch(APP + "/offline");
+const offlinePage = await fetch(APP + "/offline", { redirect: "manual" });
 const offlineText = offlinePage.status === 200 ? text(await offlinePage.text()) : "";
 check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);

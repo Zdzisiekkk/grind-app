@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+/**
+ * Trasy dostępne bez sesji.
+ *
+ * „/offline" musi tu być, bo service worker pokazuje ją dokładnie wtedy, gdy
+ * nie ma jak sprawdzić sesji — przekierowanie na logowanie dawałoby wtedy
+ * ekran, którego też nie da się pobrać.
+ */
+const PUBLIC_PATHS = ["/login", "/auth", "/offline"];
 
 /**
  * Odświeża sesję Supabase przy każdym żądaniu i pilnuje, żeby niezalogowany
@@ -64,7 +71,11 @@ export const config = {
   matcher: [
     /*
      * Wszystko poza plikami statycznymi i ikonami.
+     *
+     * sw.js jest tu wymieniony osobno: przeglądarka pobiera go bez ciasteczek
+     * przy każdej aktualizacji, więc przepuszczenie go przez sprawdzanie sesji
+     * kończyło się przekierowaniem na logowanie i martwym trybem offline.
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
