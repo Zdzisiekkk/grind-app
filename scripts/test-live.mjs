@@ -296,9 +296,9 @@ await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"DELETE"
 await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"PATCH", headers:H,
   body: JSON.stringify({ calls: 0 }) });
 
-const stillThere = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { headers: H })).json();
+const counterRows = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { headers: H })).json();
 check("licznika zapytań nie da się skasować ani wyzerować",
-  Array.isArray(stillThere) && stillThere[0]?.calls === 1, JSON.stringify(stillThere));
+  Array.isArray(counterRows) && counterRows[0]?.calls === 1, JSON.stringify(counterRows));
 
 // Uprawnienia tabelowe w Supabase są szerokie z definicji — całą ochronę
 // niesie RLS. Tabela dodana bez niego jest otwarta dla niezalogowanych.
