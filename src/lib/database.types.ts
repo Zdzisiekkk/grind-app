@@ -201,6 +201,32 @@ export type WaterLog = {
 
 export type DailyWater = { user_id: string; date: string; ml: number; wpisy: number };
 
+export type TodoList = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  order_index: number;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Todo = {
+  id: string;
+  user_id: string;
+  list_id: string | null;
+  title: string;
+  note: string | null;
+  due_date: string | null;
+  /** 0 = zwykłe, 1 = ważne, 2 = pilne. */
+  priority: number;
+  done_at: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type InjuryStatus = "active" | "monitoring" | "healed";
 export type InjurySide = "left" | "right" | "both" | "none";
 
@@ -401,6 +427,8 @@ export type Database = {
       habits: Tbl<Habit, "user_id" | "name">;
       habit_logs: Tbl<HabitLog, "user_id" | "habit_id">;
       water_logs: Tbl<WaterLog, "user_id" | "ml">;
+      todo_lists: Tbl<TodoList, "user_id" | "name">;
+      todos: Tbl<Todo, "user_id" | "title">;
       body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
       foods: Tbl<Food, "name" | "kcal_100g">;
       meals: Tbl<Meal, "user_id" | "meal_type">;

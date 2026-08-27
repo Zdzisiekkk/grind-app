@@ -8,6 +8,7 @@ import {
   ACTIVITY_LABEL,
   DEFAULT_WATER_GOAL_ML,
   bodyPart,
+  dueLabel,
   habitDueOn,
   waterLabel,
 } from "@/lib/constants";
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
     { data: habits },
     { data: habitLogs },
     { data: waterToday },
+    { data: dueTodos },
     { data: weekSummary },
     { data: activePlan },
   ] = await Promise.all([
@@ -79,6 +81,15 @@ export default async function DashboardPage() {
       .order("order_index"),
     supabase.from("habit_logs").select("habit_id, count").eq("user_id", user.id).eq("date", today),
     supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
+    supabase
+      .from("todos")
+      .select("id, title, due_date, priority")
+      .eq("user_id", user.id)
+      .is("done_at", null)
+      .not("due_date", "is", null)
+      .lte("due_date", today)
+      .order("due_date")
+      .limit(5),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -6), p_to: today }),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
   ]);
@@ -182,6 +193,40 @@ export default async function DashboardPage() {
           }}
         />
       </Card>
+
+      {/* --- Zadania z terminem na dziś lub zaległe --- */}
+      {(dueTodos ?? []).length > 0 && (
+        <Card
+          title="Zadania na teraz"
+          subtitle={`${(dueTodos ?? []).length} z terminem`}
+          action={
+            <Link href="/zadania" className="text-[13px] font-medium text-accent">
+              Wszystkie
+            </Link>
+          }
+        >
+          <ul className="flex flex-col gap-1.5">
+            {(dueTodos ?? []).map((todo) => {
+              const due = dueLabel(todo.due_date, today);
+              return (
+                <li key={todo.id} className="flex items-center gap-2 text-[14px]">
+                  <span aria-hidden className="text-faint">
+                    ☐
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{todo.title}</span>
+                  {due && (
+                    <span
+                      className={due.overdue ? "text-[12px] font-semibold text-danger" : "text-[12px] text-muted"}
+                    >
+                      {due.text}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       {/* --- Nawyki na dziś --- */}
       {habitsToday.length > 0 && (

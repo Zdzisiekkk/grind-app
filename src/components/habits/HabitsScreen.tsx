@@ -2,18 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, Card, Chip, EmptyState, Field, Input, Sheet, Textarea } from "@/components/ui";
+import { Alert, Button, Card, Chip, EmptyState, Field, Input, ProgressRing, Sheet, Textarea } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { HABIT_ICONS, WEEKDAYS, habitDueOn } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
 import type { Habit } from "@/lib/database.types";
 
+type DayMark = { date: string; count: number; due: boolean };
+
 export type HabitWithToday = Habit & {
   todayCount: number;
   /** Ostatnie 7 dni, od najstarszego: ile razy odhaczone. */
-  week: { date: string; count: number; due: boolean }[];
+  week: DayMark[];
+  /** Ostatnie 28 dni — siatka 4 tygodni pod nazwą nawyku. */
+  history: DayMark[];
   streak: number;
+  bestStreak: number;
+  totalDone: number;
 };
 
 const EMPTY = {
@@ -30,10 +36,13 @@ export function HabitsScreen({
   userId,
   habits,
   today,
+  perfectStreak,
 }: {
   userId: string;
   habits: HabitWithToday[];
   today: string;
+  /** Ile dni z rzędu domknięte zostało wszystko, co było na liście. */
+  perfectStreak: number;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -48,6 +57,8 @@ export function HabitsScreen({
   const dueToday = habits.filter((h) => habitDueOn(h.days_of_week, today));
   const restToday = habits.filter((h) => !habitDueOn(h.days_of_week, today));
   const doneToday = dueToday.filter((h) => h.todayCount >= h.target_per_day).length;
+  const allDone = dueToday.length > 0 && doneToday === dueToday.length;
+  const bestOverall = habits.reduce((max, h) => Math.max(max, h.bestStreak), 0);
 
   function openNew() {
     setEditing(null);
@@ -138,18 +149,41 @@ export function HabitsScreen({
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Nawyki</h1>
-          <p className="mt-0.5 text-[13px] text-muted">
-            {dueToday.length === 0
-              ? "Dodaj to, co chcesz robić regularnie."
-              : `Dziś zrobione ${doneToday} z ${dueToday.length}.`}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold">Nawyki</h1>
         <Button variant="primary" onClick={openNew}>
           + Dodaj
         </Button>
       </header>
+
+      {/* Pasek postępu dnia — jedna liczba, po którą sięga się najczęściej. */}
+      {dueToday.length > 0 && (
+        <Card className={clsx(allDone && "border-success/50")}>
+          <div className="flex items-center gap-4">
+            <ProgressRing value={doneToday} max={dueToday.length} size={72} />
+
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-bold leading-tight">
+                {allDone
+                  ? "Komplet na dziś 🎉"
+                  : doneToday === 0
+                    ? "Jeszcze nic dziś"
+                    : `Zostało ${dueToday.length - doneToday}`}
+              </p>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {perfectStreak > 0
+                  ? `🔥 ${perfectStreak} ${dayWord(perfectStreak)} z rzędu w komplecie`
+                  : "Domknij wszystko dziś, żeby zacząć passę."}
+              </p>
+
+              {bestOverall > 0 && (
+                <p className="mt-1 text-[12px] text-faint">
+                  Twój rekord: {bestOverall} {dayWord(bestOverall)}
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {error && <Alert>{error}</Alert>}
 
@@ -366,16 +400,21 @@ function HabitCard({
               ? `${habit.todayCount}/${habit.target_per_day}${habit.unit ? ` ${habit.unit}` : ""} · ${days}`
               : days}
             {habit.reminder_at && ` · ⏰ ${habit.reminder_at.slice(0, 5)}`}
+            {habit.bestStreak > habit.streak && ` · rekord ${habit.bestStreak}`}
           </p>
 
-          {/* Ostatnie 7 dni — kropka na dzień, wypełniona gdy cel osiągnięty. */}
-          <div className="mt-1.5 flex gap-1" aria-hidden>
-            {habit.week.map((d) => (
+          {/* Ostatnie 4 tygodnie — kwadracik na dzień, wypełniony gdy cel osiągnięty. */}
+          <div
+            className="mt-1.5 flex gap-[3px]"
+            role="img"
+            aria-label={`Ostatnie 28 dni: ${habit.history.filter((d) => d.count >= habit.target_per_day).length} dni z celem`}
+          >
+            {habit.history.map((d) => (
               <span
                 key={d.date}
                 title={d.date}
                 className={clsx(
-                  "size-1.5 rounded-full",
+                  "h-3 flex-1 rounded-[2px]",
                   d.count >= habit.target_per_day
                     ? "bg-success"
                     : d.due
@@ -412,4 +451,9 @@ function HabitCard({
       </div>
     </Card>
   );
+}
+
+/** „1 dzień", „2 dni", „5 dni" — polska odmiana bez biblioteki. */
+function dayWord(n: number): string {
+  return n === 1 ? "dzień" : "dni";
 }

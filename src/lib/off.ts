@@ -1,12 +1,29 @@
 /**
  * Open Food Facts — wyszukiwarka produktów.
- * Używamy polskiej instancji (pl.openfoodfacts.org), bo zwraca krajowe marki
- * na pierwszych miejscach. API jest darmowe i publiczne, wymaga tylko
- * opisowego nagłówka User-Agent.
+ *
+ * OFF wystawia dwa różne API i żadne samo nie wystarcza:
+ *
+ *  • search.openfoodfacts.org — szybkie (ok. 0,1 s), ale indeks trzyma tylko
+ *    kod, nazwę i wartości odżywcze. Bez marki, zdjęcia i wielkości porcji.
+ *  • /cgi/search.pl — pełne dane, ale bywa skrajnie wolne (widziane 38 s przy
+ *    jednym zapytaniu) i pod obciążeniem odpowiada 503.
+ *
+ * Dlatego: szukamy w szybkim indeksie, a szczegóły dociągamy równolegle po
+ * kodach z endpointu pojedynczego produktu. Gdyby szybkie API padło,
+ * wracamy do starego. Wzbogacanie jest „best effort" — brak marki czy zdjęcia
+ * nie blokuje dodania produktu do dziennika, bo kalorie i makro już mamy.
  */
 
+const OFF_SEARCH = "https://search.openfoodfacts.org";
 const OFF_BASE = "https://pl.openfoodfacts.org";
+const OFF_WORLD = "https://world.openfoodfacts.org";
 const USER_AGENT = "Grind/1.0 (osobista aplikacja treningowa; https://github.com)";
+
+/** Krótkie limity: lepiej pokazać część wyników niż kazać czekać w nieskończoność. */
+const SEARCH_TIMEOUT_MS = 6_000;
+const DETAIL_TIMEOUT_MS = 3_000;
+/** Ile najlepszych trafień wzbogacamy o markę, zdjęcie i porcję. */
+const ENRICH_LIMIT = 12;
 
 const FIELDS = [
   "code",
@@ -105,7 +122,33 @@ function normalize(raw: OffRaw): OffProduct | null {
   };
 }
 
-export async function searchOff(query: string, limit = 20): Promise<OffProduct[]> {
+type OffFetchInit = { timeoutMs: number; revalidate: number };
+
+async function offFetch(url: string | URL, { timeoutMs, revalidate }: OffFetchInit) {
+  return fetch(url, {
+    headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+    // Wyniki zmieniają się rzadko — cache oszczędza OFF i przyspiesza apkę.
+    next: { revalidate },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+}
+
+/** Szybki indeks: kod, nazwa, makro. Wystarcza, żeby wpisać produkt do dziennika. */
+async function searchFast(query: string, limit: number): Promise<OffRaw[]> {
+  const url = new URL(`${OFF_SEARCH}/search`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("page_size", String(Math.min(50, limit * 2)));
+  url.searchParams.set("fields", "code,product_name,product_name_pl,nutriments");
+
+  const response = await offFetch(url, { timeoutMs: SEARCH_TIMEOUT_MS, revalidate: 3600 });
+  if (!response.ok) throw new Error(`wyszukiwarka odpowiedziała ${response.status}`);
+
+  const data = (await response.json()) as { hits?: OffRaw[] };
+  return data.hits ?? [];
+}
+
+/** Stare API — pełne dane, ale wolne. Używane tylko, gdy szybkie zawiedzie. */
+async function searchLegacy(query: string, limit: number): Promise<OffRaw[]> {
   const url = new URL(`${OFF_BASE}/cgi/search.pl`);
   url.searchParams.set("search_terms", query);
   url.searchParams.set("search_simple", "1");
@@ -114,25 +157,73 @@ export async function searchOff(query: string, limit = 20): Promise<OffProduct[]
   url.searchParams.set("page_size", String(Math.min(50, limit * 2)));
   url.searchParams.set("fields", FIELDS);
 
-  const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    // Wyniki wyszukiwania zmieniają się rzadko — godzina cache oszczędza OFF i przyspiesza apkę.
-    next: { revalidate: 3600 },
-    signal: AbortSignal.timeout(12_000),
-  });
-
+  const response = await offFetch(url, { timeoutMs: SEARCH_TIMEOUT_MS, revalidate: 3600 });
   if (!response.ok) throw new Error(`Open Food Facts odpowiedział ${response.status}`);
 
   const data = (await response.json()) as { products?: OffRaw[] };
-  const seen = new Set<string>();
-  const out: OffProduct[] = [];
+  return data.products ?? [];
+}
 
-  for (const raw of data.products ?? []) {
+/** Marka, zdjęcie i wielkość porcji — dociągane po kodzie, równolegle. */
+async function fetchDetails(code: string): Promise<OffRaw | null> {
+  try {
+    const url = new URL(`${OFF_WORLD}/api/v2/product/${encodeURIComponent(code)}.json`);
+    url.searchParams.set("fields", FIELDS);
+    const response = await offFetch(url, { timeoutMs: DETAIL_TIMEOUT_MS, revalidate: 86_400 });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { product?: OffRaw };
+    return data.product ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function searchOff(query: string, limit = 20): Promise<OffProduct[]> {
+  let hits: OffRaw[];
+  try {
+    hits = await searchFast(query, limit);
+    // Pusty wynik z szybkiego indeksu bywa fałszywy przy nietypowych frazach —
+    // wtedy warto spytać starego API, zanim powiemy „nic nie znaleziono".
+    if (hits.length === 0) hits = await searchLegacy(query, limit);
+  } catch {
+    hits = await searchLegacy(query, limit);
+  }
+
+  const seen = new Set<string>();
+  const base: OffProduct[] = [];
+  for (const raw of hits) {
     const product = normalize(raw);
     if (!product || seen.has(product.off_id)) continue;
     seen.add(product.off_id);
-    out.push(product);
-    if (out.length >= limit) break;
+    base.push(product);
+    if (base.length >= limit) break;
   }
-  return out;
+
+  // Wzbogacanie tylko tam, gdzie czegoś brakuje, i tylko dla czołówki listy.
+  const toEnrich = base
+    .slice(0, ENRICH_LIMIT)
+    .filter((p) => !p.brand || !p.image_url || p.serving_size_g === null);
+
+  if (toEnrich.length === 0) return base;
+
+  const details = await Promise.all(toEnrich.map((p) => fetchDetails(p.off_id)));
+  const byCode = new Map<string, OffRaw>();
+  details.forEach((d, i) => {
+    if (d) byCode.set(toEnrich[i].off_id, d);
+  });
+
+  return base.map((product) => {
+    const detail = byCode.get(product.off_id);
+    if (!detail) return product;
+    const serving = parseServing(detail.serving_size);
+    return {
+      ...product,
+      name: (detail.product_name_pl || detail.product_name || product.name).trim(),
+      brand: product.brand ?? (detail.brands?.split(",")[0]?.trim() || null),
+      image_url:
+        product.image_url ?? (detail.image_small_url || detail.image_front_small_url || null),
+      serving_size_g: product.serving_size_g ?? serving.grams,
+      serving_label: product.serving_label ?? serving.label,
+    };
+  });
 }

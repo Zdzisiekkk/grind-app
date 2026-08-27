@@ -142,6 +142,34 @@ const dieta2 = await fetch(APP + "/dieta", { headers: { cookie }, redirect: "man
 const dietaText = dieta2.status === 200 ? text(await dieta2.text()) : "";
 check("/dieta pokazuje nawodnienie", dieta2.status === 200 && dietaText.includes("Nawodnienie"));
 
+// 7d. Zadania
+const list = await (await fetch(`${SB}/rest/v1/todo_lists`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, name: "Sprzęt", icon: "🛒" }) })).json();
+check("dodanie listy zadań", Array.isArray(list) && list[0]?.id);
+
+const todo = await (await fetch(`${SB}/rest/v1/todos`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, list_id: list[0].id, title: "Opaska na nadgarstek", priority: 1,
+    due_date: new Date().toISOString().slice(0,10) }) })).json();
+check("dodanie zadania", Array.isArray(todo) && todo[0]?.id);
+
+const doneTodo = await (await fetch(`${SB}/rest/v1/todos?id=eq.${todo[0].id}`, { method:"PATCH", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ done_at: new Date().toISOString() }) })).json();
+check("odhaczenie zadania", Array.isArray(doneTodo) && Boolean(doneTodo[0]?.done_at));
+
+const zadania = await fetch(APP + "/zadania", { headers: { cookie }, redirect: "manual" });
+const zadaniaText = zadania.status === 200 ? text(await zadania.text()) : "";
+check("/zadania pokazuje listę", zadania.status === 200 && zadaniaText.includes("Sprzęt"),
+  zadania.status !== 200 ? `status ${zadania.status}` : "");
+
+// 7e. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+const t0 = Date.now();
+const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
+const foodMs = Date.now() - t0;
+check("wyszukiwarka produktów zwraca wyniki",
+  Array.isArray(food.results) && food.results.length > 0 && !food.error,
+  `${food.results?.length ?? 0} wyników w ${foodMs} ms${food.error ? " | " + food.error : ""}`);
+check("wyszukiwarka odpowiada poniżej 5 s", foodMs < 5000, `${foodMs} ms`);
+
 const summ = await (await fetch(`${SB}/rest/v1/rpc/period_summary`, { method:"POST", headers:H,
   body: JSON.stringify({ p_from: new Date(Date.now()-7*864e5).toISOString().slice(0,10), p_to: new Date().toISOString().slice(0,10) }) })).json();
 check("podsumowanie liczy objętość 480 kg", summ?.volume_kg === 480, `volume_kg=${summ?.volume_kg}`);

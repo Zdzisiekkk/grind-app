@@ -191,3 +191,34 @@ export const WATER_PORTIONS = [
 export function waterLabel(ml: number): string {
   return ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 === 0 ? 0 : 1)} l` : `${ml} ml`;
 }
+
+/* --------------------------------- Zadania -------------------------------- */
+
+export const LIST_ICONS = [
+  "📝", "🛒", "🏋️", "🩺", "🥊", "💰", "🏠", "✈️", "📚", "🔧",
+] as const;
+
+export const TODO_PRIORITIES = [
+  { value: 0, label: "Zwykłe", chip: null },
+  { value: 1, label: "Ważne", chip: "❗" },
+  { value: 2, label: "Pilne", chip: "🔥" },
+] as const;
+
+export function priorityTone(priority: number): "neutral" | "warn" | "danger" {
+  if (priority >= 2) return "danger";
+  if (priority === 1) return "warn";
+  return "neutral";
+}
+
+/** „Zaległe", „Dziś", „Jutro", „za 3 dni" — do etykiety terminu. */
+export function dueLabel(due: string | null, today: string): { text: string; overdue: boolean } | null {
+  if (!due) return null;
+  const days = Math.round(
+    (new Date(`${due}T00:00:00`).getTime() - new Date(`${today}T00:00:00`).getTime()) / 86_400_000,
+  );
+  if (days < 0) return { text: days === -1 ? "wczoraj" : `${-days} dni temu`, overdue: true };
+  if (days === 0) return { text: "dziś", overdue: false };
+  if (days === 1) return { text: "jutro", overdue: false };
+  if (days <= 7) return { text: `za ${days} dni`, overdue: false };
+  return { text: due.slice(5).replace("-", "."), overdue: false };
+}

@@ -60,8 +60,11 @@ przełącza się automatycznie za ustawieniem systemu.
   Działa po dodaniu `ANTHROPIC_API_KEY`; bez klucza reszta aplikacji działa
   normalnie.
 - **Nawyki** — lista rzeczy do robienia regularnie (suplementy, sen, rozciąganie).
-  Cel dzienny większy niż jeden, wybrane dni tygodnia, seria („🔥 12 dni"), podgląd
-  ostatnich siedmiu dni i opcjonalna godzina przypomnienia.
+  Cel dzienny większy niż jeden, wybrane dni tygodnia, pierścień postępu dnia,
+  passa dni w komplecie, rekord do pobicia, siatka ostatnich czterech tygodni
+  i opcjonalna godzina przypomnienia.
+- **Zadania** — listy rzeczy do zrobienia raz: termin, priorytet, grupowanie
+  w listy, szybkie dopisanie jednym polem. Zaległe i dzisiejsze widać na pulpicie.
 - **Przypomnienia** — powiadomienia przeglądarki o nawykach i wodzie. Docierają,
   gdy aplikacja jest otwarta (na iPhonie po dodaniu do ekranu głównego); zaległe
   rzeczy widać też zawsze na ekranie „Dziś”. Prawdziwe powiadomienia w tle
@@ -96,6 +99,7 @@ zapytanie:
 | `0006_injuries.sql` | kontuzje i oceny bólu (zastępują wcześniejszy „ból kolana”) |
 | `0007_plan_wlasciciela.sql` | plan treningowy właściciela, wygenerowany z `plan_treningowy.json` |
 | `0008_habits_water.sql` | nawyki, odhaczenia i nawodnienie |
+| `0009_todos.sql` | listy zadań |
 
 Każdy plik jest idempotentny (`if not exists`, `on conflict do nothing`) —
 ponowne uruchomienie niczego nie zepsuje.
@@ -176,7 +180,7 @@ e-mailem — profil, cele makro i rola tworzą się automatycznie.
 
 ## Struktura bazy
 
-19 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
+21 tabel, każda z włączonym Row Level Security. Poza globalnym katalogiem
 ćwiczeń i publicznymi szablonami planów **każdy widzi wyłącznie własne dane** —
 sprawdza to zestaw testów (`npm run test:db`).
 
@@ -224,6 +228,8 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | `habits` | nawyk: nazwa, ikona, cel dzienny, dni tygodnia, godzina przypomnienia |
 | `habit_logs` | odhaczenie nawyku — jeden wiersz na nawyk i dzień, z licznikiem |
 | `water_logs` | pojedynczy wpis wody w ml (osobne wpisy, żeby dało się cofnąć jeden) |
+| `todo_lists` | lista zadań: nazwa, ikona, kolejność |
+| `todos` | zadanie: treść, notatka, termin, priorytet, moment odhaczenia |
 | `ai_plan_requests` | historia zapytań do AI-trenera wraz z wygenerowanym planem |
 
 ### Funkcje i widoki

@@ -19,10 +19,17 @@ export async function GET(request: Request) {
     const results = await searchOff(query, 20);
     return NextResponse.json({ results });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Nieznany błąd";
-    return NextResponse.json(
-      { error: `Nie udało się połączyć z bazą produktów: ${message}`, results: [] },
-      { status: 502 },
-    );
+    // Zwracamy 200 z pustą listą i miękkim komunikatem: baza produktów jest
+    // dodatkiem, a nie warunkiem działania — własny produkt można dodać zawsze.
+    const message =
+      error instanceof Error && error.name === "TimeoutError"
+        ? "baza produktów nie odpowiedziała na czas"
+        : error instanceof Error
+          ? error.message
+          : "nieznany błąd";
+    return NextResponse.json({
+      results: [],
+      error: `Wyszukiwarka produktów chwilowo nie odpowiada (${message}). Dodaj produkt ręcznie — zostanie u Ciebie na stałe.`,
+    });
   }
 }

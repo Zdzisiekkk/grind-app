@@ -380,3 +380,65 @@ export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
     </div>
   );
 }
+
+/* ----------------------------- Pierścień postępu --------------------------- */
+
+/**
+ * Kołowy wskaźnik „ile z ilu”. Liczba w środku jest nośnikiem informacji,
+ * pierścień tylko ją wzmacnia — dzięki temu działa też przy daltonizmie
+ * i w trybie wysokiego kontrastu.
+ */
+export function ProgressRing({
+  value,
+  max,
+  size = 64,
+  label,
+}: {
+  value: number;
+  max: number;
+  size?: number;
+  label?: ReactNode;
+}) {
+  const pct = max > 0 ? Math.min(1, value / max) : 0;
+  const stroke = size >= 56 ? 6 : 4;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const complete = max > 0 && value >= max;
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          className="stroke-[var(--surface-2)]"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          className={clsx(
+            "transition-[stroke-dashoffset] duration-500",
+            complete ? "stroke-[var(--success)]" : "stroke-[var(--accent)]",
+          )}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        {label ?? (
+          <span className="tabular text-[15px] font-bold">
+            {value}
+            <span className="text-faint">/{max}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
