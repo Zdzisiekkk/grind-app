@@ -9,6 +9,7 @@ import { WaterTracker } from "@/components/diet/WaterTracker";
 import { DateNav } from "@/components/DateNav";
 import type { MealEntry, MealType } from "@/lib/database.types";
 import { MEAL_TYPES } from "@/lib/constants";
+import { SaveMealAsRecipe } from "@/components/diet/SaveMealAsRecipe";
 import { sumMacros } from "@/lib/diet";
 import { createClient } from "@/lib/supabase/client";
 import { num } from "@/lib/format";
@@ -81,7 +82,14 @@ export function DietScreen({
             }
             action={
               mealEntries.length ? (
-                <Chip tone="neutral">{num(mealTotals.kcal, 0)} kcal</Chip>
+                <span className="flex items-center gap-2">
+                  <SaveMealAsRecipe
+                    userId={userId}
+                    mealLabel={meal.label}
+                    entries={mealEntries}
+                  />
+                  <Chip tone="neutral">{num(mealTotals.kcal, 0)} kcal</Chip>
+                </span>
               ) : null
             }
             className="overflow-hidden"

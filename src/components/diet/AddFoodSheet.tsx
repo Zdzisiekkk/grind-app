@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Chip, EmptyState, Field, Input, SegmentedControl, Sheet, Spinner } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { addMealEntry, cacheOffProduct, ensureMeal } from "@/lib/diet";
-import type { Food, MealEntry, MealType } from "@/lib/database.types";
+import type { Food, MealEntry, MealType, RecipeTotals } from "@/lib/database.types";
+import { portionGrams, recipeAsFood } from "@/lib/recipes";
 import type { OffProduct } from "@/lib/off";
 import { MEAL_LABEL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
@@ -62,6 +63,7 @@ export function AddFoodSheet({
   const [picked, setPicked] = useState<Candidate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dishes, setDishes] = useState<Food[]>([]);
+  const [recipes, setRecipes] = useState<RecipeTotals[]>([]);
 
   /*
    * Gotowe dania.
@@ -82,6 +84,23 @@ export function AddFoodSheet({
         .order("name")
         .limit(200);
       if (!cancelled) setDishes((data ?? []) as Food[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, supabase]);
+
+  // Własne dania — te wracają codziennie, więc idą na samą górę zakładki.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("v_recipe_totals")
+        .select("*")
+        .gt("items", 0)
+        .order("name");
+      if (!cancelled) setRecipes((data ?? []) as RecipeTotals[]);
     })();
     return () => {
       cancelled = true;
@@ -174,6 +193,7 @@ export function AddFoodSheet({
           {tab === "dishes" ? (
             <DishList
               dishes={dishes}
+              recipes={recipes}
               query={query}
               onQuery={setQuery}
               onPick={(food) => setPicked({ kind: "food", food })}
@@ -498,17 +518,22 @@ function CustomFoodForm({
  */
 function DishList({
   dishes,
+  recipes,
   query,
   onQuery,
   onPick,
 }: {
   dishes: Food[];
+  recipes: RecipeTotals[];
   query: string;
   onQuery: (value: string) => void;
   onPick: (food: Food) => void;
 }) {
   const phrase = query.trim().toLowerCase();
   const shown = phrase ? dishes.filter((d) => d.name.toLowerCase().includes(phrase)) : dishes;
+  const mine = phrase
+    ? recipes.filter((r) => r.name.toLowerCase().includes(phrase))
+    : recipes;
 
   return (
     <div className="flex flex-col gap-3">
@@ -519,11 +544,62 @@ function DishList({
         aria-label="Filtruj dania"
       />
 
-      {shown.length === 0 ? (
+      {/* Własne dania idą pierwsze — to one wracają codziennie. */}
+      {mine.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
+            Moje dania
+          </h3>
+          <ul className="flex flex-col divide-y divide-border">
+            {mine.map((recipe) => {
+              const portion = portionGrams(recipe);
+              return (
+                <li key={recipe.recipe_id}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onPick({
+                        ...(recipeAsFood(recipe) as unknown as Food),
+                        serving_size_g: portion,
+                        serving_label: "porcja",
+                      } as Food)
+                    }
+                    className="flex w-full items-center gap-3 py-2.5 text-left active:bg-surface-2"
+                  >
+                    <span aria-hidden className="text-lg">
+                      {recipe.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-medium leading-tight">
+                        {recipe.name}
+                      </span>
+                      <span className="tabular block text-[12px] text-muted">
+                        {Math.round(Number(recipe.kcal_100g))} kcal / 100 g
+                        {portion ? ` · porcja ${portion} g` : ""} · {recipe.items} składników
+                      </span>
+                    </span>
+                    <span className="text-faint" aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {mine.length > 0 && dishes.length > 0 && (
+        <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
+          Popularne dania
+        </h3>
+      )}
+
+      {shown.length === 0 && mine.length === 0 ? (
         <EmptyState
           icon="🍲"
           title="Nie ma takiego dania"
-          description="Wpisz je raz jako własny produkt — zostanie u Ciebie na stałe i następnym razem znajdziesz je od ręki."
+          description="Zapisz posiłek jako własne danie w dzienniku albo wpisz go raz jako własny produkt — następnym razem znajdziesz go od ręki."
         />
       ) : (
         <ul className="flex flex-col divide-y divide-border">

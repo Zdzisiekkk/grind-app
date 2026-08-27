@@ -338,6 +338,57 @@ export type PushSubscription = {
   created_at: string;
 };
 
+/**
+ * Własne danie ze składników. Szablon posiłku to ten sam byt — powstały
+ * z zapisania posiłku, a nie z ręcznego układania składników.
+ */
+export type Recipe = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  note: string | null;
+  /** Na ile porcji wychodzi cała ilość. */
+  servings: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RecipeItem = {
+  id: string;
+  user_id: string;
+  recipe_id: string;
+  food_id: string | null;
+  name: string;
+  grams: number;
+  /** Kopiowane w chwili dodania — poprawka produktu nie zmienia historii. */
+  kcal_100g: number;
+  protein_100g: number;
+  carbs_100g: number;
+  fat_100g: number;
+  order_index: number;
+  created_at: string;
+};
+
+/** Przepis policzony jako produkt — te same pola, co zwykłe jedzenie. */
+export type RecipeTotals = {
+  recipe_id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  servings: number;
+  total_g: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  items: number;
+  kcal_100g: number;
+  protein_100g: number;
+  carbs_100g: number;
+  fat_100g: number;
+};
+
 export type BookStatus = "want" | "reading" | "read" | "abandoned";
 
 export type Book = {
@@ -623,6 +674,11 @@ export type Database = {
       ai_usage: Tbl<AiUsage, "user_id">;
       push_subscriptions: Tbl<PushSubscription, "user_id" | "endpoint" | "p256dh" | "auth">;
       app_settings: Tbl<AppSetting, "key" | "value">;
+      recipes: Tbl<Recipe, "user_id" | "name">;
+      recipe_items: Tbl<
+        RecipeItem,
+        "user_id" | "recipe_id" | "name" | "grams" | "kcal_100g"
+      >;
       books: Tbl<Book, "user_id" | "title">;
       book_notes: Tbl<BookNote, "user_id" | "book_id">;
       reading_logs: Tbl<ReadingLog, "user_id">;
@@ -646,6 +702,7 @@ export type Database = {
       v_exercise_prs: { Row: ExercisePr; Relationships: [] };
       v_daily_water: { Row: DailyWater; Relationships: [] };
       v_sleep: { Row: SleepView; Relationships: [] };
+      v_recipe_totals: { Row: RecipeTotals; Relationships: [] };
     };
     Functions: {
       clone_plan: {

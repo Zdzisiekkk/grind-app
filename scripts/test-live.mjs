@@ -347,7 +347,41 @@ check("/nawyki/ksiazki pokazuje książkę i notatkę",
   ksiazki.status === 200 && ksiazkiText.includes("Atomowe nawyki"),
   ksiazki.status !== 200 ? `status ${ksiazki.status}` : "");
 
-// 7j. Trener AI — bramka i limit
+// 7j. Własne dania ze składników
+const recipe = await (await fetch(`${SB}/rest/v1/recipes`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, name: "Owsianka testowa", icon: "🥣", servings: 2 }) })).json();
+check("utworzenie własnego dania", Array.isArray(recipe) && recipe[0]?.id);
+
+// Ta sama nazwa drugi raz nie ma prawa przejść — inaczej lista zapełnia się
+// bliźniakami, których nie da się od siebie odróżnić.
+const dup = await fetch(`${SB}/rest/v1/recipes`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, name: "Owsianka testowa" }) });
+check("dwa dania o tej samej nazwie odrzucone", dup.status >= 400, `status ${dup.status}`);
+
+await fetch(`${SB}/rest/v1/recipe_items`, { method:"POST", headers:H,
+  body: JSON.stringify([
+    { user_id: li.user.id, recipe_id: recipe[0].id, name: "Płatki owsiane", grams: 100,
+      kcal_100g: 370, protein_100g: 13, carbs_100g: 60, fat_100g: 7, order_index: 0 },
+    { user_id: li.user.id, recipe_id: recipe[0].id, name: "Mleko 2%", grams: 300,
+      kcal_100g: 51, protein_100g: 3.4, carbs_100g: 4.8, fat_100g: 2, order_index: 1 },
+  ]) });
+
+const totals = await (await fetch(`${SB}/rest/v1/v_recipe_totals?select=*&recipe_id=eq.${recipe[0].id}`, { headers: H })).json();
+const t = totals?.[0];
+// 100 g × 370 kcal/100 g + 300 g × 51 kcal/100 g = 370 + 153 = 523 kcal na 400 g.
+check("przepis liczy kalorie całości", Math.round(Number(t?.kcal)) === 523, `kcal=${t?.kcal}`);
+check("przepis przelicza się na 100 g", Math.abs(Number(t?.kcal_100g) - 130.75) < 0.5,
+  `kcal_100g=${t?.kcal_100g}`);
+check("przepis zna wagę jednej porcji", Number(t?.total_g) === 400 && Number(t?.servings) === 2,
+  `${t?.total_g} g / ${t?.servings} porcje`);
+
+const dania = await fetch(APP + "/dieta/dania", { headers: { cookie }, redirect: "manual" });
+const daniaText = dania.status === 200 ? text(await dania.text()) : "";
+check("/dieta/dania pokazuje własne danie",
+  dania.status === 200 && daniaText.includes("Owsianka testowa"),
+  dania.status !== 200 ? `status ${dania.status}` : "");
+
+// 7k. Trener AI — bramka i limit
 const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
   body: JSON.stringify({ mode: "analyze" }) });
 const coachBody = await coach.json().catch(() => ({}));
@@ -387,7 +421,7 @@ check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
   trener.status === 200 && trenerText.includes("wersji płatnej"),
   trener.status !== 200 ? `status ${trener.status}` : "");
 
-// 7k. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7l. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -423,7 +457,7 @@ const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method:
 check("kolejka powiadomień milczy przy złym sekrecie",
   Array.isArray(pushBadSecret) && pushBadSecret.length === 0, JSON.stringify(pushBadSecret).slice(0, 80));
 
-// 7l. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7m. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;
@@ -445,7 +479,7 @@ check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 
-// 7m. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
+// 7n. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
 const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
 const eksportBody = eksport.status === 200 ? await eksport.json() : null;
 check("eksport danych oddaje plik do pobrania",
@@ -462,7 +496,7 @@ const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" 
 check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200,
   `status ${eksportAnon.status}`);
 
-// 7n. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
+// 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
 const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
 check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
 
