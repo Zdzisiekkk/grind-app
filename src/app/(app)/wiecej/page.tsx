@@ -6,7 +6,8 @@ export const metadata = { title: "Więcej" };
 
 const LINKS = [
   { href: "/progres", icon: "📈", label: "Postępy", desc: "Wykresy siły, wagi, bólu i objętości" },
-  { href: "/subskrypcja", icon: "✨", label: "Trener AI", desc: "Analizy i plan pod Ciebie" },
+  { href: "/trener", icon: "✨", label: "Trener AI", desc: "Analizy, propozycje, rozmowa" },
+  { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },
   { href: "/plan", icon: "📋", label: "Plany treningowe", desc: "Twórz, edytuj, kopiuj szablony, poproś AI" },
   { href: "/cwiczenia", icon: "📚", label: "Katalog ćwiczeń", desc: "Technika, ilustracje, Twoja historia" },
   { href: "/aktywnosci", icon: "🏃", label: "Aktywności", desc: "Bieganie, rower, sparingi MMA" },

@@ -53,6 +53,7 @@ export default async function DashboardPage() {
     { data: weekSummary },
     { data: prevSummary },
     { data: sleepRows },
+    { data: coachProposals },
     { data: activePlan },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
@@ -114,6 +115,13 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .gte("date", addDaysISO(today, -20))
       .order("date", { ascending: false }),
+    supabase
+      .from("coach_proposals")
+      .select("id, title, kind")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(3),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
   ]);
 
@@ -195,6 +203,30 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold leading-tight">{greeting}</h1>
         <p className="text-[13px] capitalize text-muted">{longDate(today)}</p>
       </header>
+
+      {/* --- Propozycje trenera czekające na decyzję --- */}
+      {(coachProposals ?? []).length > 0 && (
+        <Card
+          title="Trener czeka na decyzję"
+          subtitle={`${(coachProposals ?? []).length} ${
+            (coachProposals ?? []).length === 1 ? "propozycja" : "propozycje"
+          } do zatwierdzenia lub odrzucenia`}
+          action={
+            <Link href="/trener" className="text-[13px] font-medium text-accent">
+              Zobacz
+            </Link>
+          }
+        >
+          <ul className="flex flex-col gap-1.5">
+            {(coachProposals ?? []).map((p) => (
+              <li key={p.id} className="flex items-start gap-2 text-[14px]">
+                <span aria-hidden>{p.kind === "diet_kcal" ? "🍽️" : p.kind === "training" ? "🏋️" : "👁️"}</span>
+                <span className="min-w-0 flex-1">{p.title}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* --- Health Score --- */}
       {health && <HealthCard result={health} previous={prevHealth?.total ?? null} />}

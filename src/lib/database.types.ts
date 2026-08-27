@@ -293,6 +293,31 @@ export type SleepView = {
   note: string | null;
 };
 
+/** Propozycja trenera — czeka na tapnięcie, nic nie zmienia sama z siebie. */
+export type CoachProposal = {
+  id: string;
+  user_id: string;
+  kind: "diet_kcal" | "training" | "note";
+  title: string;
+  rationale: string;
+  facts: Record<string, unknown>;
+  /** Co się stanie po akceptacji, np. { daily_kcal: 2200 }. Puste = nic. */
+  action: Record<string, unknown>;
+  status: "pending" | "accepted" | "rejected";
+  decided_at: string | null;
+  created_at: string;
+};
+
+export type CoachMessage = {
+  id: string;
+  user_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+};
+
+export type AiUsage = { user_id: string; date: string; calls: number };
+
 export type SubscriptionStatus =
   | "none" | "trialing" | "active" | "past_due" | "canceled" | "incomplete";
 
@@ -532,6 +557,9 @@ export type Database = {
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
       subscriptions: Tbl<Subscription, "user_id">;
+      coach_proposals: Tbl<CoachProposal, "user_id" | "kind" | "title" | "rationale">;
+      coach_messages: Tbl<CoachMessage, "user_id" | "role" | "content">;
+      ai_usage: Tbl<AiUsage, "user_id">;
       app_settings: Tbl<AppSetting, "key" | "value">;
       sleep_logs: Tbl<
         Omit<SleepLog, "time_in_bed_min">,
@@ -571,6 +599,8 @@ export type Database = {
       period_summary: { Args: { p_from: string; p_to: string }; Returns: PeriodSummary };
       is_admin: { Args: Record<string, never>; Returns: boolean };
       has_pro: { Args: { p_user?: string }; Returns: boolean };
+      /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
+      consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
       apply_subscription: {
         Args: {

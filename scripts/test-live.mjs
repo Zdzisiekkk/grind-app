@@ -272,7 +272,31 @@ check("/subskrypcja mówi, co jest darmowe, a co nie",
   sub.status === 200 && subText.includes("Darmowe na zawsze") && subText.includes("wersja darmowa"),
   sub.status !== 200 ? `status ${sub.status}` : "");
 
-// 7g. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7g. Trener AI — bramka i limit
+const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
+  body: JSON.stringify({ mode: "analyze" }) });
+const coachBody = await coach.json().catch(() => ({}));
+// Bez subskrypcji ma być 402; gdy klucz do modelu nie jest wpisany, 503 zapada
+// wcześniej — obie odpowiedzi znaczą „model NIE został uruchomiony".
+check("trener bez subskrypcji nie rusza modelu",
+  coach.status === 402 || coach.status === 503,
+  `status ${coach.status}, ${coachBody.code ?? coachBody.error ?? ""}`);
+
+const noCalls = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { headers: H })).json();
+check("odrzucone zapytanie nie zużywa limitu",
+  Array.isArray(noCalls) && noCalls.length === 0, JSON.stringify(noCalls));
+
+// Licznik musi być nietykalny — skasowanie go zerowałoby limit dzienny.
+const wipe = await fetch(`${SB}/rest/v1/ai_usage?user_id=eq.${li.user.id}`, { method:"DELETE", headers:H });
+check("nie można skasować własnego licznika zapytań", wipe.status >= 400, `status ${wipe.status}`);
+
+const trener = await fetch(APP + "/trener", { headers: { cookie }, redirect: "manual" });
+const trenerText = trener.status === 200 ? text(await trener.text()) : "";
+check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
+  trener.status === 200 && trenerText.includes("wersji płatnej"),
+  trener.status !== 200 ? `status ${trener.status}` : "");
+
+// 7h. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -288,7 +312,7 @@ const offlineText = offlinePage.status === 200 ? text(await offlinePage.text()) 
 check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);
 
-// 7h. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7i. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;
