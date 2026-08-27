@@ -334,6 +334,9 @@ export function VicesScreen({
       <Sheet open={crisis !== null} onClose={() => setCrisis(null)} title="Mam ochotę">
         {crisis && (
           <CrisisPanel
+            // Klucz po nałogu: przełączenie na inny zaczyna odliczanie od nowa,
+            // zamiast dziedziczyć sekundy z poprzedniego.
+            key={crisis.id}
             vice={crisis}
             onSurvived={() => logUrge(crisis)}
             onGaveIn={() => {
