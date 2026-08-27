@@ -154,7 +154,6 @@ export default async function ProfilPage() {
             regularności jest mediana Twoich ostatnich dwóch tygodni.
           </p>
         </Card>
-
       </ProfileForm>
 
       <NotificationSettings vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
