@@ -289,8 +289,15 @@ export function HabitsScreen({
             </span>
           </button>
 
-          {listOpen && (
-            <div className="flex flex-col gap-2 border-t border-border p-3">
+          {/* Zwinięte, ale wciąż w DOM: dzięki temu wyszukiwarka przeglądarki
+              znajduje nazwę nawyku, a display:none i tak wycina to z drzewa
+              dostępności, więc czytnik ekranu nie czyta ukrytej listy. */}
+          <div
+            className={clsx(
+              "flex-col gap-2 border-t border-border p-3",
+              listOpen ? "flex" : "hidden",
+            )}
+          >
               {dueToday.map((habit) => (
                 <HabitCard
                   key={habit.id}
@@ -320,8 +327,7 @@ export function HabitsScreen({
                   ))}
                 </>
               )}
-            </div>
-          )}
+          </div>
         </Card>
       )}
 
