@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
-import { Reminders, type WaterReminder } from "@/components/reminders/Reminders";
+import { Reminders, type SleepReminder, type WaterReminder } from "@/components/reminders/Reminders";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/SetupNotice";
 import { DEFAULT_WATER_GOAL_ML, habitDueOn } from "@/lib/constants";
 import { todayISO } from "@/lib/format";
+import { DEFAULT_SLEEP_GOAL_MIN, sleepDuration } from "@/lib/sleep";
 import type { Habit } from "@/lib/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -29,7 +30,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase.from("habit_logs").select("habit_id, count").eq("user_id", user.id).eq("date", today),
       supabase
         .from("profiles")
-        .select("daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min")
+        .select(
+          "daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min",
+        )
         .eq("id", user.id)
         .maybeSingle(),
       supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
@@ -56,6 +59,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       }
     : null;
 
+  const sleepReminder: SleepReminder = profile?.sleep_reminder_at
+    ? {
+        at: profile.sleep_reminder_at,
+        goalLabel: `Cel na dziś: ${sleepDuration(profile.sleep_goal_min ?? DEFAULT_SLEEP_GOAL_MIN)}`,
+      }
+    : null;
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
       {/*
@@ -67,7 +77,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <BottomNav />
-      <Reminders habits={habitReminders} water={waterReminder} />
+      <Reminders habits={habitReminders} water={waterReminder} sleep={sleepReminder} />
     </div>
   );
 }

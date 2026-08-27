@@ -43,7 +43,38 @@ przełącza się automatycznie za ustawieniem systemu.
 - Tabela ma kolumnę `source` (`manual` / `strava`), więc późniejszy import ze
   Stravy nie będzie wymagał migracji schematu. Samej integracji w wersji 1 nie ma.
 
-### 4. Postępy
+### 4. Sen i Sleep Score
+- Jedna noc = jeden wpis, opisany datą **poranka**, którego wstałeś. Dzięki temu
+  sen łączy się z resztą dnia bez przesunięcia o dobę.
+- Zapisujesz: godzinę położenia się i pobudki, czas zasypiania, liczbę pobudek
+  i minut na jawie, ocenę snu i energię po przebudzeniu (osobno — można przespać
+  osiem godzin i wstać rozbitym), drzemkę i czynniki („alkohol", „ekran przed
+  snem", „chłodna sypialnia").
+- **Sleep Score 0–100** składa się z czterech części o jawnych wagach:
+  długość 40, odczucia 25, ciągłość 20, regularność 15. Regularność to odległość
+  od Twojej zwykłej pory snu — mediany ostatnich czternastu nocy albo godziny
+  docelowej z profilu. Gdy nie da się jej policzyć, jej waga rozkłada się na
+  pozostałe składowe, zamiast obniżać wynik.
+- Formuła mieszka w `src/lib/sleep.ts`, nie w bazie — regularność wymaga
+  porównania z sąsiednimi nocami, a strojenie wag nie ma wymagać migracji.
+  Baza trzyma wyłącznie fakty.
+- **Wnioski o czynnikach**: apka porównuje średni wynik nocy z danym czynnikiem
+  i bez niego („alkohol: 54 pkt kontra 78"). Pokazuje je dopiero od trzech nocy
+  po każdej stronie i podpisuje jako porównanie średnich, nie dowód przyczynowości.
+
+### 5. Health Score
+- Jedna liczba 0–100 z sześciu filarów: sen 25 %, trening 20 %, dieta 20 %,
+  nawyki 15 %, nawodnienie 10 %, regeneracja (ból) 10 %.
+- **Brak danych nie karze.** Filar bez wpisów wypada z rachunku, a jego waga
+  rozkłada się na pozostałe — inaczej wynik mierzyłby pilność w prowadzeniu
+  dziennika, a nie formę, i spadałby najmocniej wtedy, gdy jesteś zajęty.
+  Widok zawsze pisze, ile filarów weszło do wyniku.
+- **Nigdy sama liczba** — na pulpicie jest pasmo słowne i najsłabszy filar,
+  w Postępach pełne rozbicie z wagami i uzasadnieniem każdej składowej.
+- Okno kroczące 7 dni, ze strzałką trendu względem poprzedniego tygodnia.
+- Formuła: `src/lib/health.ts`.
+
+### 6. Postępy
 - Wykres siły dla wybranego ćwiczenia (najcięższa seria albo szacowany 1RM).
 - Waga ciała, ból każdej kontuzji osobno, objętość tygodniowa (ciężar × powtórzenia).
 - Podsumowanie 7 / 30 dni: treningi, serie, objętość, średnie kcal, aktywności.
@@ -65,7 +96,7 @@ przełącza się automatycznie za ustawieniem systemu.
   i opcjonalna godzina przypomnienia.
 - **Zadania** — listy rzeczy do zrobienia raz: termin, priorytet, grupowanie
   w listy, szybkie dopisanie jednym polem. Zaległe i dzisiejsze widać na pulpicie.
-- **Przypomnienia** — powiadomienia przeglądarki o nawykach i wodzie. Docierają,
+- **Przypomnienia** — powiadomienia przeglądarki o nawykach, wodzie i porze snu. Docierają,
   gdy aplikacja jest otwarta (na iPhonie po dodaniu do ekranu głównego); zaległe
   rzeczy widać też zawsze na ekranie „Dziś”. Prawdziwe powiadomienia w tle
   wymagają Web Push z serwerem wysyłkowym — schemat jest na to gotowy.
@@ -230,6 +261,7 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | `water_logs` | pojedynczy wpis wody w ml (osobne wpisy, żeby dało się cofnąć jeden) |
 | `todo_lists` | lista zadań: nazwa, ikona, kolejność |
 | `todos` | zadanie: treść, notatka, termin, priorytet, moment odhaczenia |
+| `sleep_logs` | jedna noc: godziny, czas zasypiania, pobudki, ocena, energia rano, czynniki. `time_in_bed_min` to kolumna generowana licząca różnicę **przez północ** |
 | `ai_plan_requests` | historia zapytań do AI-trenera wraz z wygenerowanym planem |
 
 ### Funkcje i widoki
@@ -239,11 +271,13 @@ Hierarchia jest dokładnie taka, jak w założeniach: **plan → faza → dzień
 | `clone_plan(plan_id, nazwa, aktywuj)` | kopiuje cały plan z fazami, dniami i ćwiczeniami na konto wywołującego |
 | `set_active_plan(plan_id)` | ustawia jeden plan jako aktywny |
 | `last_exercise_sets(...)` | serie z ostatniego treningu danego ćwiczenia — to, co widać obok pól wpisywania |
-| `period_summary(od, do)` | podsumowanie okresu: treningi, serie, objętość, kcal, aktywności, waga, ból (średnia i rozbicie na kontuzje) |
+| `period_summary(od, do)` | podsumowanie okresu: treningi, serie, objętość, kcal, aktywności, waga, ból, woda, sen oraz mianowniki potrzebne Health Score (`habit_days_due`, `days_in_period`) |
+| `sleep_factor_keys()` | zamknięta lista czynników snu — baza waliduje nią kolumnę `factors` |
 | `v_daily_nutrition` | makro zsumowane per dzień |
 | `v_daily_volume` | objętość i liczba serii per dzień |
 | `v_exercise_prs` | rekordy dla każdego ćwiczenia |
 | `v_daily_water` | wypite mililitry per dzień |
+| `v_sleep` | noc z policzonym realnym snem (czas w łóżku minus zasypianie i minuty na jawie) |
 
 Widoki mają `security_invoker = on`, więc **nie omijają** Row Level Security.
 

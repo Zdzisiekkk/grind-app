@@ -222,3 +222,48 @@ export function dueLabel(due: string | null, today: string): { text: string; ove
   if (days <= 7) return { text: `za ${days} dni`, overdue: false };
   return { text: due.slice(5).replace("-", "."), overdue: false };
 }
+
+/* ----------------------------------- Sen ---------------------------------- */
+
+/**
+ * Czynniki, które mogły wpłynąć na noc. Klucze muszą się zgadzać z listą
+ * w migracji 0010 (funkcja sleep_factor_keys) — baza je waliduje.
+ *
+ * `helps` mówi tylko, jak podpisać wniosek („alkohol zabiera Ci 14 pkt"
+ * kontra „magnez dodaje 6"). O tym, czy coś naprawdę pomaga, decydują Twoje
+ * dane, a nie ta flaga.
+ */
+export const SLEEP_FACTORS = [
+  { value: "alkohol", label: "Alkohol", icon: "🍺", helps: false },
+  { value: "kofeina", label: "Kofeina po południu", icon: "☕", helps: false },
+  { value: "ekran", label: "Ekran przed snem", icon: "📱", helps: false },
+  { value: "pozny_posilek", label: "Późny posiłek", icon: "🍔", helps: false },
+  { value: "trening_wieczor", label: "Trening wieczorem", icon: "🏋️", helps: false },
+  { value: "stres", label: "Stres", icon: "😰", helps: false },
+  { value: "choroba", label: "Choroba / ból", icon: "🤒", helps: false },
+  { value: "halas", label: "Hałas", icon: "🔊", helps: false },
+  { value: "upal", label: "Za ciepło", icon: "🥵", helps: false },
+  { value: "podroz", label: "Podróż / inne łóżko", icon: "✈️", helps: false },
+  { value: "drzemka", label: "Drzemka w dzień", icon: "😪", helps: false },
+  { value: "melatonina", label: "Melatonina", icon: "💊", helps: true },
+  { value: "magnez", label: "Magnez", icon: "🧂", helps: true },
+  { value: "ciemno", label: "Pełne zaciemnienie", icon: "🌑", helps: true },
+  { value: "chlodno", label: "Chłodna sypialnia", icon: "❄️", helps: true },
+] as const;
+
+export type SleepFactorKey = (typeof SLEEP_FACTORS)[number]["value"];
+
+export function sleepFactor(value: string) {
+  return (
+    SLEEP_FACTORS.find((f) => f.value === value) ?? {
+      value,
+      label: value,
+      icon: "•",
+      helps: false,
+    }
+  );
+}
+
+/** Podpowiedzi pory snu przy pierwszym wpisie — typowe godziny. */
+export const BEDTIME_PRESETS = ["21:30", "22:00", "22:30", "23:00", "23:30", "00:00"] as const;
+export const WAKE_PRESETS = ["05:30", "06:00", "06:30", "07:00", "07:30", "08:00"] as const;

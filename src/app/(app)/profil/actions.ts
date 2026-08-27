@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_WATER_PORTION_ML } from "@/lib/constants";
+import { DEFAULT_SLEEP_GOAL_MIN } from "@/lib/sleep";
 
 const intOrNull = (value: FormDataEntryValue | null) => {
   const n = Number(value);
@@ -13,6 +14,13 @@ const intOrNull = (value: FormDataEntryValue | null) => {
 /** Pole <input type="time"> oddaje „HH:MM" albo pusty string. */
 const timeOrNull = (value: FormDataEntryValue | null) =>
   typeof value === "string" && /^\d{2}:\d{2}$/.test(value) ? value : null;
+
+/** Cel snu wpisuje się w godzinach, baza trzyma minuty. */
+const sleepGoalMin = (value: FormDataEntryValue | null) => {
+  const h = Number(String(value ?? "").replace(",", "."));
+  if (!Number.isFinite(h) || h <= 0) return DEFAULT_SLEEP_GOAL_MIN;
+  return Math.min(720, Math.max(240, Math.round(h * 60)));
+};
 
 export async function saveProfile(formData: FormData) {
   const supabase = await createClient();
@@ -36,6 +44,9 @@ export async function saveProfile(formData: FormData) {
       water_reminder_from: timeOrNull(formData.get("water_reminder_from")),
       water_reminder_to: timeOrNull(formData.get("water_reminder_to")),
       water_reminder_every_min: intOrNull(formData.get("water_reminder_every_min")),
+      sleep_goal_min: sleepGoalMin(formData.get("sleep_goal_h")),
+      sleep_target_bedtime: timeOrNull(formData.get("sleep_target_bedtime")),
+      sleep_reminder_at: timeOrNull(formData.get("sleep_reminder_at")),
     })
     .eq("id", user.id);
 
@@ -45,6 +56,8 @@ export async function saveProfile(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/dieta");
   revalidatePath("/nawyki");
+  revalidatePath("/sen");
+  revalidatePath("/progres");
 }
 
 export async function signOut() {

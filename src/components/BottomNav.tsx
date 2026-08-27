@@ -5,15 +5,16 @@ import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/clsx";
 
 /**
- * Sześć zakładek to maksimum, jakie mieści się czytelnie na wąskim telefonie.
- * Miejsce dla Nawyków i Zadań zwolniły Postępy — to ekran przeglądowy, do
- * którego wraca się raz na tydzień, a nie w trakcie dnia. Wchodzi się na niego
- * z pulpitu i z „Więcej".
+ * Siedem zakładek to absolutne maksimum na wąskim telefonie — dlatego etykiety
+ * są krótkie („Sen", nie „Sleep score"). W nawigacji siedzą rzeczy, które
+ * uzupełnia się codziennie. Ekrany przeglądowe (Postępy, Kalendarz, Kontuzje)
+ * zostają w „Więcej" i na pulpicie.
  */
 const ITEMS = [
   { href: "/", label: "Dziś", icon: "🏠" },
   { href: "/trening", label: "Trening", icon: "🏋️" },
   { href: "/dieta", label: "Dieta", icon: "🍽️" },
+  { href: "/sen", label: "Sen", icon: "😴" },
   { href: "/nawyki", label: "Nawyki", icon: "🔥" },
   { href: "/zadania", label: "Zadania", icon: "☑️" },
   { href: "/wiecej", label: "Więcej", icon: "⚙️" },
@@ -66,7 +67,7 @@ export function BottomNav() {
                 <span className="text-[18px] leading-none" aria-hidden>
                   {item.icon}
                 </span>
-                {item.label}
+                <span className="w-full truncate">{item.label}</span>
                 <TabIndicator active={active} />
               </Link>
             </li>

@@ -442,3 +442,61 @@ export function ProgressRing({
     </div>
   );
 }
+
+/* ------------------------------ Pierścień oceny ---------------------------- */
+
+/**
+ * Wynik 0–100 w pierścieniu. W odróżnieniu od ProgressRing kolor przychodzi
+ * z zewnątrz — sen i Health Score używają palety statusów, więc kolor niesie
+ * stan („słaba noc"), a nie wielkość. Liczba w środku i podpis pod nią są
+ * właściwym nośnikiem informacji; kolor tylko je wzmacnia.
+ */
+export function ScoreRing({
+  score,
+  color,
+  size = 72,
+  caption,
+}: {
+  score: number;
+  color: string;
+  size?: number;
+  caption?: ReactNode;
+}) {
+  const stroke = size >= 72 ? 7 : 5;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(1, score / 100));
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          className="stroke-[var(--surface-2)]"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          stroke={color}
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          className="transition-[stroke-dashoffset] duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="tabular font-black" style={{ fontSize: size * 0.32 }}>
+          {score}
+        </span>
+        {caption && <span className="mt-0.5 text-[9px] uppercase tracking-wide text-faint">{caption}</span>}
+      </div>
+    </div>
+  );
+}

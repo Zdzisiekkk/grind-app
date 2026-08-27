@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react";
 
 export type HabitReminder = { id: string; name: string; icon: string; at: string; due: boolean };
 
+/** Przypomnienie o pójściu spać. `loggedToday` gasi je, gdy noc już zapisana. */
+export type SleepReminder = { at: string; goalLabel: string } | null;
+
 export type WaterReminder = {
   from: string | null;
   to: string | null;
@@ -67,17 +70,19 @@ function notify(title: string, body: string, tag: string) {
 export function Reminders({
   habits,
   water,
+  sleep,
 }: {
   habits: HabitReminder[];
   water: WaterReminder;
+  sleep: SleepReminder;
 }) {
   // Świeże dane bez restartowania interwału przy każdym renderze.
   // Ref aktualizujemy w efekcie — pisanie do niego w trakcie renderu
   // łamie reguły Reacta.
-  const dataRef = useRef({ habits, water });
+  const dataRef = useRef({ habits, water, sleep });
   useEffect(() => {
-    dataRef.current = { habits, water };
-  }, [habits, water]);
+    dataRef.current = { habits, water, sleep };
+  }, [habits, water, sleep]);
 
   useEffect(() => {
     if (typeof Notification === "undefined") return;
@@ -114,6 +119,19 @@ export function Reminders({
           const key = `water:${slot}`;
           if (!fired.has(key) && notify("Grind — nawodnienie", "Czas na wodę 💧", key)) {
             fired.add(key);
+          }
+        }
+      }
+
+      // Pora spać. Okno jest szersze niż przy nawykach (60 minut), bo to
+      // przypomnienie ma sens także wtedy, gdy sięgnąłeś po telefon później —
+      // wtedy właśnie jest najbardziej na miejscu.
+      const sleepReminder = dataRef.current.sleep;
+      if (sleepReminder) {
+        const at = toMinutes(sleepReminder.at);
+        if (at !== null && minutes >= at && minutes <= at + 60 && !fired.has("sleep")) {
+          if (notify("Grind — pora spać", `${sleepReminder.goalLabel} 😴`, "sleep")) {
+            fired.add("sleep");
           }
         }
       }

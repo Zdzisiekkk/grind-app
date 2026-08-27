@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button, Card, Chip, Stat } from "@/components/ui";
 import { MacroSummary } from "@/components/diet/MacroSummary";
+import { HealthCard } from "@/components/health/HealthCard";
 import { QuickLog } from "@/components/QuickLog";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,6 +14,16 @@ import {
   waterLabel,
 } from "@/lib/constants";
 import { painStatus } from "@/lib/viz";
+import { DEFAULT_WORKOUTS_PER_WEEK, healthScore } from "@/lib/health";
+import {
+  DEFAULT_SLEEP_GOAL_MIN,
+  medianBedtime,
+  scoreNight,
+  sleepBand,
+  sleepDuration,
+  timeToMin,
+  type SleepNight,
+} from "@/lib/sleep";
 import { addDaysISO, duration, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
 import type { Habit, Injury, PeriodSummary } from "@/lib/database.types";
 
@@ -40,6 +51,8 @@ export default async function DashboardPage() {
     { data: waterToday },
     { data: dueTodos },
     { data: weekSummary },
+    { data: prevSummary },
+    { data: sleepRows },
     { data: activePlan },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
@@ -91,6 +104,16 @@ export default async function DashboardPage() {
       .order("due_date")
       .limit(5),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -6), p_to: today }),
+    // Poprzedni taki sam tydzień — tylko po to, żeby przy wyniku dało się
+    // pokazać kierunek zmiany. Bez tego liczba nic nie mówi.
+    supabase.rpc("period_summary", { p_from: addDaysISO(today, -13), p_to: addDaysISO(today, -7) }),
+    // 21 dni: 7 wchodzi do wyniku, reszta wyznacza „Twoją zwykłą porę snu”.
+    supabase
+      .from("v_sleep")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("date", addDaysISO(today, -20))
+      .order("date", { ascending: false }),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
   ]);
 
@@ -113,12 +136,68 @@ export default async function DashboardPage() {
   const waterPct = waterGoal > 0 ? Math.min(100, Math.round((waterMl / waterGoal) * 100)) : 0;
   const greeting = profile?.display_name ? `Cześć, ${profile.display_name}` : "Cześć";
 
+  /* ------------------------------- Sen i forma ------------------------------ */
+
+  const sleepGoal = profile?.sleep_goal_min ?? DEFAULT_SLEEP_GOAL_MIN;
+  const nights: SleepNight[] = (sleepRows ?? []).map((r) => ({
+    date: r.date,
+    bedtime: r.bedtime,
+    wake_time: r.wake_time,
+    sleep_min: r.sleep_min,
+    time_in_bed_min: r.time_in_bed_min,
+    fell_asleep_min: r.fell_asleep_min,
+    awakenings: r.awakenings,
+    awake_min: r.awake_min,
+    quality: r.quality,
+    morning_energy: r.morning_energy,
+    nap_min: r.nap_min,
+    factors: r.factors,
+    note: r.note,
+  }));
+
+  const bedtimeReference = timeToMin(profile?.sleep_target_bedtime) ?? medianBedtime(nights);
+  const scoredNights = nights.map((night) => ({
+    night,
+    score: scoreNight(night, { goalMin: sleepGoal, referenceBedtime: bedtimeReference }).total,
+  }));
+
+  const lastNight = scoredNights[0] ?? null;
+  const sleptToday = lastNight?.night.date === today;
+  const weekFrom = addDaysISO(today, -6);
+  const weekNightScores = scoredNights.filter((n) => n.night.date >= weekFrom).map((n) => n.score);
+
+  const goals = {
+    kcal: profile?.daily_kcal ?? null,
+    waterMl: waterGoal,
+    workoutsPerWeek: DEFAULT_WORKOUTS_PER_WEEK,
+  };
+
+  const health = summary ? healthScore({ summary, sleepScores: weekNightScores, goals }) : null;
+
+  // Ten sam rachunek dla poprzedniego tygodnia — sam wynik bez kierunku
+  // niewiele mówi, a „+6 pkt" już tak.
+  const prevHealth = prevSummary
+    ? healthScore({
+        summary: prevSummary as PeriodSummary,
+        sleepScores: scoredNights
+          .filter(
+            (n) =>
+              n.night.date >= addDaysISO(today, -13) && n.night.date <= addDaysISO(today, -7),
+          )
+          .map((n) => n.score),
+        goals,
+      })
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
       <header>
         <h1 className="text-2xl font-bold leading-tight">{greeting}</h1>
         <p className="text-[13px] capitalize text-muted">{longDate(today)}</p>
       </header>
+
+      {/* --- Health Score --- */}
+      {health && <HealthCard result={health} previous={prevHealth?.total ?? null} />}
 
       {/* --- Trening --- */}
       <Card
@@ -192,6 +271,45 @@ export default async function DashboardPage() {
             fat: profile?.daily_fat_g ?? null,
           }}
         />
+      </Card>
+
+      {/* --- Sen --- */}
+      <Card
+        title="Sen"
+        subtitle={sleptToday ? "Dzisiejsza noc" : "Ostatnia zapisana noc"}
+        action={
+          <Link href="/sen" className="text-[13px] font-medium text-accent">
+            {sleptToday ? "Szczegóły" : "Zapisz"}
+          </Link>
+        }
+      >
+        {lastNight ? (
+          <div className="flex items-center gap-3">
+            <span
+              className="tabular flex size-12 shrink-0 items-center justify-center rounded-xl text-[17px] font-bold"
+              style={{
+                background: `${sleepBand(lastNight.score).color}22`,
+                color: sleepBand(lastNight.score).color,
+              }}
+            >
+              {lastNight.score}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold leading-tight">
+                {sleepDuration(lastNight.night.sleep_min)}
+              </p>
+              <p className="text-[13px] text-muted">
+                {lastNight.night.bedtime.slice(0, 5)} → {lastNight.night.wake_time.slice(0, 5)} ·{" "}
+                {sleepBand(lastNight.score).label}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted">
+            Zapisz, o której się położyłeś i o której wstałeś — to dwa tapnięcia,
+            a daje najcięższy filar Health Score.
+          </p>
+        )}
       </Card>
 
       {/* --- Zadania z terminem na dziś lub zaległe --- */}

@@ -16,6 +16,7 @@ import {
 import type { ReactNode } from "react";
 import { PAIN_LEGEND, painStatus, useVizColors, type VizColors } from "@/lib/viz";
 import { num, shortDate } from "@/lib/format";
+import { SLEEP_LEGEND, sleepBand, sleepDuration } from "@/lib/sleep";
 import { EmptyState } from "@/components/ui";
 
 const AXIS_FONT = 11;
@@ -320,6 +321,133 @@ export function VolumeChart({
           isAnimationActive={false}
         />
       </BarChart>
+    </ChartFrame>
+  );
+}
+
+/* ---------------------------------- Sen ----------------------------------- */
+
+export type SleepPoint = { date: string; minutes: number; score: number };
+
+/**
+ * Długość snu. Słupek to wielkość (ile godzin), ale jego kolor to stan
+ * (ocena całej nocy) — dlatego bierze go z palety statusów, a nie z serii,
+ * i zawsze idzie w parze z legendą opisową pod wykresem.
+ */
+export function SleepChart({ data, goalMin }: { data: SleepPoint[]; goalMin: number }) {
+  const c = useVizColors();
+  const tipRows: TooltipRows = (p) => [
+    { label: "Sen", value: sleepDuration(Number(p.minutes)) },
+    { label: "Wynik", value: `${p.score} / 100` },
+    { label: "Ocena", value: sleepBand(Number(p.score)).label },
+  ];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartFrame
+        isEmpty={data.length < 1}
+        emptyTitle="Brak zapisanych nocy"
+        emptyDescription="Wystarczy godzina położenia się i pobudki — resztę pól możesz pominąć."
+      >
+        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -20 }} barCategoryGap="20%">
+          <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={shortDate}
+            tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+            tickLine={false}
+            axisLine={{ stroke: c.grid }}
+            minTickGap={24}
+          />
+          <YAxis
+            tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+            tickLine={false}
+            axisLine={false}
+            width={44}
+            domain={[0, (max: number) => Math.max(600, Math.ceil(max / 60) * 60)]}
+            tickFormatter={(v: number) => `${Math.round(v / 60)} h`}
+          />
+          <ReferenceLine
+            y={goalMin}
+            stroke={c.axis}
+            strokeDasharray="4 4"
+            label={{ value: "cel", position: "insideTopRight", fill: c.textMuted, fontSize: 10 }}
+          />
+          <Tooltip content={<ChartTooltip colors={c} rows={tipRows} />} cursor={{ fill: c.grid, fillOpacity: 0.35 }} />
+          <Bar dataKey="minutes" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            {data.map((d) => (
+              <Cell key={d.date} fill={sleepBand(d.score).color} stroke={c.surface} strokeWidth={2} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ChartFrame>
+
+      {data.length > 0 && (
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 px-1">
+          {SLEEP_LEGEND.map((l) => (
+            <li key={l.range} className="flex items-center gap-1 text-[11px] text-muted">
+              <span aria-hidden style={{ color: l.color }}>
+                {l.icon}
+              </span>
+              {l.range} · {l.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Sam wynik w czasie — jedna seria, więc bez legendy: tytuł karty ją nazywa. */
+export function SleepScoreChart({ data }: { data: SleepPoint[] }) {
+  const c = useVizColors();
+  const tipRows: TooltipRows = (p) => [
+    { label: "Wynik", value: `${p.score} / 100` },
+    { label: "Ocena", value: sleepBand(Number(p.score)).label },
+  ];
+
+  return (
+    <ChartFrame
+      height={180}
+      isEmpty={data.length < 2}
+      emptyTitle="Za mało nocy na trend"
+      emptyDescription="Trend pojawi się po drugiej zapisanej nocy."
+    >
+      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -24 }}>
+        <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tickFormatter={shortDate}
+          tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+          tickLine={false}
+          axisLine={{ stroke: c.grid }}
+          minTickGap={24}
+        />
+        <YAxis
+          tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+          tickLine={false}
+          axisLine={false}
+          width={40}
+          domain={[0, 100]}
+          ticks={[0, 25, 50, 75, 100]}
+        />
+        <ReferenceLine
+          y={80}
+          stroke={c.axis}
+          strokeDasharray="4 4"
+          label={{ value: "świetna noc", position: "insideTopRight", fill: c.textMuted, fontSize: 10 }}
+        />
+        <Tooltip content={<ChartTooltip colors={c} rows={tipRows} />} cursor={{ stroke: c.axis, strokeWidth: 1 }} />
+        <Line
+          type="monotone"
+          dataKey="score"
+          stroke={c.series2}
+          strokeWidth={2}
+          dot={{ r: 3.5, fill: c.series2, stroke: c.surface, strokeWidth: 2 }}
+          activeDot={{ r: 6, fill: c.series2, stroke: c.surface, strokeWidth: 2 }}
+          isAnimationActive={false}
+        />
+      </LineChart>
     </ChartFrame>
   );
 }

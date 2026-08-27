@@ -1,6 +1,8 @@
 import { ProgressScreen } from "@/components/ProgressScreen";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, shortDate, todayISO } from "@/lib/format";
+import { DEFAULT_SLEEP_GOAL_MIN, type SleepNight } from "@/lib/sleep";
+import { DEFAULT_WATER_GOAL_ML } from "@/lib/constants";
 import type { ExercisePr, PeriodSummary } from "@/lib/database.types";
 
 export const metadata = { title: "Postępy" };
@@ -26,7 +28,17 @@ export default async function ProgresPage() {
   const today = todayISO();
   const twelveWeeksAgo = addDaysISO(today, -84);
 
-  const [prsRes, weightRes, painRes, injuryRes, volumeRes, weekRes, monthRes] = await Promise.all([
+  const [
+    prsRes,
+    weightRes,
+    painRes,
+    injuryRes,
+    volumeRes,
+    weekRes,
+    monthRes,
+    sleepRes,
+    profileRes,
+  ] = await Promise.all([
     supabase
       .from("v_exercise_prs")
       .select("*")
@@ -59,6 +71,18 @@ export default async function ProgresPage() {
       .order("date"),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -6), p_to: today }),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -29), p_to: today }),
+    // 44 dni: 30 wchodzi na wykres, 14 najnowszych wyznacza zwykłą porę snu.
+    supabase
+      .from("v_sleep")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("date", addDaysISO(today, -44))
+      .order("date", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("sleep_goal_min, sleep_target_bedtime, daily_kcal, daily_water_ml")
+      .eq("id", user.id)
+      .maybeSingle(),
   ]);
 
   // Dzienna objętość → tygodnie (poniedziałek–niedziela)
@@ -99,6 +123,22 @@ export default async function ProgresPage() {
     }))
     .filter((injury) => injury.points.length > 0);
 
+  const nights: SleepNight[] = (sleepRes.data ?? []).map((r) => ({
+    date: r.date,
+    bedtime: r.bedtime,
+    wake_time: r.wake_time,
+    sleep_min: r.sleep_min,
+    time_in_bed_min: r.time_in_bed_min,
+    fell_asleep_min: r.fell_asleep_min,
+    awakenings: r.awakenings,
+    awake_min: r.awake_min,
+    quality: r.quality,
+    morning_energy: r.morning_energy,
+    nap_min: r.nap_min,
+    factors: r.factors,
+    note: r.note,
+  }));
+
   return (
     <ProgressScreen
       userId={user.id}
@@ -110,6 +150,12 @@ export default async function ProgresPage() {
         week: weekRes.data as PeriodSummary,
         month: monthRes.data as PeriodSummary,
       }}
+      nights={nights}
+      today={today}
+      sleepGoalMin={profileRes.data?.sleep_goal_min ?? DEFAULT_SLEEP_GOAL_MIN}
+      targetBedtime={profileRes.data?.sleep_target_bedtime ?? null}
+      kcalGoal={profileRes.data?.daily_kcal ?? null}
+      waterGoal={profileRes.data?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML}
     />
   );
 }

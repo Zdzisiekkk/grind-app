@@ -68,7 +68,7 @@ const cookie = (enc.length <= C
 ).join("; ");
 
 const text = (h) => h.replace(/<script[\s\S]*?<\/script>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-for (const [path, expect] of [["/","Dziś"],["/trening","Trening"],["/dieta","Dieta"],["/progres","Postępy"],["/plan","Plany"],["/cwiczenia","Katalog"],["/kalendarz","Kalendarz"],["/profil","Profil"],["/aktywnosci","Aktywno"]]) {
+for (const [path, expect] of [["/","Dziś"],["/trening","Trening"],["/dieta","Dieta"],["/progres","Postępy"],["/plan","Plany"],["/cwiczenia","Katalog"],["/kalendarz","Kalendarz"],["/profil","Profil"],["/aktywnosci","Aktywno"],["/sen","Sen"]]) {
   const r = await fetch(APP + path, { headers: { cookie }, redirect: "manual" });
   const t = r.status === 200 ? text(await r.text()) : "";
   check(`${path.padEnd(13)} po zalogowaniu`, r.status === 200 && t.includes(expect), r.status !== 200 ? `status ${r.status}` : "");
@@ -161,7 +161,38 @@ const zadaniaText = zadania.status === 200 ? text(await zadania.text()) : "";
 check("/zadania pokazuje listę", zadania.status === 200 && zadaniaText.includes("Sprzęt"),
   zadania.status !== 200 ? `status ${zadania.status}` : "");
 
-// 7e. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7e. Sen i Health Score
+const nightDate = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+const night = await (await fetch(`${SB}/rest/v1/sleep_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
+  body: JSON.stringify({ user_id: li.user.id, date: nightDate, bedtime: "23:30", wake_time: "07:00",
+    fell_asleep_min: 20, awakenings: 1, awake_min: 15, quality: 4, morning_energy: 4,
+    factors: ["ekran", "magnez"] }) })).json();
+check("zapis nocy 23:30 → 07:00", Array.isArray(night) && night[0]?.id);
+
+// Kolumna generowana liczy przez północ: 450 min w łóżku, 415 realnego snu.
+check("czas w łóżku liczony przez północ", night[0]?.time_in_bed_min === 450,
+  `time_in_bed_min=${night[0]?.time_in_bed_min}`);
+
+const vsleep = await (await fetch(`${SB}/rest/v1/v_sleep?select=sleep_min,quality&date=eq.${nightDate}`, { headers: H })).json();
+check("realny sen po odjęciu zasypiania i pobudek", vsleep?.[0]?.sleep_min === 415,
+  `sleep_min=${vsleep?.[0]?.sleep_min}`);
+
+const badFactor = await fetch(`${SB}/rest/v1/sleep_logs`, { method:"POST", headers:H,
+  body: JSON.stringify({ user_id: li.user.id, date: "2000-01-01", bedtime: "23:00", wake_time: "07:00",
+    quality: 3, factors: ["cos_wymyslonego"] }) });
+check("baza odrzuca nieznany czynnik snu", badFactor.status >= 400, `status ${badFactor.status}`);
+
+const sen = await fetch(APP + "/sen", { headers: { cookie }, redirect: "manual" });
+const senText = sen.status === 200 ? text(await sen.text()) : "";
+check("/sen pokazuje ocenę nocy", sen.status === 200 && /23:30/.test(senText) && /6 h 55 min/.test(senText),
+  sen.status !== 200 ? `status ${sen.status}` : "");
+
+const pulpit = await fetch(APP + "/", { headers: { cookie }, redirect: "manual" });
+const pulpitText = pulpit.status === 200 ? text(await pulpit.text()) : "";
+check("pulpit pokazuje Health Score", pulpit.status === 200 && pulpitText.includes("Health Score"),
+  pulpit.status !== 200 ? `status ${pulpit.status}` : "");
+
+// 7f. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;
@@ -176,6 +207,10 @@ check("podsumowanie liczy objętość 480 kg", summ?.volume_kg === 480, `volume_
 check("podsumowanie zna wodę i nawyki",
   summ?.avg_water_ml === 830 && summ?.habit_days_done === 1,
   `woda=${summ?.avg_water_ml} nawyki=${summ?.habit_days_done}`);
+check("podsumowanie zna sen", summ?.nights_logged === 1 && summ?.avg_sleep_min === 415,
+  `nocy=${summ?.nights_logged} sen=${summ?.avg_sleep_min}`);
+check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
+  `habit_days_due=${summ?.habit_days_due}`);
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 

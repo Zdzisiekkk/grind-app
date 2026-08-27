@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BodyWeightChart, PainChart, StrengthChart, VolumeChart, type StrengthPoint } from "@/components/charts/Charts";
+import {
+  BodyWeightChart,
+  PainChart,
+  SleepChart,
+  StrengthChart,
+  VolumeChart,
+  type StrengthPoint,
+} from "@/components/charts/Charts";
+import { HealthBreakdown } from "@/components/health/HealthCard";
 import { Card, Chip, EmptyState, SegmentedControl, Select, Spinner, Stat } from "@/components/ui";
 import type { ExercisePr, PeriodSummary, WorkoutLog } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
-import { e1rm, num, volume as fmtVolume, workouts as fmtWorkouts } from "@/lib/format";
+import { addDaysISO, e1rm, num, volume as fmtVolume, workouts as fmtWorkouts } from "@/lib/format";
 import { bodyPart, injurySideLabel } from "@/lib/constants";
+import { DEFAULT_WORKOUTS_PER_WEEK, healthScore } from "@/lib/health";
+import { medianBedtime, scoreNight, sleepDuration, timeToMin, type SleepNight } from "@/lib/sleep";
 
 const EMPTY_POINTS: StrengthPoint[] = [];
 
@@ -17,6 +27,12 @@ export function ProgressScreen({
   painByInjury,
   weeklyVolume,
   summaries,
+  nights,
+  today,
+  sleepGoalMin,
+  targetBedtime,
+  kcalGoal,
+  waterGoal,
 }: {
   userId: string;
   prs: ExercisePr[];
@@ -30,9 +46,50 @@ export function ProgressScreen({
   }[];
   weeklyVolume: { label: string; volume: number; sets: number; workouts: number }[];
   summaries: { week: PeriodSummary; month: PeriodSummary };
+  /** Noce od najnowszej — starsze niż okno służą tylko za punkt odniesienia. */
+  nights: SleepNight[];
+  today: string;
+  sleepGoalMin: number;
+  targetBedtime: string | null;
+  kcalGoal: number | null;
+  waterGoal: number;
 }) {
   const [period, setPeriod] = useState<"week" | "month">("week");
   const summary = summaries[period];
+  const days = period === "week" ? 7 : 30;
+
+  /* --- Sen i Health Score liczone dla wybranego okresu --- */
+
+  const reference = useMemo(
+    () => timeToMin(targetBedtime) ?? medianBedtime(nights.slice(0, 14)),
+    [targetBedtime, nights],
+  );
+
+  const sleepPoints = useMemo(() => {
+    const from = addDaysISO(today, -(days - 1));
+    return nights
+      .filter((n) => n.date >= from)
+      .map((n) => ({
+        date: n.date,
+        minutes: n.sleep_min,
+        score: scoreNight(n, { goalMin: sleepGoalMin, referenceBedtime: reference }).total,
+      }))
+      .reverse();
+  }, [nights, today, days, sleepGoalMin, reference]);
+
+  const health = useMemo(
+    () =>
+      healthScore({
+        summary,
+        sleepScores: sleepPoints.map((p) => p.score),
+        goals: {
+          kcal: kcalGoal,
+          waterMl: waterGoal,
+          workoutsPerWeek: DEFAULT_WORKOUTS_PER_WEEK,
+        },
+      }),
+    [summary, sleepPoints, kcalGoal, waterGoal],
+  );
 
   const [exerciseId, setExerciseId] = useState<string>(prs[0]?.exercise_key ?? "");
   const [strengthMode, setStrengthMode] = useState<"weight" | "e1rm">("weight");
@@ -120,6 +177,22 @@ export function ProgressScreen({
         />
       </header>
 
+      <Card title="Health Score" subtitle="Sześć filarów, waga proporcjonalna do wpływu">
+        <HealthBreakdown result={health} days={days} />
+      </Card>
+
+      <Card
+        title="Sen"
+        subtitle="Kolor słupka to ocena całej nocy"
+        action={
+          summary.avg_sleep_min != null ? (
+            <Chip tone="accent">średnio {sleepDuration(summary.avg_sleep_min)}</Chip>
+          ) : undefined
+        }
+      >
+        <SleepChart data={sleepPoints} goalMin={sleepGoalMin} />
+      </Card>
+
       <Card title="Podsumowanie okresu">
         <div className="grid grid-cols-2 gap-2">
           <Stat label="Treningi" value={summary.workouts} sub={`${summary.sets} serii`} />
@@ -143,6 +216,15 @@ export function ProgressScreen({
                 : "brak ocen"
             }
             tone={summary.avg_pain != null && summary.avg_pain >= 5 ? "danger" : undefined}
+          />
+          <Stat
+            label="Sen (średnia)"
+            value={summary.avg_sleep_min != null ? sleepDuration(summary.avg_sleep_min) : "–"}
+            sub={
+              summary.nights_logged
+                ? `${summary.nights_logged} z ${summary.days_in_period} nocy`
+                : "brak wpisów"
+            }
           />
           <Stat
             label="Waga"

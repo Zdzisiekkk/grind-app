@@ -48,6 +48,11 @@ export type Profile = {
   water_reminder_from: string | null;
   water_reminder_to: string | null;
   water_reminder_every_min: number | null;
+  /** Cel snu na dobę w minutach. */
+  sleep_goal_min: number;
+  /** Godzina, o której chcesz gasić światło — punkt odniesienia regularności. */
+  sleep_target_bedtime: string | null;
+  sleep_reminder_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -227,6 +232,52 @@ export type Todo = {
   updated_at: string;
 };
 
+export type SleepFactor =
+  | "alkohol" | "kofeina" | "ekran" | "pozny_posilek" | "trening_wieczor"
+  | "stres" | "choroba" | "halas" | "upal" | "podroz" | "drzemka"
+  | "melatonina" | "magnez" | "ciemno" | "chlodno";
+
+export type SleepLog = {
+  id: string;
+  user_id: string;
+  /** Data PORANKA, którego się obudziłeś — noc z 3 na 4 maja to 4 maja. */
+  date: string;
+  bedtime: string;
+  wake_time: string;
+  fell_asleep_min: number;
+  awakenings: number;
+  awake_min: number;
+  /** Jak Ci się spało, 1–5. */
+  quality: number;
+  /** Jak się obudziłeś, 1–5. Osobno, bo to nie to samo co jakość snu. */
+  morning_energy: number | null;
+  nap_min: number;
+  factors: string[];
+  note: string | null;
+  /** Kolumna generowana: różnica pobudka − położenie się, liczona przez północ. */
+  time_in_bed_min: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Widok v_sleep — to samo plus realny sen po odjęciu zasypiania i pobudek. */
+export type SleepView = {
+  user_id: string;
+  date: string;
+  bedtime: string;
+  wake_time: string;
+  time_in_bed_min: number;
+  sleep_min: number;
+  fell_asleep_min: number;
+  awakenings: number;
+  awake_min: number;
+  quality: number;
+  morning_energy: number | null;
+  nap_min: number;
+  factors: string[];
+  note: string | null;
+};
+
 export type InjuryStatus = "active" | "monitoring" | "healed";
 export type InjurySide = "left" | "right" | "both" | "none";
 
@@ -380,6 +431,7 @@ export type ExercisePr = {
 export type PeriodSummary = {
   from: string;
   to: string;
+  days_in_period: number;
   workouts: number;
   sets: number;
   volume_kg: number;
@@ -397,7 +449,16 @@ export type PeriodSummary = {
     entries: number;
   }[];
   avg_water_ml: number | null;
+  days_water_logged: number;
+  avg_protein_g: number | null;
   habit_days_done: number;
+  /** Ile odhaczeń w ogóle wypadało w okresie — mianownik filaru nawyków. */
+  habit_days_due: number;
+  nights_logged: number;
+  avg_sleep_min: number | null;
+  avg_sleep_quality: number | null;
+  /** Średnia pora zaśnięcia jako minuty od 18:00. */
+  avg_bedtime_min: number | null;
   weight_start: number | null;
   weight_end: number | null;
 };
@@ -429,6 +490,10 @@ export type Database = {
       water_logs: Tbl<WaterLog, "user_id" | "ml">;
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
+      sleep_logs: Tbl<
+        Omit<SleepLog, "time_in_bed_min">,
+        "user_id" | "bedtime" | "wake_time" | "quality"
+      > & { Row: SleepLog };
       body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
       foods: Tbl<Food, "name" | "kcal_100g">;
       meals: Tbl<Meal, "user_id" | "meal_type">;
@@ -444,6 +509,7 @@ export type Database = {
       v_daily_volume: { Row: DailyVolume; Relationships: [] };
       v_exercise_prs: { Row: ExercisePr; Relationships: [] };
       v_daily_water: { Row: DailyWater; Relationships: [] };
+      v_sleep: { Row: SleepView; Relationships: [] };
     };
     Functions: {
       clone_plan: {

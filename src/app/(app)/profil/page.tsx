@@ -1,6 +1,7 @@
 import { Button, Card, Chip, Field, Input } from "@/components/ui";
 import { BodyWeightChart } from "@/components/charts/Charts";
 import { NotificationSettings } from "@/components/reminders/NotificationSettings";
+import { DEFAULT_SLEEP_GOAL_MIN } from "@/lib/sleep";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile, signOut } from "./actions";
 import { addDaysISO, num, todayISO } from "@/lib/format";
@@ -113,6 +114,40 @@ export default async function ProfilPage() {
           </div>
           <p className="mt-1 text-[12px] text-faint">
             Zostaw „co ile minut” puste, żeby wyłączyć przypomnienia o wodzie.
+          </p>
+        </Card>
+
+        <Card
+          title="Sen"
+          subtitle="Cel i docelowa pora snu — z nich liczy się długość i regularność w Sleep Score."
+        >
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Cel (godziny)">
+              <Input
+                name="sleep_goal_h"
+                inputMode="decimal"
+                defaultValue={((profile?.sleep_goal_min ?? DEFAULT_SLEEP_GOAL_MIN) / 60).toFixed(1)}
+                placeholder="8"
+              />
+            </Field>
+            <Field label="Kładę się o">
+              <Input
+                type="time"
+                name="sleep_target_bedtime"
+                defaultValue={profile?.sleep_target_bedtime?.slice(0, 5) ?? ""}
+              />
+            </Field>
+            <Field label="Przypomnienie">
+              <Input
+                type="time"
+                name="sleep_reminder_at"
+                defaultValue={profile?.sleep_reminder_at?.slice(0, 5) ?? ""}
+              />
+            </Field>
+          </div>
+          <p className="mt-1 text-[12px] text-faint">
+            Docelową porę snu możesz zostawić pustą — wtedy punktem odniesienia
+            regularności jest mediana Twoich ostatnich dwóch tygodni.
           </p>
         </Card>
 
