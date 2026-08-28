@@ -5,6 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -539,5 +540,113 @@ export function ViceChart({ data }: { data: VicePoint[] }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/* -------------------------------- Wygląd ---------------------------------- */
+
+export type LooksPoint = {
+  date: string;
+  ogolna: number | null;
+  podocena: number | null;
+  /** Skan z kiepskiego zdjęcia — rysowany pustym punktem, żeby nie mylił. */
+  pewny: boolean;
+};
+
+/**
+ * Ocena wyglądu w czasie.
+ *
+ * Dwie serie: ogólna i jedna wybrana podocena. Skany, przy których model sam
+ * powiedział, że zdjęcie było za słabe, dostają pusty środek punktu — inaczej
+ * spadek spowodowany przepaloną klatką wyglądałby na pogorszenie skóry.
+ */
+export function LooksChart({
+  data,
+  podocenaLabel,
+}: {
+  data: LooksPoint[];
+  podocenaLabel: string | null;
+}) {
+  const c = useVizColors();
+  const tipRows: TooltipRows = (p) => [
+    { label: "Ocena ogólna", value: p.ogolna == null ? "—" : `${p.ogolna} / 100` },
+    ...(podocenaLabel
+      ? [{ label: podocenaLabel, value: p.podocena == null ? "—" : `${p.podocena} / 100` }]
+      : []),
+    ...(p.pewny ? [] : [{ label: "Uwaga", value: "słabe zdjęcie" }]),
+  ];
+
+  return (
+    <ChartFrame
+      isEmpty={data.length < 2}
+      emptyTitle="Za mało skanów"
+      emptyDescription="Wykres pojawi się po drugim skanie — jeden punkt nie pokazuje żadnej zmiany."
+    >
+      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
+        <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tickFormatter={shortDate}
+          tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+          tickLine={false}
+          axisLine={{ stroke: c.grid }}
+          minTickGap={24}
+        />
+        <YAxis
+          tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+          tickLine={false}
+          axisLine={false}
+          width={36}
+          domain={[0, 100]}
+        />
+        <Tooltip
+          content={<ChartTooltip colors={c} rows={tipRows} />}
+          cursor={{ stroke: c.axis, strokeWidth: 1 }}
+        />
+        <Legend wrapperStyle={{ fontSize: 12, color: c.axis }} />
+        <Line
+          name="Ocena ogólna"
+          type="monotone"
+          dataKey="ogolna"
+          stroke={c.series1}
+          strokeWidth={2}
+          connectNulls
+          dot={(props) => {
+            const { cx, cy, payload, index } = props as {
+              cx: number;
+              cy: number;
+              payload: LooksPoint;
+              index: number;
+            };
+            if (cx == null || cy == null) return <g key={index} />;
+            return (
+              <circle
+                key={index}
+                cx={cx}
+                cy={cy}
+                r={3.5}
+                fill={payload.pewny ? c.series1 : c.surface}
+                stroke={c.series1}
+                strokeWidth={2}
+              />
+            );
+          }}
+          isAnimationActive={false}
+        />
+        {podocenaLabel && (
+          <Line
+            name={podocenaLabel}
+            type="monotone"
+            dataKey="podocena"
+            stroke={c.series2}
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            connectNulls
+            dot={{ r: 3, fill: c.series2, stroke: c.surface, strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
+        )}
+      </LineChart>
+    </ChartFrame>
   );
 }

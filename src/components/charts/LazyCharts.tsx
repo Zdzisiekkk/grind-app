@@ -65,5 +65,10 @@ export const ViceChart = dynamic(
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
+export const LooksChart = dynamic(
+  () => import("@/components/charts/Charts").then((m) => m.LooksChart),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
+
 // Typy nie mają wagi w przeglądarce — idą wprost ze źródła.
-export type { StrengthPoint, SleepPoint, VicePoint } from "@/components/charts/Charts";
+export type { StrengthPoint, SleepPoint, VicePoint, LooksPoint } from "@/components/charts/Charts";

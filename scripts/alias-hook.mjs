@@ -8,14 +8,22 @@
  *
  * Node sam zdejmuje typy z plików .ts, więc kompilacja nie jest potrzebna.
  */
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const SRC = new URL("../src/", import.meta.url);
 
-/** TypeScript pisze „./format", na dysku leży „format.ts". */
+/**
+ * TypeScript pisze „./format", na dysku leży „format.ts".
+ *
+ * Kolejność ma znaczenie: „looks.ts" wygrywa z katalogiem „looks/". Tak samo
+ * rozstrzygają to TypeScript i bundlery, a Node sam z siebie wybrałby katalog
+ * i wywalił się na ERR_UNSUPPORTED_DIR_IMPORT — czyli test nie działałby
+ * dokładnie tam, gdzie moduł ma i plik, i folder o tej samej nazwie.
+ */
 function withExtension(url) {
-  if (existsSync(fileURLToPath(url))) return url;
+  const sciezka = fileURLToPath(url);
+  if (existsSync(sciezka) && !statSync(sciezka).isDirectory()) return url;
   for (const suffix of [".ts", ".tsx", "/index.ts"]) {
     const candidate = new URL(url.href + suffix);
     if (existsSync(fileURLToPath(candidate))) return candidate;

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = { title: "Więcej" };
 
 const LINKS = [
+  { href: "/wyglad", icon: "🪪", label: "Wygląd", desc: "Skan twarzy, pielęgnacja, postawa, progres" },
   { href: "/progres", icon: "📈", label: "Postępy", desc: "Wykresy siły, wagi, bólu i objętości" },
   { href: "/trener", icon: "✨", label: "Trener AI", desc: "Analizy, propozycje, rozmowa" },
   { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },

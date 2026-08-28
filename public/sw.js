@@ -9,14 +9,49 @@
  * aplikacji u ludzi, którzy już ją mają zainstalowaną.
  */
 
-const VERSION = "grind-v2";
+const VERSION = "grind-v3";
+
 const SHELL = `${VERSION}-shell`;
 const PAGES = `${VERSION}-pages`;
 
 /** Zasoby, bez których nie da się narysować nic sensownego. */
 const PRECACHE = ["/offline", "/icons/icon-192.png", "/icons/icon-512.png"];
 
+/*
+ * Na maszynie deweloperskiej workera nie ma.
+ *
+ * Poniżej trzymamy pliki z `/_next/static/` w pamięci NA ZAWSZE, bo w gotowej
+ * aplikacji nazwa takiego pliku zawiera skrót jego treści: inna treść to inna
+ * nazwa, więc stara nigdy nie zostanie użyta ponownie. Turbopack podczas pracy
+ * nazywa je zupełnie inaczej — ta sama nazwa, co chwilę nowa zawartość. Worker
+ * podawał wtedy do świeżej strony kawałek kodu sprzed kilku dni i przeglądarka
+ * wywalała się na module, którego już nie ma w projekcie.
+ *
+ * Rozbroić musi się sam, bo strona z takim błędem nie wykonuje ANI JEDNEJ
+ * linijki kodu aplikacji — więc nikt inny go o to nie poprosi.
+ *
+ * Cena: pracy bez zasięgu nie sprawdzimy pod localhostem, tylko na wdrożonej
+ * wersji. Tam i tak sprawdza ją test „strona zastępcza bez zasięgu działa".
+ */
+const DEV = ["localhost", "127.0.0.1", "[::1]"].includes(self.location.hostname);
+
+if (DEV) {
+  self.addEventListener("install", () => self.skipWaiting());
+  self.addEventListener("activate", (event) => {
+    event.waitUntil(
+      (async () => {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+        await self.registration.unregister();
+        const clients = await self.clients.matchAll({ type: "window" });
+        for (const client of clients) client.navigate(client.url);
+      })(),
+    );
+  });
+}
+
 self.addEventListener("install", (event) => {
+  if (DEV) return;
   event.waitUntil(
     caches
       .open(SHELL)
@@ -26,6 +61,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  if (DEV) return;
   event.waitUntil(
     caches
       .keys()
@@ -58,6 +94,7 @@ function isNetworkOnly(url) {
 }
 
 self.addEventListener("fetch", (event) => {
+  if (DEV) return;
   const { request } = event;
   if (request.method !== "GET") return;
 

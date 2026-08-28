@@ -24,7 +24,7 @@ import {
   timeToMin,
   type SleepNight,
 } from "@/lib/sleep";
-import { addDaysISO, duration, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
+import { addDaysISO, duration, humanDate, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
 import type { Habit, Injury, PeriodSummary } from "@/lib/database.types";
 
 export const metadata = { title: "Dziś" };
@@ -55,6 +55,7 @@ export default async function DashboardPage() {
     { data: sleepRows },
     { data: coachProposals },
     { data: activePlan },
+    { data: ostatniSkan },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -123,6 +124,16 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(3),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
+    // Wygląd: sam wynik i data. Kafelek ma powiedzieć „kiedy ostatnio" —
+    // reszta raportu i tak nie zmieści się na pulpicie.
+    supabase
+      .from("wyglad_skany")
+      .select("id, utworzono, ocena_ogolna")
+      .eq("user_id", user.id)
+      .not("ocena_ogolna", "is", null)
+      .order("utworzono", { ascending: false })
+      .limit(1)
+      .maybeSingle()
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -230,6 +241,37 @@ export default async function DashboardPage() {
 
       {/* --- Health Score --- */}
       {health && <HealthCard result={health} previous={prevHealth?.total ?? null} />}
+
+      {/* --- Wygląd --- */}
+      <Card
+        title="Wygląd"
+        action={
+          ostatniSkan ? <Chip tone="accent">{ostatniSkan.ocena_ogolna} / 100</Chip> : null
+        }
+      >
+        {ostatniSkan ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[13px] text-muted">
+              Ostatni skan {humanDate(String(ostatniSkan.utworzono).slice(0, 10))}
+            </p>
+            <Link href="/wyglad">
+              <Button variant="secondary">Otwórz</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-[14px] text-muted">
+              Skan twarzy pokazuje, co da się poprawić pielęgnacją, postawą i snem — i co z tego
+              faktycznie się zmienia.
+            </p>
+            <Link href="/wyglad">
+              <Button variant="secondary" block>
+                Zrób pierwszy skan
+              </Button>
+            </Link>
+          </div>
+        )}
+      </Card>
 
       {/* --- Trening --- */}
       <Card

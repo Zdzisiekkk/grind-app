@@ -686,6 +686,104 @@ export type LastExerciseSet = {
   duration_seconds: number | null;
 };
 
+/* ------------------------------- Wygląd ----------------------------------- */
+
+export type Ujecie = "front" | "profil" | "sylwetka";
+export type PoraDnia = "rano" | "wieczor" | "dowolnie";
+export type ZrodloRutyny = "ai" | "wlasna" | "biblioteka";
+
+export type WygladZgoda = {
+  user_id: string;
+  wiek_potwierdzony: boolean;
+  zaakceptowano_at: string;
+};
+
+export type WygladSkan = {
+  id: string;
+  user_id: string;
+  utworzono: string;
+  ocena_ogolna: number | null;
+  /** Podoceny wyjęte z raportu, żeby wykres nie musiał go rozpakowywać. */
+  oceny: Record<string, number> | null;
+  raport: unknown;
+  /** false = model uznał zdjęcie za niewystarczające; taki punkt nie ciągnie wykresu. */
+  jakosc_ok: boolean | null;
+  model: string | null;
+  wersja_promptu: number;
+};
+
+export type WygladZdjecie = {
+  id: string;
+  user_id: string;
+  skan_id: string;
+  ujecie: Ujecie;
+  storage_path: string;
+  utworzono: string;
+};
+
+export type WygladPomiar = {
+  id: string;
+  user_id: string;
+  data: string;
+  talia: number | null;
+  klatka: number | null;
+  ramie: number | null;
+  szyja: number | null;
+  biodra: number | null;
+  bf_szac: number | null;
+};
+
+export type WygladRutyna = {
+  id: string;
+  user_id: string;
+  klucz: string;
+  nazwa: string;
+  pora: PoraDnia;
+  kroki: string[];
+  aktywna: boolean;
+  zrodlo: ZrodloRutyny;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WygladRutynaLog = {
+  id: string;
+  user_id: string;
+  rutyna_id: string;
+  data: string;
+  wykonano: boolean;
+};
+
+export type WygladProtokol = {
+  id: string;
+  user_id: string;
+  klucz: string;
+  aktywny: boolean;
+  rozpoczeto: string;
+};
+
+export type WygladProdukt = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  skladniki_aktywne: string[];
+  pora: PoraDnia;
+  otwarty_od: string | null;
+  wazny_do: string | null;
+  created_at: string;
+};
+
+/** Stan limitów skanowania — zwracany przez `wyglad_limit()`. */
+export type WygladLimit = {
+  odstep_dni: number;
+  limit_miesiaca: number;
+  w_miesiacu: number;
+  ostatni_skan: string | null;
+  nastepny_od: string;
+  mozna: boolean;
+  powod: "limit_miesiaca" | "odstep" | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -733,6 +831,14 @@ export type Database = {
       > & { Row: MealEntry };
       activities: Tbl<Activity, "user_id" | "type">;
       ai_plan_requests: Tbl<AiPlanRequest, "user_id" | "input">;
+      wyglad_zgoda: Tbl<WygladZgoda, "user_id">;
+      wyglad_skany: Tbl<WygladSkan, "user_id">;
+      wyglad_zdjecia: Tbl<WygladZdjecie, "user_id" | "skan_id" | "ujecie" | "storage_path">;
+      wyglad_pomiary: Tbl<WygladPomiar, "user_id">;
+      wyglad_rutyny: Tbl<WygladRutyna, "user_id" | "klucz" | "nazwa" | "pora">;
+      wyglad_rutyna_log: Tbl<WygladRutynaLog, "user_id" | "rutyna_id">;
+      wyglad_protokoly: Tbl<WygladProtokol, "user_id" | "klucz">;
+      wyglad_produkty: Tbl<WygladProdukt, "user_id" | "nazwa">;
     };
     Views: {
       v_daily_nutrition: { Row: DailyNutrition; Relationships: [] };
@@ -761,6 +867,8 @@ export type Database = {
       has_pro: { Args: { p_user?: string }; Returns: boolean };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
+      /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
+      wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
       /** Tabele w public bez RLS. Pusta tablica to jedyny poprawny wynik. */
       tables_without_rls: { Args: Record<string, never>; Returns: string[] };
       /** Trwałe usunięcie własnego konta. Działa tylko na koncie wywołującego. */

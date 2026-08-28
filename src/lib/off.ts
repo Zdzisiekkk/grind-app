@@ -227,3 +227,15 @@ export async function searchOff(query: string, limit = 20): Promise<OffProduct[]
     };
   });
 }
+
+/**
+ * Jeden produkt po kodzie kreskowym.
+ *
+ * Osobno od `searchOff`, bo to zupełnie inne zapytanie: znamy dokładny numer,
+ * więc nie ma czego szukać ani czego rankingować — pytamy wprost o produkt
+ * i albo jest, albo go nie ma.
+ */
+export async function productByCode(code: string): Promise<OffProduct | null> {
+  const raw = await fetchDetails(code);
+  return raw ? normalize(raw) : null;
+}

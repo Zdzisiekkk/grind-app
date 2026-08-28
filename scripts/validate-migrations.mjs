@@ -1,35 +1,14 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { SUPABASE_STUB } from './supabase-stub.mjs';
 
 const MIG = new URL('../supabase/migrations', import.meta.url).pathname;
 const db = await new PGlite();
 
-// --- Stub środowiska Supabase ---
-await db.exec(`
-  create schema if not exists auth;
-  do $$ begin
-    if not exists (select 1 from pg_roles where rolname = 'authenticated') then
-      create role authenticated;
-    end if;
-    if not exists (select 1 from pg_roles where rolname = 'anon') then
-      create role anon;
-    end if;
-    if not exists (select 1 from pg_roles where rolname = 'service_role') then
-      create role service_role;
-    end if;
-  end $$;
-  create table if not exists auth.users (
-    id uuid primary key default gen_random_uuid(),
-    email text unique,
-    raw_user_meta_data jsonb default '{}'::jsonb,
-    created_at timestamptz default now()
-  );
-  create or replace function auth.uid() returns uuid language sql stable as $$
-    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-  $$;
-  grant usage on schema auth to authenticated;
-`);
+// --- Stub środowiska Supabase (wspólny z testami dostępu) ---
+await db.exec(SUPABASE_STUB);
+
 
 const files = readdirSync(MIG).filter(f => f.endsWith('.sql')).sort();
 let failed = false;

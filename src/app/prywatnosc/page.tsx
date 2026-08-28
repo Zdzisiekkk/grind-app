@@ -22,6 +22,10 @@ export default function PrivacyPage() {
             <strong>dane o zdrowiu</strong>: waga, wzrost, wiek, płeć, sen, ból, kontuzje,
             spożyte posiłki, treningi i aktywności,
           </li>
+          <li>
+            <strong>zdjęcia twarzy i sylwetki</strong>, jeżeli korzystasz z modułu „Wygląd” —
+            razem z ocenami i opisami, które model z nich wygenerował,
+          </li>
           <li>ustawienia aplikacji: cele, przypomnienia, strefa czasowa,</li>
           <li>
             przy subskrypcji: identyfikator klienta w Stripe i status płatności. Numeru
@@ -40,6 +44,37 @@ export default function PrivacyPage() {
           Przetwarzamy je wyłącznie na podstawie Twojej wyraźnej i odrębnej zgody, wyrażonej
           przy zakładaniu konta. Zgodę możesz wycofać w każdej chwili w ustawieniach profilu
           — wtedy usuwamy te dane, a reszta aplikacji działa dalej.
+        </p>
+      </Section>
+
+      <Section title="Zdjęcia w module „Wygląd”">
+        <p>
+          Moduł „Wygląd” jest dobrowolny i włącza się osobną zgodą, przy której potwierdzasz,
+          że masz ukończone 16 lat. Bez niej nie da się zapisać żadnego zdjęcia — pilnuje tego
+          sama baza danych, nie tylko ekran.
+        </p>
+        <ul className="list-disc pl-5">
+          <li>
+            Zdjęcia leżą w <strong>prywatnym magazynie</strong>. Nie istnieje adres, pod którym
+            dałoby się je otworzyć bez Twojego zalogowania; linki do podglądu są podpisywane
+            i wygasają po godzinie.
+          </li>
+          <li>
+            Przy każdym skanie zdjęcie jest wysyłane do <strong>Anthropic</strong>, żeby model
+            je opisał. Wysyłamy je wyłącznie w momencie, w którym sam uruchomisz skan.
+          </li>
+          <li>
+            Zdjęcia zostają <strong>bezterminowo</strong> — po to, żeby dało się porównać
+            wygląd sprzed miesięcy. Możesz je usunąć pojedynczo w każdej chwili, a wszystkie
+            znikają razem z kontem.
+          </li>
+          <li>
+            Trafiają też do eksportu danych, więc da się je pobrać i zabrać ze sobą.
+          </li>
+        </ul>
+        <p>
+          Ocena wyglądu <strong>nie jest poradą medyczną ani diagnozą dermatologiczną</strong>.
+          Przy niepokojącej zmianie skórnej idź do lekarza.
         </p>
       </Section>
 
@@ -70,17 +105,18 @@ export default function PrivacyPage() {
             <strong>Stripe</strong> — obsługa płatności; tylko dane rozliczeniowe.
           </li>
           <li>
-            <strong>Anthropic</strong> — model językowy trenera AI. Dane trafiają tam
-            wyłącznie wtedy, gdy sam uruchomisz analizę albo napiszesz do trenera, i tylko
-            w wersji płatnej.
+            <strong>Anthropic</strong> — model językowy trenera AI oraz oceny wyglądu. Dane
+            trafiają tam wyłącznie wtedy, gdy sam uruchomisz analizę, napiszesz do trenera albo
+            zrobisz skan, i tylko w wersji płatnej. W przypadku skanu jest to również zdjęcie.
           </li>
         </ul>
       </Section>
 
       <Section title="Jak długo je trzymamy">
         <p>
-          Do czasu usunięcia konta. Usunięcie jest natychmiastowe i nieodwracalne — kasujemy
-          wszystko, co do Ciebie należy, bez kopii „na wszelki wypadek”.
+          Do czasu usunięcia konta — dotyczy to także zdjęć z modułu „Wygląd”. Usunięcie jest
+          natychmiastowe i nieodwracalne: kasujemy wszystko, co do Ciebie należy, razem
+          z plikami w magazynie, bez kopii „na wszelki wypadek”.
         </p>
       </Section>
 

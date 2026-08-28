@@ -21,8 +21,31 @@ export function OfflineGate() {
   // Service worker jest potrzebny tylko po to, żeby apka OTWIERAŁA się bez
   // zasięgu. Za nieutracone zapisy odpowiada kolejka, więc brak wsparcia
   // (albo prywatne okno) nic nie psuje.
+  //
+  // W trybie deweloperskim workera NIE MA i mieć nie może. Trzyma on pliki
+  // z `/_next/static/` na zawsze, bo w gotowej aplikacji nazwa takiego pliku
+  // zawiera skrót jego treści — inna treść to inna nazwa. Turbopack podczas
+  // pracy nazywa je inaczej: ta sama nazwa, co chwilę nowa zawartość. Worker
+  // podawał wtedy wczorajszy kawałek kodu do dzisiejszej strony i przeglądarka
+  // wywalała się na module, którego już nie ma. Zainstalowanego wcześniej
+  // trzeba przy okazji wymieść, bo sam z siebie nie zniknie.
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker.getRegistrations().then(async (regs) => {
+        if (regs.length === 0) return;
+        await Promise.all(regs.map((r) => r.unregister()));
+        if (typeof caches !== "undefined") {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+        // Strona wciąż należy do starego workera aż do przeładowania.
+        window.location.reload();
+      });
+      return;
+    }
+
     navigator.serviceWorker.register("/sw.js").catch(() => {
       /* prywatne okno albo zablokowane — apka działa dalej, tylko online */
     });

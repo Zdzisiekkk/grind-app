@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Chip, EmptyState, Field, Input, SegmentedControl, Sheet, Spinner } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
+import { BarcodeSheet } from "@/components/diet/BarcodeSheet";
 import { addMealEntry, cacheOffProduct, ensureMeal } from "@/lib/diet";
 import type { Food, MealEntry, MealType, RecipeTotals } from "@/lib/database.types";
 import { portionGrams, recipeAsFood } from "@/lib/recipes";
@@ -64,6 +65,7 @@ export function AddFoodSheet({
   const [error, setError] = useState<string | null>(null);
   const [dishes, setDishes] = useState<Food[]>([]);
   const [recipes, setRecipes] = useState<RecipeTotals[]>([]);
+  const [skanerOtwarty, setSkanerOtwarty] = useState(false);
 
   /*
    * Gotowe dania.
@@ -205,13 +207,28 @@ export function AddFoodSheet({
             />
           ) : (
             <>
-              <Input
-                type="search"
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="np. twaróg, ryż, pierś z kurczaka…"
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="search"
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="np. twaróg, ryż, pierś z kurczaka…"
+                />
+                {/*
+                  Kod kreskowy obok wyszukiwarki, a nie w osobnej zakładce.
+                  Przy produkcie z opakowania to jest szybsza droga do tego
+                  samego celu, więc ma być widoczna dokładnie tam, gdzie
+                  człowiek i tak zaczyna szukać.
+                */}
+                <Button
+                  variant="secondary"
+                  onClick={() => setSkanerOtwarty(true)}
+                  aria-label="Skanuj kod kreskowy"
+                >
+                  Kod
+                </Button>
+              </div>
 
               {mine.length > 0 && (
                 <section>
@@ -267,6 +284,16 @@ export function AddFoodSheet({
           )}
         </div>
       )}
+
+      <BarcodeSheet
+        key={skanerOtwarty ? "skaner-otwarty" : "skaner-zamkniety"}
+        open={skanerOtwarty}
+        onClose={() => setSkanerOtwarty(false)}
+        onZnaleziono={(co) => {
+          setPicked(co);
+          setSkanerOtwarty(false);
+        }}
+      />
     </Sheet>
   );
 }

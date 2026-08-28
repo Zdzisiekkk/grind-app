@@ -740,6 +740,92 @@ check("po usunięciu konta znikają też jego dane",
   !Array.isArray(afterDelete) || afterDelete.length === 0, JSON.stringify(afterDelete).slice(0, 80));
 
 // 8. Sprzątanie
+console.log("\n  Kod kreskowy w diecie\n");
+
+// Suma kontrolna sprawdzana PRZED pytaniem do Open Food Facts — odczyt
+// z wygniecionej folii bywa o jedną cyfrę obok.
+const zlyKod = await fetch(`${APP}/api/food/kod?kod=5900541000101`, { headers: { cookie } });
+check("kod z błędną sumą kontrolną odrzucony bez pytania OFF", zlyKod.status === 400,
+  `status ${zlyKod.status}`);
+
+const bezSesji = await fetch(`${APP}/api/food/kod?kod=3017620422003`, { redirect: "manual" });
+check("bez sesji kod nie działa jako otwarty pośrednik do OFF",
+  bezSesji.status === 307 || bezSesji.status === 401, `status ${bezSesji.status}`);
+
+// Nutella — jeden z najlepiej opisanych produktów w Open Food Facts.
+const nutella = await fetch(`${APP}/api/food/kod?kod=3017620422003`, { headers: { cookie } });
+const nutellaBody = await nutella.json().catch(() => ({}));
+const nazwaZKodu = nutellaBody?.food?.name ?? nutellaBody?.product?.name ?? "";
+check("prawdziwy kod znajduje produkt", nutella.ok && Boolean(nazwaZKodu),
+  nutella.ok ? nazwaZKodu : (nutellaBody?.error ?? `status ${nutella.status}`));
+check("produkt z kodu ma kalorie, czyli da się go wpisać do dziennika",
+  Number(nutellaBody?.food?.kcal_100g ?? nutellaBody?.product?.kcal_100g) > 0);
+
+// UPC-A z importu: OFF trzyma je z wiodącym zerem, więc oba zapisy tego samego
+// produktu muszą prowadzić do jednego numeru.
+const upc = await fetch(`${APP}/api/food/kod?kod=036000291452`, { headers: { cookie } });
+const upcBody = await upc.json().catch(() => ({}));
+check("UPC-A rozszerzony do EAN-13 przed zapytaniem", upcBody?.kod === "0036000291452",
+  String(upcBody?.kod));
+
+// Nieznany, ale formalnie poprawny kod: uczciwe 404 z numerem do przepisania.
+const nieznany = await fetch(`${APP}/api/food/kod?kod=5900000000008`, { headers: { cookie } });
+const nieznanyBody = await nieznany.json().catch(() => ({}));
+check("nieznany kod daje czytelny brak, nie awarię",
+  nieznany.status === 404 || nieznany.status === 200, `status ${nieznany.status}`);
+if (nieznany.status === 404) {
+  check("brak wyniku oddaje numer, żeby dało się dopisać produkt ręcznie",
+    nieznanyBody?.kod === "5900000000008", String(nieznanyBody?.kod));
+}
+
+console.log("\n  Moduł Wygląd\n");
+
+const wygladStrona = await fetch(APP + "/wyglad", { headers: { cookie }, redirect: "manual" });
+check("/wyglad otwiera się po zalogowaniu", wygladStrona.status === 200,
+  `status ${wygladStrona.status}`);
+const wygladHtml = wygladStrona.status === 200 ? await wygladStrona.text() : "";
+check("nowe konto widzi najpierw ekran zgody, nie skan",
+  wygladHtml.includes("16 lat"), "brak ekranu zgody");
+
+// Bramka Pro. Konto testowe nie ma subskrypcji, więc skan ma się nie odbyć —
+// i to zanim jakiekolwiek zdjęcie gdziekolwiek poleci.
+const skanBezPro = await fetch(`${APP}/api/ai/wyglad/start`, { method: "POST", headers: { cookie } });
+const skanBody = await skanBezPro.json().catch(() => ({}));
+check("darmowe konto nie uruchomi skanu na cudzy rachunek",
+  skanBezPro.status === 402 && skanBody?.code === "needs_subscription",
+  `status ${skanBezPro.status} ${skanBody?.code ?? ""}`);
+
+// Zgoda 16+ jest warunkiem zapisu w BAZIE, nie tylko ekranem — próbujemy ją ominąć.
+const skanBezZgody = await fetch(`${SB}/rest/v1/wyglad_skany`, {
+  method: "POST", headers: { ...H, Prefer: "return=representation" },
+  body: JSON.stringify({ user_id: li.user.id, ocena_ogolna: 99 }),
+});
+check("bez zgody nie da się zapisać skanu z pominięciem aplikacji",
+  skanBezZgody.status === 403 || skanBezZgody.status === 401,
+  `status ${skanBezZgody.status}`);
+
+// Kubełek ze zdjęciami nie może być publiczny ani wystawiony na listowanie.
+const kubelek = await fetch(`${SB}/storage/v1/object/public/wyglad/`, { redirect: "manual" });
+check("zdjęcia nie są dostępne bez podpisanego linku",
+  kubelek.status >= 400, `status ${kubelek.status}`);
+
+const limitStan = await (await fetch(`${SB}/rest/v1/rpc/wyglad_limit`, {
+  method: "POST", headers: H, body: "{}",
+})).json();
+check("limity skanowania są czytelne dla ekranu",
+  typeof limitStan?.limit_miesiaca === "number" && typeof limitStan?.mozna === "boolean",
+  JSON.stringify(limitStan));
+
+const cudzeSkany = await (await fetch(`${SB}/rest/v1/wyglad_skany?select=id`, { headers: H })).json();
+check("widać wyłącznie własne skany", Array.isArray(cudzeSkany) && cudzeSkany.length === 0,
+  `wierszy: ${Array.isArray(cudzeSkany) ? cudzeSkany.length : "?"}`);
+
+const prywatnoscOZdjeciach = await (await fetch(APP + "/prywatnosc")).text();
+check("polityka prywatności mówi o zdjęciach twarzy",
+  prywatnoscOZdjeciach.includes("Zdjęcia w module") ||
+    prywatnoscOZdjeciach.includes("zdjęcia twarzy"));
+
+
 // Konto testowe kasuje się SAMO, tą samą funkcją co prawdziwy użytkownik.
 // Dzięki temu test nie potrzebuje klucza serwisowego Supabase i można go
 // bezpiecznie uruchamiać z GitHub Actions — a przy okazji sprzątanie jest
