@@ -25,6 +25,23 @@ const REF = new URL(SB).hostname.split(".")[0];
 const EMAIL = `e2e-${Date.now()}@example.com`;
 const PASS = "TestoweHaslo123";
 
+/*
+ * „Dzisiaj" liczone w strefie aplikacji, nie w UTC.
+ *
+ * Aplikacja od migracji stref czasowych rozstrzyga datę w Europe/Warsaw.
+ * Test liczący ją przez toISOString() trafiał w inny dzień między północą
+ * a drugą w nocy — i wtedy wpis „ból dzisiaj" nie pokazywał się na pulpicie,
+ * bo pulpit szukał go pod jutrzejszą datą. To był błąd testu, nie aplikacji,
+ * ale wyglądał dokładnie jak ten drugi.
+ */
+const STREFA = process.env.NEXT_PUBLIC_APP_TIMEZONE || "Europe/Warsaw";
+const dzisiaj = () => {
+  const cz = new Intl.DateTimeFormat("en-CA", {
+    timeZone: STREFA, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  return cz; // en-CA daje od razu RRRR-MM-DD
+};
+
 const ok = (b) => (b ? "✅" : "❌");
 let fails = 0;
 const check = (label, cond, extra = "") => { if (!cond) fails++; console.log(`  ${ok(cond)} ${label}${extra ? " — " + extra : ""}`); };
@@ -128,12 +145,12 @@ check("kopia ma tyle dni co szablon", days.length === tplDays.length && days.len
 
 const ex = await (await fetch(`${SB}/rest/v1/workout_exercises?select=id,catalog_exercise_id&workout_day_id=eq.${days[0].id}&limit=1`, { headers: H })).json();
 const sess = await (await fetch(`${SB}/rest/v1/workout_sessions`, { method:"POST", headers:{...H, Prefer:"return=representation"},
-  body: JSON.stringify({ user_id: li.user.id, workout_day_id: days[0].id, date: new Date().toISOString().slice(0,10) }) })).json();
+  body: JSON.stringify({ user_id: li.user.id, workout_day_id: days[0].id, date: dzisiaj() }) })).json();
 check("start sesji treningowej", Array.isArray(sess) && sess[0]?.id);
 
 const log = await (await fetch(`${SB}/rest/v1/workout_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
   body: JSON.stringify({ user_id: li.user.id, session_id: sess[0].id, workout_exercise_id: ex[0].id,
-    catalog_exercise_id: ex[0].catalog_exercise_id, exercise_name: "test", date: new Date().toISOString().slice(0,10),
+    catalog_exercise_id: ex[0].catalog_exercise_id, exercise_name: "test", date: dzisiaj(),
     set_number: 1, weight_kg: 60, reps: 8 }) })).json();
 check("zapis serii 60 kg x 8", Array.isArray(log) && log[0]?.id);
 
@@ -143,7 +160,7 @@ const inj = await (await fetch(`${SB}/rest/v1/injuries`, { method:"POST", header
 check("dodanie kontuzji", Array.isArray(inj) && inj[0]?.id);
 
 const pain = await (await fetch(`${SB}/rest/v1/pain_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
-  body: JSON.stringify({ user_id: li.user.id, injury_id: inj[0].id, date: new Date().toISOString().slice(0,10), level: 4 }) })).json();
+  body: JSON.stringify({ user_id: li.user.id, injury_id: inj[0].id, date: dzisiaj(), level: 4 }) })).json();
 check("ocena bólu 4/10", Array.isArray(pain) && pain[0]?.level === 4);
 
 const kontuzje = await fetch(APP + "/kontuzje", { headers: { cookie }, redirect: "manual" });
@@ -158,12 +175,12 @@ const habit = await (await fetch(`${SB}/rest/v1/habits`, { method:"POST", header
 check("dodanie nawyku", Array.isArray(habit) && habit[0]?.id);
 
 const hlog = await (await fetch(`${SB}/rest/v1/habit_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
-  body: JSON.stringify({ user_id: li.user.id, habit_id: habit[0].id, date: new Date().toISOString().slice(0,10), count: 2 }) })).json();
+  body: JSON.stringify({ user_id: li.user.id, habit_id: habit[0].id, date: dzisiaj(), count: 2 }) })).json();
 check("odhaczenie nawyku 2/2", Array.isArray(hlog) && hlog[0]?.count === 2);
 
 for (const ml of [500, 330]) {
   await fetch(`${SB}/rest/v1/water_logs`, { method:"POST", headers:H,
-    body: JSON.stringify({ user_id: li.user.id, date: new Date().toISOString().slice(0,10), ml }) });
+    body: JSON.stringify({ user_id: li.user.id, date: dzisiaj(), ml }) });
 }
 const wsum = await (await fetch(`${SB}/rest/v1/v_daily_water?select=ml`, { headers: H })).json();
 check("suma wody 830 ml", wsum?.[0]?.ml === 830, `ml=${wsum?.[0]?.ml}`);
@@ -184,7 +201,7 @@ check("dodanie listy zadań", Array.isArray(list) && list[0]?.id);
 
 const todo = await (await fetch(`${SB}/rest/v1/todos`, { method:"POST", headers:{...H, Prefer:"return=representation"},
   body: JSON.stringify({ user_id: li.user.id, list_id: list[0].id, title: "Opaska na nadgarstek", priority: 1,
-    due_date: new Date().toISOString().slice(0,10) }) })).json();
+    due_date: dzisiaj() }) })).json();
 check("dodanie zadania", Array.isArray(todo) && todo[0]?.id);
 
 const doneTodo = await (await fetch(`${SB}/rest/v1/todos?id=eq.${todo[0].id}`, { method:"PATCH", headers:{...H, Prefer:"return=representation"},
@@ -197,7 +214,8 @@ check("/zadania pokazuje listę", zadania.status === 200 && zadaniaText.includes
   zadania.status !== 200 ? `status ${zadania.status}` : "");
 
 // 7e. Sen i Health Score
-const nightDate = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+const nightDate = new Date(new Date(dzisiaj() + "T00:00:00Z").getTime() - 864e5)
+  .toISOString().slice(0, 10);
 const night = await (await fetch(`${SB}/rest/v1/sleep_logs`, { method:"POST", headers:{...H, Prefer:"return=representation"},
   body: JSON.stringify({ user_id: li.user.id, date: nightDate, bedtime: "23:30", wake_time: "07:00",
     fell_asleep_min: 20, awakenings: 1, awake_min: 15, quality: 4, morning_energy: 4,
@@ -541,7 +559,7 @@ check("wyszukiwarka produktów zwraca wyniki",
 check("wyszukiwarka odpowiada poniżej 5 s", foodMs < 5000, `${foodMs} ms`);
 
 const summ = await (await fetch(`${SB}/rest/v1/rpc/period_summary`, { method:"POST", headers:H,
-  body: JSON.stringify({ p_from: new Date(Date.now()-7*864e5).toISOString().slice(0,10), p_to: new Date().toISOString().slice(0,10) }) })).json();
+  body: JSON.stringify({ p_from: new Date(Date.now()-7*864e5).toISOString().slice(0,10), p_to: dzisiaj() }) })).json();
 check("podsumowanie liczy objętość 480 kg", summ?.volume_kg === 480, `volume_kg=${summ?.volume_kg}`);
 check("podsumowanie zna wodę i nawyki",
   summ?.avg_water_ml === 830 && summ?.habit_days_done === 1,
@@ -731,15 +749,6 @@ const eksportAnon = await fetch(APP + "/api/dane/eksport", { redirect: "manual" 
 check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200,
   `status ${eksportAnon.status}`);
 
-// 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
-const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
-check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
-
-const afterDelete = await (await fetch(`${SB}/rest/v1/workout_logs?select=id`, { headers: H })).json();
-check("po usunięciu konta znikają też jego dane",
-  !Array.isArray(afterDelete) || afterDelete.length === 0, JSON.stringify(afterDelete).slice(0, 80));
-
-// 8. Sprzątanie
 console.log("\n  Kod kreskowy w diecie\n");
 
 // Suma kontrolna sprawdzana PRZED pytaniem do Open Food Facts — odczyt
@@ -785,7 +794,7 @@ check("/wyglad otwiera się po zalogowaniu", wygladStrona.status === 200,
   `status ${wygladStrona.status}`);
 const wygladHtml = wygladStrona.status === 200 ? await wygladStrona.text() : "";
 check("nowe konto widzi najpierw ekran zgody, nie skan",
-  wygladHtml.includes("16 lat"), "brak ekranu zgody");
+  wygladHtml.includes("16 lat"));
 
 // Bramka Pro. Konto testowe nie ma subskrypcji, więc skan ma się nie odbyć —
 // i to zanim jakiekolwiek zdjęcie gdziekolwiek poleci.
@@ -825,7 +834,15 @@ check("polityka prywatności mówi o zdjęciach twarzy",
   prywatnoscOZdjeciach.includes("Zdjęcia w module") ||
     prywatnoscOZdjeciach.includes("zdjęcia twarzy"));
 
+// 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
+const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
+check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
 
+const afterDelete = await (await fetch(`${SB}/rest/v1/workout_logs?select=id`, { headers: H })).json();
+check("po usunięciu konta znikają też jego dane",
+  !Array.isArray(afterDelete) || afterDelete.length === 0, JSON.stringify(afterDelete).slice(0, 80));
+
+// 8. Sprzątanie
 // Konto testowe kasuje się SAMO, tą samą funkcją co prawdziwy użytkownik.
 // Dzięki temu test nie potrzebuje klucza serwisowego Supabase i można go
 // bezpiecznie uruchamiać z GitHub Actions — a przy okazji sprzątanie jest
