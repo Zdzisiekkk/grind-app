@@ -95,8 +95,14 @@ check("jest plan bez sprzętu", (tpls || []).some(p => p.equipment === "home"));
 
 // Dalsza część testu udaje, że kreator został przeszedł — resztę aplikacji
 // sprawdzamy w stanie „konto już używane".
-await fetch(`${SB}/rest/v1/profiles?id=eq.${li.user.id}`, { method: "PATCH", headers: H,
+const konczyKreator = await fetch(`${SB}/rest/v1/profiles?id=eq.${li.user.id}`, {
+  method: "PATCH", headers: H,
   body: JSON.stringify({ onboarded_at: new Date().toISOString(), weekly_workouts: 4 }) });
+// Osobne sprawdzenie, bo cichy błąd TUTAJ zostawia nowe konto uwięzione
+// w kreatorze, a wszystkie kolejne testy pokazują wtedy tylko „status 307"
+// i trzeba zgadywać, co się właściwie stało.
+check("nowe konto może domknąć kreator", konczyKreator.ok,
+  konczyKreator.ok ? "" : JSON.stringify(await konczyKreator.json().catch(() => null)).slice(0, 160));
 
 for (const [path, expect] of [["/","Dziś"],["/trening","Trening"],["/dieta","Dieta"],["/progres","Postępy"],["/plan","Plany"],["/cwiczenia","Katalog"],["/kalendarz","Kalendarz"],["/profil","Profil"],["/aktywnosci","Aktywno"],["/sen","Sen"]]) {
   const r = await fetch(APP + path, { headers: { cookie }, redirect: "manual" });
@@ -272,29 +278,39 @@ check("/subskrypcja mówi, co jest darmowe, a co nie",
   sub.status !== 200 ? `status ${sub.status}` : "");
 
 // 7g. Zapis produktu z Open Food Facts do wspólnego cache'u
-// Regresja: indeks na off_id był częściowy, więc ON CONFLICT nie miał go jak
-// dopasować i KAŻDE dodanie produktu z OFF do posiłku kończyło się błędem.
+// Dwie regresje w historii tego kawałka: najpierw częściowy indeks na off_id,
+// przez który ON CONFLICT nie miał czego dopasować, a potem otwarty zapis do
+// wierszy wspólnych. Dziś jedyną drogą jest funkcja cache_off_product.
 const offCode = `test-${Date.now()}`;
-const cacheOff = () => fetch(`${SB}/rest/v1/foods?on_conflict=off_id`, {
-  method: "POST",
-  headers: { ...H, Prefer: "resolution=merge-duplicates,return=representation" },
-  body: JSON.stringify({ user_id: null, source: "off", off_id: offCode,
-    name: "Masło testowe", kcal_100g: 750, protein_100g: 0.5, carbs_100g: 0.5, fat_100g: 82 }),
+const cacheOff = (kcal) => fetch(`${SB}/rest/v1/rpc/cache_off_product`, {
+  method: "POST", headers: H,
+  body: JSON.stringify({ p_off_id: offCode, p_name: "Masło testowe", p_kcal_100g: kcal,
+    p_protein_100g: 0.5, p_carbs_100g: 0.5, p_fat_100g: 82 }),
 });
 
-const off1 = await cacheOff();
+const off1 = await cacheOff(750);
 const off1Body = await off1.json().catch(() => null);
-check("produkt z OFF zapisuje się do cache'u", off1.ok,
+check("produkt z OFF zapisuje się do cache'u", off1.ok && Boolean(off1Body?.id),
   off1.ok ? "" : JSON.stringify(off1Body).slice(0, 160));
 
 // Drugie dodanie tego samego kodu — tak wygląda wpisanie tego produktu jutro.
-const off2 = await cacheOff();
+const off2 = await cacheOff(750);
 check("ten sam produkt drugi raz nie wywala błędu", off2.ok,
   off2.ok ? "" : JSON.stringify(await off2.json().catch(() => null)).slice(0, 160));
 
 const offRows = await (await fetch(`${SB}/rest/v1/foods?select=id&off_id=eq.${offCode}`, { headers: H })).json();
 check("w cache'u zostaje jeden wiersz, nie dwa",
   Array.isArray(offRows) && offRows.length === 1, `wierszy: ${offRows?.length}`);
+
+// Bezpośredni zapis do wiersza wspólnego musi się odbić — to była realna
+// dziura: jedna osoba mogła popsuć liczenie kalorii wszystkim pozostałym.
+const naSkroty = await fetch(`${SB}/rest/v1/foods`, {
+  method: "POST", headers: { ...H, Prefer: "return=representation" },
+  body: JSON.stringify({ user_id: null, source: "off", off_id: `${offCode}-x`,
+    name: "Na skróty", kcal_100g: 9000 }),
+});
+check("nie da się dopisać produktu wspólnego z pominięciem funkcji",
+  !naSkroty.ok, `status ${naSkroty.status}`);
 
 // 7h. Prawa użytkownika — muszą działać, a nie być obietnicą w regulaminie
 const regulamin = await fetch(APP + "/regulamin", { redirect: "manual" });
