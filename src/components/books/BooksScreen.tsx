@@ -209,7 +209,13 @@ export function BooksScreen({
       cover_url: found.coverUrl,
     });
     setScanning(false);
-    setError(null);
+    // Bez tytułu znaczy „zeskanowane, ale nieznane" — mówimy o tym wprost,
+    // zamiast zostawiać pusty formularz bez wyjaśnienia.
+    setError(
+      found.title
+        ? null
+        : "Nie znaleźliśmy tej książki w bazach — wpisz tytuł, numer ISBN już zapamiętaliśmy.",
+    );
     setFormOpen(true);
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Alert, Button, Card, Chip, Field, Input, Stat } from "@/components/ui";
+import { Alert, Button, Card, Chip, Field, NumberField, Stat } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { clsx } from "@/lib/clsx";
 import { finishOnboarding, skipOnboarding, type OnboardingInput } from "@/app/start/actions";
@@ -225,26 +225,30 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
 
               <div className="grid grid-cols-3 gap-2">
                 <Field label="Rok urodzenia">
-                  <Input
-                    inputMode="numeric"
-                    value={birthYear ?? ""}
-                    onChange={(e) => setBirthYear(Number(e.target.value) || null)}
+                  <NumberField
+                    value={birthYear}
+                    onChange={setBirthYear}
+                    min={1920}
+                    max={new Date().getFullYear()}
                     placeholder="1998"
                   />
                 </Field>
                 <Field label="Wzrost (cm)">
-                  <Input
-                    inputMode="numeric"
-                    value={heightCm ?? ""}
-                    onChange={(e) => setHeightCm(Number(e.target.value) || null)}
+                  <NumberField
+                    value={heightCm}
+                    onChange={setHeightCm}
+                    min={100}
+                    max={250}
                     placeholder="180"
                   />
                 </Field>
                 <Field label="Waga (kg)">
-                  <Input
-                    inputMode="decimal"
-                    value={weightKg ?? ""}
-                    onChange={(e) => setWeightKg(Number(e.target.value.replace(",", ".")) || null)}
+                  <NumberField
+                    value={weightKg}
+                    onChange={setWeightKg}
+                    min={30}
+                    max={300}
+                    decimals={1}
                     placeholder="80"
                   />
                 </Field>

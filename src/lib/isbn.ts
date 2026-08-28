@@ -122,3 +122,89 @@ export function bookFromOpenLibrary(isbn: string, payload: unknown): IsbnBook | 
     coverUrl: cover ? (str(cover.medium) ?? str(cover.large) ?? str(cover.small)) : null,
   };
 }
+
+/**
+ * Rekord wydania z /isbn/{isbn}.json.
+ *
+ * Open Library ma dwa źródła o różnym pokryciu: „jscmd=data" bywa puste tam,
+ * gdzie surowy rekord wydania istnieje. Nazwiska autorów są tu tylko kluczami,
+ * więc dostajemy je osobno — kto je pobiera, decyduje trasa.
+ */
+export function bookFromOpenLibraryEdition(
+  isbn: string,
+  payload: unknown,
+  authorNames: string[] = [],
+): IsbnBook | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const entry = payload as Record<string, unknown>;
+
+  const title = str(entry.title);
+  if (!title) return null;
+
+  const subtitle = str(entry.subtitle);
+  const rawPages = entry.number_of_pages;
+  const pages =
+    typeof rawPages === "number" && Number.isInteger(rawPages) && rawPages > 0 && rawPages <= 10000
+      ? rawPages
+      : null;
+
+  const covers = Array.isArray(entry.covers) ? entry.covers : [];
+  const coverId = covers.find((c) => typeof c === "number" && c > 0);
+
+  return {
+    isbn,
+    title: subtitle ? `${title}. ${subtitle}` : title,
+    author: authorNames.length ? authorNames.join(", ") : null,
+    pages,
+    coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
+  };
+}
+
+/**
+ * Odpowiedź Google Books.
+ *
+ * Sięgamy tu po polskie wydania, których Open Library po prostu nie ma.
+ * Adresy okładek przychodzą czasem po http — podmieniamy na https, bo strona
+ * chodzi po https i przeglądarka zablokowałaby taki obrazek.
+ */
+export function bookFromGoogleBooks(isbn: string, payload: unknown): IsbnBook | null {
+  if (typeof payload !== "object" || payload === null) return null;
+
+  const items = (payload as Record<string, unknown>).items;
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  const info =
+    typeof items[0] === "object" && items[0] !== null
+      ? ((items[0] as Record<string, unknown>).volumeInfo as Record<string, unknown> | undefined)
+      : undefined;
+  if (!info) return null;
+
+  const title = str(info.title);
+  if (!title) return null;
+
+  const subtitle = str(info.subtitle);
+
+  const authors = Array.isArray(info.authors)
+    ? info.authors.map(str).filter((n): n is string => n !== null)
+    : [];
+
+  const rawPages = info.pageCount;
+  const pages =
+    typeof rawPages === "number" && Number.isInteger(rawPages) && rawPages > 0 && rawPages <= 10000
+      ? rawPages
+      : null;
+
+  const links =
+    typeof info.imageLinks === "object" && info.imageLinks !== null
+      ? (info.imageLinks as Record<string, unknown>)
+      : null;
+  const rawCover = links ? (str(links.thumbnail) ?? str(links.smallThumbnail)) : null;
+
+  return {
+    isbn,
+    title: subtitle ? `${title}. ${subtitle}` : title,
+    author: authors.length ? authors.join(", ") : null,
+    pages,
+    coverUrl: rawCover ? rawCover.replace(/^http:\/\//, "https://") : null,
+  };
+}

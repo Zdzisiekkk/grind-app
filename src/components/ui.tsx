@@ -349,6 +349,84 @@ export function Alert({
   );
 }
 
+/* ------------------------------ Pole liczbowe ------------------------------ */
+
+/**
+ * Pole na liczbę, z którego da się wymazać zawartość.
+ *
+ * Naiwne `onChange={e => set(Number(e.target.value) || 60)}` wygląda niewinnie,
+ * a uniemożliwia wpisanie czegokolwiek: skasowanie treści daje pusty string,
+ * Number("") to 0, a 0 jest fałszywe — więc w polu natychmiast ląduje z
+ * powrotem 60. Człowiek widzi wartość, której nie potrafi usunąć.
+ *
+ * Dlatego w trakcie pisania trzymamy dokładnie to, co zostało wpisane (draft),
+ * a na liczbę przeliczamy dopiero przy wyjściu z pola albo po Enterze. To ten
+ * sam mechanizm, co w NumberStepperze przy wadze ciała.
+ */
+export function NumberField({
+  value,
+  onChange,
+  min,
+  max,
+  decimals = 0,
+  fallback = null,
+  className,
+  ...rest
+}: {
+  value: number | null;
+  onChange: (value: number | null) => void;
+  min?: number;
+  max?: number;
+  /** Miejsca po przecinku. 0 = liczba całkowita. */
+  decimals?: number;
+  /** Co wstawić, gdy pole zostanie puste. null = wolno zostawić puste. */
+  fallback?: number | null;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type">) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  function commit() {
+    if (draft === null) return;
+
+    const text = draft.trim().replace(",", ".");
+    setDraft(null);
+
+    if (text === "") {
+      onChange(fallback);
+      return;
+    }
+
+    const parsed = Number(text);
+    if (!Number.isFinite(parsed)) {
+      onChange(fallback);
+      return;
+    }
+
+    const factor = 10 ** decimals;
+    let next = Math.round(parsed * factor) / factor;
+    if (min !== undefined) next = Math.max(min, next);
+    if (max !== undefined) next = Math.min(max, next);
+    onChange(next);
+  }
+
+  return (
+    <Input
+      {...rest}
+      type="text"
+      inputMode={decimals > 0 ? "decimal" : "numeric"}
+      className={className}
+      value={draft ?? (value ?? "")}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit();
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 /* ---------------------------------- Toast --------------------------------- */
 
 /**

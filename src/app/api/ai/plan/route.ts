@@ -9,6 +9,9 @@ export const maxDuration = 300;
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
 
+/** Wspólny z trenerem dzienny limit wywołań modelu na konto. */
+const DAILY_LIMIT = 10;
+
 const SYSTEM = `Jesteś doświadczonym trenerem przygotowania motorycznego. Układasz plany treningowe po polsku.
 
 Zasady, których nie łamiesz:
@@ -39,6 +42,30 @@ export async function POST(request: Request) {
         code: "missing_api_key",
       },
       { status: 503 },
+    );
+  }
+
+  // Układanie planu przez model kosztuje realne pieniądze na koncie Anthropic,
+  // a aplikacja jest publiczna. Bez tej bramki każde świeżo założone konto
+  // generowało plany na cudzy rachunek — sprawdzone, tak właśnie było.
+  const { data: pro } = await supabase.rpc("has_pro", {});
+  if (!pro) {
+    return NextResponse.json(
+      { error: "Układanie planu przez AI jest częścią wersji płatnej.", code: "needs_subscription" },
+      { status: 402 },
+    );
+  }
+
+  // Ten sam dzienny licznik, co u trenera — jedno konto nie wyczerpie budżetu
+  // w kwadrans, nawet mając subskrypcję.
+  const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: `Dzienny limit ${DAILY_LIMIT} zapytań do AI został wyczerpany. Wróć jutro.`,
+        code: "daily_limit",
+      },
+      { status: 429 },
     );
   }
 

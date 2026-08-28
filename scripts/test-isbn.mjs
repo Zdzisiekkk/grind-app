@@ -7,8 +7,8 @@
  *
  * Uruchom: npm run test:isbn
  */
-import { bookFromOpenLibrary, cleanIsbn, looksLikeBookBarcode, normalizeIsbn }
-  from "../src/lib/isbn.ts";
+import { bookFromGoogleBooks, bookFromOpenLibrary, bookFromOpenLibraryEdition, cleanIsbn,
+  looksLikeBookBarcode, normalizeIsbn } from "../src/lib/isbn.ts";
 
 let fails = 0;
 const check = (label, cond, extra = "") => {
@@ -100,6 +100,35 @@ check("absurdalna liczba stron pomijana",
   bookFromOpenLibrary("9780735211292", {
     "ISBN:9780735211292": { title: "T", number_of_pages: 99999 },
   }).pages === null);
+
+console.log("\n  Zapasowe źródła\n");
+
+const wydanie = bookFromOpenLibraryEdition("9788328302341", {
+  title: "Czysty kod", number_of_pages: 424, covers: [8783963],
+}, ["Robert C. Martin"]);
+check("rekord wydania czytany, gdy jscmd=data milczy",
+  wydanie.title === "Czysty kod" && wydanie.pages === 424 && wydanie.author === "Robert C. Martin",
+  JSON.stringify(wydanie));
+check("okładka składana z identyfikatora",
+  wydanie.coverUrl === "https://covers.openlibrary.org/b/id/8783963-M.jpg", wydanie.coverUrl);
+check("podtytuł doklejany do tytułu",
+  bookFromOpenLibraryEdition("9788328302341",
+    { title: "Czysty kod", subtitle: "Podręcznik" }, []).title === "Czysty kod. Podręcznik");
+
+const gb = bookFromGoogleBooks("9788328302341", { items: [{ volumeInfo: {
+  title: "Czysty kod", authors: ["Robert C. Martin"], pageCount: 424,
+  imageLinks: { thumbnail: "http://books.google.com/x.jpg" },
+}}]});
+check("Google Books czyta tytuł, autora i strony",
+  gb.title === "Czysty kod" && gb.author === "Robert C. Martin" && gb.pages === 424,
+  JSON.stringify(gb));
+// Strona chodzi po https — obrazek po http zostałby zablokowany.
+check("adres okładki podnoszony do https",
+  gb.coverUrl === "https://books.google.com/x.jpg", gb.coverUrl);
+check("pusta lista wyników daje null",
+  bookFromGoogleBooks("9788328302341", { totalItems: 0, items: [] }) === null);
+check("odpowiedź z błędem limitu daje null",
+  bookFromGoogleBooks("9788328302341", { error: { code: 429 } }) === null);
 
 console.log(fails ? `\n  BŁĘDÓW: ${fails}\n` : "\n  WSZYSTKO PRZESZŁO\n");
 process.exit(fails ? 1 : 0);

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, Chip, Field, Input, SegmentedControl, Select, Sheet, Spinner, Textarea } from "@/components/ui";
+import { Alert, Button, Chip, Field, NumberField, SegmentedControl, Select, Sheet, Spinner, Textarea } from "@/components/ui";
 import { EQUIPMENT_OPTIONS, type AiPlan, type PlanRequest } from "@/lib/ai/planSchema";
 import { DAY_TYPE_LABEL } from "@/lib/constants";
 import { clsx } from "@/lib/clsx";
@@ -44,11 +44,20 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
+        // Bez tego wygasła sesja kończy się przekierowaniem na stronę
+        // logowania, a jej HTML wywala JSON.parse — i awaria uwierzytelnienia
+        // udaje brak internetu.
+        redirect: "manual",
       });
-      const json = await res.json();
 
-      if (!res.ok) {
-        setError(json.error ?? "Nie udało się ułożyć planu.");
+      // Odpowiedź nie zawsze jest JSON-em: przerwane wdrożenie albo limit
+      // czasu funkcji oddają stronę błędu Vercela. Wcześniej każdy taki
+      // przypadek pokazywał „brak połączenia", co kierowało szukanie w złą
+      // stronę — teraz mówimy, co się naprawdę stało.
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json) {
+        setError(json?.error ?? serverProblem(res.status));
         setStage("form");
         return;
       }
@@ -57,7 +66,7 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
       setRequestId(json.requestId);
       setStage("preview");
     } catch {
-      setError("Brak połączenia z serwerem.");
+      setError("Brak połączenia z internetem. Sprawdź zasięg i spróbuj ponownie.");
       setStage("form");
     }
   }
@@ -152,10 +161,12 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
               </Select>
             </Field>
             <Field label="Czas sesji (min)">
-              <Input
-                inputMode="numeric"
+              <NumberField
                 value={form.session_minutes}
-                onChange={(e) => upd({ session_minutes: Number(e.target.value) || 60 })}
+                onChange={(v) => upd({ session_minutes: v ?? 60 })}
+                min={15}
+                max={240}
+                fallback={60}
               />
             </Field>
           </div>
@@ -254,4 +265,24 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
       )}
     </Sheet>
   );
+}
+
+/**
+ * Komunikat dla odpowiedzi, która nie była JSON-em.
+ *
+ * Status mówi więcej niż „coś poszło nie tak": inaczej reaguje się na wygasłą
+ * sesję, inaczej na trwające wdrożenie, a inaczej na plan, który liczył się
+ * zbyt długo.
+ */
+function serverProblem(status: number): string {
+  if (status === 0 || status === 401 || status === 403 || (status >= 300 && status < 400)) {
+    return "Twoja sesja wygasła. Odśwież stronę i zaloguj się ponownie.";
+  }
+  if (status === 504 || status === 408) {
+    return "Układanie planu trwało zbyt długo. Spróbuj ponownie — zwykle udaje się za drugim razem.";
+  }
+  if (status >= 500) {
+    return "Serwer chwilowo nie odpowiada. Jeśli trwa wdrożenie nowej wersji, poczekaj minutę.";
+  }
+  return `Nie udało się ułożyć planu (błąd ${status}).`;
 }

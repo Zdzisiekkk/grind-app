@@ -74,6 +74,14 @@ export function IsbnScanner({
         const body = await res.json();
 
         if (!res.ok) {
+          // Brak w bazach to nie porażka skanera: kod odczytaliśmy poprawnie,
+          // tylko żadne źródło nie zna tej książki. Otwieramy formularz
+          // z zapamiętanym numerem, żeby został do wpisania sam tytuł —
+          // dobijanie się do zamkniętych drzwi byłoby tu bez sensu.
+          if (res.status === 404) {
+            onFound({ isbn, title: "", author: null, pages: null, coverUrl: null });
+            return;
+          }
           setStatus("idle");
           setError(body?.error ?? "Nie udało się sprawdzić numeru.");
           return;

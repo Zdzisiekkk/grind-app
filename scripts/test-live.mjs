@@ -354,8 +354,30 @@ check("ISBN z błędną sumą kontrolną odrzucony przed zapytaniem",
   isbnZly.status === 400, `status ${isbnZly.status}`);
 
 const isbnBrak = await fetch(APP + "/api/ksiazki/isbn?isbn=9790000000001", { headers: { cookie } });
+const isbnBrakBody = await isbnBrak.json().catch(() => null);
 check("nieznany numer daje czytelny brak, nie awarię",
   isbnBrak.status === 404 || isbnBrak.status === 200, `status ${isbnBrak.status}`);
+// Numer musi wrócić, bo ekran otwiera na nim formularz zamiast zostawiać ślepy zaułek.
+check("brak wyniku oddaje numer, żeby dało się dopisać tytuł",
+  isbnBrak.status !== 404 || isbnBrakBody?.isbn === "9790000000001",
+  JSON.stringify(isbnBrakBody).slice(0, 80));
+
+// Ta książka jest tylko w drugim rejestrze Open Library — pierwszy o niej milczy.
+const isbnZapas = await fetch(APP + "/api/ksiazki/isbn?isbn=9788328302341", { headers: { cookie } });
+const isbnZapasBody = isbnZapas.status === 200 ? await isbnZapas.json() : null;
+check("zapasowe źródło znajduje polską książkę",
+  isbnZapas.status === 200 && (isbnZapasBody?.title || "").toLowerCase().includes("czysty"),
+  isbnZapas.status !== 200 ? `status ${isbnZapas.status}` : isbnZapasBody.title);
+
+// Generowanie planu przez AI kosztuje realne pieniądze — musi być za paywallem.
+const planAi = await fetch(APP + "/api/ai/plan", { method: "POST",
+  headers: { cookie, "Content-Type": "application/json" },
+  body: JSON.stringify({ goal: "sila", experience: "beginner", days_per_week: 2,
+    session_minutes: 60, equipment: ["sztanga"], limitations: "" }) });
+const planAiBody = await planAi.json().catch(() => null);
+check("darmowe konto nie generuje planów na cudzy rachunek",
+  planAi.status === 402 && planAiBody?.code === "needs_subscription",
+  `status ${planAi.status} ${planAiBody?.code ?? ""}`);
 
 const isbnAnon = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211292", { redirect: "manual" });
 check("bez sesji ISBN nie działa jako otwarty pośrednik",
