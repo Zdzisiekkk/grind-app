@@ -6,9 +6,10 @@ import {
   PainChart,
   SleepChart,
   StrengthChart,
+  ViceChart,
   VolumeChart,
-  type StrengthPoint,
-} from "@/components/charts/Charts";
+} from "@/components/charts/LazyCharts";
+import type { StrengthPoint, VicePoint } from "@/components/charts/Charts";
 import { HealthBreakdown } from "@/components/health/HealthCard";
 import { Card, Chip, EmptyState, SegmentedControl, Select, Spinner, Stat } from "@/components/ui";
 import type { ExercisePr, PeriodSummary, WorkoutLog } from "@/lib/database.types";
@@ -21,6 +22,7 @@ import { medianBedtime, scoreNight, sleepDuration, timeToMin, type SleepNight } 
 const EMPTY_POINTS: StrengthPoint[] = [];
 
 export function ProgressScreen({
+  vices,
   userId,
   prs,
   bodyWeight,
@@ -35,6 +37,8 @@ export function ProgressScreen({
   waterGoal,
   workoutsPerWeek,
 }: {
+  /** Tygodnie nałogów — puste, gdy nikt nie prowadzi żadnego. */
+  vices: VicePoint[];
   userId: string;
   prs: ExercisePr[];
   bodyWeight: { date: string; weight: number }[];
@@ -300,6 +304,24 @@ export function ProgressScreen({
           {fmtWorkouts(weeklyVolume.reduce((s, w) => s + w.workouts, 0))}
         </p>
       </Card>
+
+      {/*
+        Nałogi tuż pod objętością, bo obie rzeczy liczone są tygodniami i obie
+        odpowiadają na to samo pytanie: czy ten tydzień był lepszy od poprzedniego.
+        Postawienie ich obok siebie to jedyny powód, dla którego ten wykres jest
+        tutaj, a nie na ekranie nałogów.
+      */}
+      {vices.length > 0 && (
+        <Card
+          title="Nałogi tydzień po tygodniu"
+          subtitle="Czyste dni; czerwony słupek to tydzień z wpadką"
+        >
+          <ViceChart data={vices} />
+          <p className="mt-2 text-[12px] text-faint">
+            Przeczekanych chęci w tym okresie: {vices.reduce((s, w) => s + w.urges, 0)}
+          </p>
+        </Card>
+      )}
 
       {painByInjury.length === 0 ? (
         <Card title="Ból kontuzji" subtitle="Skala 0–10">

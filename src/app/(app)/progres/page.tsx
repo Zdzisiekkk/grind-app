@@ -4,7 +4,8 @@ import { addDaysISO, shortDate, todayISO } from "@/lib/format";
 import { DEFAULT_SLEEP_GOAL_MIN, type SleepNight } from "@/lib/sleep";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/constants";
 import { DEFAULT_WORKOUTS_PER_WEEK } from "@/lib/health";
-import type { ExercisePr, PeriodSummary } from "@/lib/database.types";
+import type { ExercisePr, PeriodSummary, Vice, ViceEvent } from "@/lib/database.types";
+import { viceWeeks } from "@/lib/vices";
 
 export const metadata = { title: "Postępy" };
 
@@ -39,6 +40,8 @@ export default async function ProgresPage() {
     monthRes,
     sleepRes,
     profileRes,
+    vicesRes,
+    viceEventsRes,
   ] = await Promise.all([
     supabase
       .from("v_exercise_prs")
@@ -84,6 +87,16 @@ export default async function ProgresPage() {
       .select("sleep_goal_min, sleep_target_bedtime, daily_kcal, daily_water_ml, weekly_workouts")
       .eq("id", user.id)
       .maybeSingle(),
+    // Nałogi trafiają na ten ekran, bo to jedyne miejsce, gdzie widać rzeczy
+    // OBOK siebie. Zestawienie tygodni bez wpadki z objętością treningową
+    // i snem to wykres, którego nikt inny nie zrobi — nikt inny nie ma
+    // obu tych dzienników naraz.
+    supabase.from("vices").select("*").eq("user_id", user.id).eq("is_archived", false),
+    supabase
+      .from("vice_events")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("occurred_at", addDaysISO(today, -90)),
   ]);
 
   // Dzienna objętość → tygodnie (poniedziałek–niedziela)
@@ -140,8 +153,26 @@ export default async function ProgresPage() {
     note: r.note,
   }));
 
+  const viceRows = (vicesRes.data ?? []) as Vice[];
+  const eventsByVice = new Map<string, ViceEvent[]>();
+  for (const event of (viceEventsRes.data ?? []) as ViceEvent[]) {
+    const list = eventsByVice.get(event.vice_id) ?? [];
+    list.push(event);
+    eventsByVice.set(event.vice_id, list);
+  }
+
+  const vices = viceRows.length
+    ? viceWeeks(viceRows, eventsByVice, 12).map((w) => ({
+        label: shortDate(w.start),
+        clean: w.clean,
+        lapses: w.lapses,
+        urges: w.urges,
+      }))
+    : [];
+
   return (
     <ProgressScreen
+      vices={vices}
       userId={user.id}
       prs={(prsRes.data ?? []) as ExercisePr[]}
       bodyWeight={(weightRes.data ?? []).map((w) => ({ date: w.date, weight: Number(w.weight_kg) }))}

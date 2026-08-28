@@ -290,7 +290,14 @@ function FoodRow({
       >
         {m.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={m.image} alt="" loading="lazy" className="size-10 shrink-0 rounded-lg bg-surface-2 object-cover" />
+          <img
+            src={m.image}
+            alt=""
+            loading="lazy"
+            width={40}
+            height={40}
+            className="size-10 shrink-0 rounded-lg bg-surface-2 object-cover"
+          />
         ) : (
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-2">🍎</span>
         )}

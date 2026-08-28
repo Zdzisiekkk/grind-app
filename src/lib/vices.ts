@@ -217,3 +217,162 @@ export function lapsesByPartOfDay(events: ViceEventLike[]): { label: string; cou
  * „Przeczekaj" bez widocznego końca to nie jest instrukcja.
  */
 export const URGE_SECONDS = 15 * 60;
+
+/* -------------------------------------------------------------------------- */
+/*  Tygodnie na wykres                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type ViceWeek = {
+  /** Poniedziałek tygodnia, ISO. */
+  start: string;
+  /** Ile dni w tym tygodniu było czystych (dni sprzed rzucenia się nie liczą). */
+  clean: number;
+  lapses: number;
+  urges: number;
+};
+
+/**
+ * Ostatnie `weeks` tygodni zwinięte do jednego wiersza na tydzień.
+ *
+ * Ekran nałogów pokazuje jeden nałóg naraz i ostatnie 90 dni. Ekran postępów
+ * ma inne zadanie: postawić nałogi OBOK snu i objętości treningowej, bo to
+ * jedyne miejsce w aplikacji, gdzie widać rzeczy naraz. Dlatego liczymy tu
+ * wszystkie nałogi razem — pytanie brzmi „jak wyglądał ten tydzień", a nie
+ * „jak wyglądał ten jeden nałóg".
+ */
+export function viceWeeks(
+  vices: (ViceLike & { id: string })[],
+  eventsByVice: Map<string, ViceEventLike[]>,
+  weeks = 12,
+  now = new Date(),
+): ViceWeek[] {
+  // Poniedziałek bieżącego tygodnia, liczony w UTC — to czysta arytmetyka
+  // kalendarzowa, a doba w UTC zawsze ma 24 godziny.
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const shift = (today.getUTCDay() + 6) % 7;
+  const thisMonday = new Date(today.getTime() - shift * DAY_MS);
+
+  return Array.from({ length: weeks }, (_, i) => {
+    const start = new Date(thisMonday.getTime() - (weeks - 1 - i) * DAY_MS * 7);
+    const startIso = isoDay(start);
+    const endIso = isoDay(new Date(start.getTime() + 6 * DAY_MS));
+
+    const lapseDays = new Set<string>();
+    let urges = 0;
+    let lapses = 0;
+    // Dzień liczy się do czystych tylko wtedy, gdy JAKIKOLWIEK nałóg był już
+    // wtedy rzucony — inaczej tygodnie sprzed założenia konta wyglądałyby
+    // na siedem dni sukcesu.
+    let tracked = false;
+
+    for (const vice of vices) {
+      const startedIso = isoDay(new Date(vice.started_at));
+      if (startedIso <= endIso) tracked = true;
+
+      for (const event of eventsByVice.get(vice.id) ?? []) {
+        const day = isoDay(new Date(event.occurred_at));
+        if (day < startIso || day > endIso) continue;
+        if (event.kind === "lapse") {
+          lapses++;
+          lapseDays.add(day);
+        } else {
+          urges++;
+        }
+      }
+    }
+
+    // Tydzień bieżący jeszcze trwa — liczymy tylko dni, które się wydarzyły.
+    const elapsed = Math.min(7, Math.round((today.getTime() - start.getTime()) / DAY_MS) + 1);
+    const days = Math.max(0, Math.min(7, elapsed));
+
+    return {
+      start: startIso,
+      clean: tracked ? Math.max(0, days - lapseDays.size) : 0,
+      lapses,
+      urges,
+    };
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Kryzys — co robić przez te piętnaście minut                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Oddech 4-7-8: wdech 4 s, wstrzymanie 7 s, wydech 8 s.
+ *
+ * Cykl trwa 19 sekund. Wybrany nie dlatego, że jest magiczny, tylko dlatego,
+ * że wydech dłuższy od wdechu wymusza wolniejsze tempo — a policzalne fazy
+ * dają rękom i głowie jedno zadanie zamiast żadnego.
+ */
+export const BREATH_CYCLE = 19;
+
+export function breathPhase(elapsedSeconds: number): {
+  label: string;
+  left: number;
+  total: number;
+  /** 0–1: jak daleko w tej fazie. Sterujemy tym rozmiarem okręgu. */
+  progress: number;
+} {
+  const t = ((elapsedSeconds % BREATH_CYCLE) + BREATH_CYCLE) % BREATH_CYCLE;
+
+  if (t < 4) return { label: "wdech", left: 4 - t, total: 4, progress: t / 4 };
+  if (t < 11) return { label: "wstrzymaj", left: 11 - t, total: 7, progress: (t - 4) / 7 };
+  return { label: "wydech", left: 19 - t, total: 8, progress: (t - 11) / 8 };
+}
+
+export type CrisisStep = {
+  /** Od której sekundy odliczania krok jest aktualny. */
+  from: number;
+  title: string;
+  body: string;
+  /** Czy przy tym kroku pokazujemy prowadnicę oddechu. */
+  breathing?: boolean;
+};
+
+/**
+ * Cztery rzeczy do zrobienia przez kwadrans.
+ *
+ * Panel pokazywał wcześniej sam licznik, passę i zaoszczędzone pieniądze.
+ * Piętnaście minut to długo, gdy patrzy się na zegar, a człowiek w kryzysie
+ * o pierwszej w nocy nie potrzebuje statystyki — potrzebuje czegoś do zrobienia
+ * rękami. Kroki idą od najbardziej fizycznego do najbardziej twojego, bo
+ * w pierwszej minucie nikt nie jest gotowy czytać własnych powodów.
+ */
+export const CRISIS_STEPS: CrisisStep[] = [
+  {
+    from: 0,
+    title: "Oddychaj razem z kółkiem",
+    body: "Cztery sekundy wdech, siedem wstrzymania, osiem wydechu. Nie licz w głowie — patrz na kółko. To ma zająć ręce i głowę, a nie cię uleczyć.",
+    breathing: true,
+  },
+  {
+    from: 180,
+    title: "Wstań i się rusz",
+    body: "Szklanka wody i dwie minuty ruchu: dwadzieścia przysiadów, spacer po mieszkaniu, cokolwiek. Chęć jest przywiązana do miejsca, w którym siedzisz — zmień miejsce.",
+  },
+  {
+    from: 420,
+    title: "Przypomnij sobie, po co",
+    body: "Przeczytaj swój powód poniżej. Jeśli go nie wpisałeś, wpisz go teraz w ustawieniach nałogu — nie na tę falę, tylko na następną.",
+  },
+  {
+    from: 660,
+    title: "Zostały cztery minuty",
+    body: "Najgorsze już minęło; fala zwykle opada wcześniej, niż kończy się ten zegar. Sprawdź, ile razy przeczekałeś ją wcześniej — ta liczba nie kłamie.",
+  },
+];
+
+/** Krok aktualny dla danego stanu zegara i numer kroku (do „2 z 4"). */
+export function crisisStepAt(secondsLeft: number, total = URGE_SECONDS): {
+  step: CrisisStep;
+  index: number;
+  count: number;
+} {
+  const elapsed = total - secondsLeft;
+  let index = 0;
+  for (let i = 0; i < CRISIS_STEPS.length; i++) {
+    if (elapsed >= CRISIS_STEPS[i].from) index = i;
+  }
+  return { step: CRISIS_STEPS[index], index, count: CRISIS_STEPS.length };
+}

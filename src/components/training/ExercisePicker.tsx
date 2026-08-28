@@ -68,6 +68,8 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: CatalogExercise)
                     src={ex.image_thumb_url}
                     alt=""
                     loading="lazy"
+                    width={40}
+                    height={40}
                     className="size-10 shrink-0 rounded-lg bg-surface-2 object-cover"
                   />
                 ) : (

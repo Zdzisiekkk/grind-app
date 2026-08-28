@@ -17,7 +17,7 @@ import {
 } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { SleepScoreRing } from "@/components/sleep/SleepScoreRing";
-import { SleepChart, SleepScoreChart } from "@/components/charts/Charts";
+import { SleepChart, SleepScoreChart } from "@/components/charts/LazyCharts";
 import { BEDTIME_PRESETS, SLEEP_FACTORS, WAKE_PRESETS, sleepFactor } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";

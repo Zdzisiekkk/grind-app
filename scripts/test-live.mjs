@@ -593,6 +593,109 @@ const nawykiNavText = nawykiNav.status === 200 ? text(await nawykiNav.text()) : 
 check("nawigacja mówi o nawykach i nałogach",
   nawykiNavText.includes("i nałogi"), nawykiNav.status !== 200 ? `status ${nawykiNav.status}` : "");
 
+// ---------------------------------------------------------------------------
+// 7m. Rzeczy naprawione po przeglądzie kodu
+// ---------------------------------------------------------------------------
+
+console.log("\n  Po przeglądzie kodu\n");
+
+// Wspólna baza produktów była otwarta do zapisu dla KAŻDEGO zalogowanego:
+// jedna osoba mogła wpisać mleku 9000 kcal i popsuć liczenie wszystkim.
+const jakisOff = await (await fetch(
+  `${SB}/rest/v1/foods?select=id,name,kcal_100g&user_id=is.null&source=eq.off&limit=1`,
+  { headers: H },
+)).json();
+
+if (Array.isArray(jakisOff) && jakisOff[0]) {
+  const przed = jakisOff[0].kcal_100g;
+  const sabotaz = await fetch(`${SB}/rest/v1/foods?id=eq.${jakisOff[0].id}`, {
+    method: "PATCH",
+    headers: { ...H, Prefer: "return=representation" },
+    body: JSON.stringify({ kcal_100g: 9000 }),
+  });
+  const zmienione = sabotaz.ok ? await sabotaz.json() : [];
+  const po = await (await fetch(
+    `${SB}/rest/v1/foods?select=kcal_100g&id=eq.${jakisOff[0].id}`, { headers: H },
+  )).json();
+  check("nie da się popsuć kalorii we wspólnej bazie produktów",
+    zmienione.length === 0 && String(po[0]?.kcal_100g) === String(przed),
+    `${przed} → ${po[0]?.kcal_100g}`);
+} else {
+  check("nie da się popsuć kalorii we wspólnej bazie produktów", true, "brak produktów z OFF do próby");
+}
+
+// …ale dopisanie brakującego produktu nadal musi działać, inaczej zepsulibyśmy
+// dodawanie jedzenia z wyszukiwarki.
+const kodTestowy = `e2e-${Date.now()}`;
+const dopis = await fetch(`${SB}/rest/v1/rpc/cache_off_product`, {
+  method: "POST", headers: H,
+  body: JSON.stringify({ p_off_id: kodTestowy, p_name: "Produkt testowy", p_kcal_100g: 100 }),
+});
+const dopisany = dopis.ok ? await dopis.json() : null;
+check("nowy produkt z OFF nadal się dopisuje",
+  Boolean(dopisany?.id) && Number(dopisany.kcal_100g) === 100,
+  dopis.ok ? `kcal=${dopisany?.kcal_100g}` : `status ${dopis.status}`);
+
+// Druga próba z innymi liczbami nie może podmienić pierwszej.
+const podmiana = await fetch(`${SB}/rest/v1/rpc/cache_off_product`, {
+  method: "POST", headers: H,
+  body: JSON.stringify({ p_off_id: kodTestowy, p_name: "Podmiana", p_kcal_100g: 9000 }),
+});
+const poPodmianie = podmiana.ok ? await podmiana.json() : null;
+check("powtórny zapis nie nadpisuje istniejącego produktu",
+  Number(poPodmianie?.kcal_100g) === 100, `kcal=${poPodmianie?.kcal_100g}`);
+
+// RLS nie może przeliczać tożsamości dla każdego wiersza — to rosło razem
+// z ilością danych i najbardziej bolało trenera, który czyta 2000 serii.
+const polityki = await (await fetch(`${SB}/rest/v1/rpc/policies_rechecking_uid`, {
+  method: "POST", headers: H, body: "{}",
+})).json();
+check("żadna reguła dostępu nie przelicza tożsamości co wiersz",
+  Array.isArray(polityki) && polityki.length === 0, JSON.stringify(polityki));
+
+// Nagłówki bezpieczeństwa: wcześniej nie było ŻADNEGO.
+const naglowki = await fetch(APP + "/login", { redirect: "manual" });
+check("strona nie da się osadzić w cudzej ramce",
+  (naglowki.headers.get("x-frame-options") || "").toUpperCase() === "DENY",
+  naglowki.headers.get("x-frame-options") || "brak");
+check("polityka treści jest wysyłana",
+  (naglowki.headers.get("content-security-policy-report-only") || "").includes("frame-ancestors"),
+  naglowki.headers.get("content-security-policy-report-only") ? "jest" : "brak");
+check("przeglądarka nie zgaduje typu pliku",
+  naglowki.headers.get("x-content-type-options") === "nosniff");
+check("kamera zostaje włączona dla skanera kodów",
+  (naglowki.headers.get("permissions-policy") || "").includes("camera=(self)"),
+  naglowki.headers.get("permissions-policy") || "brak");
+
+// Treść: MMA było w nazwie aplikacji, ale nie w katalogu.
+const mma = await (await fetch(
+  `${SB}/rest/v1/exercise_catalog?select=name,muscle_group&category=eq.MMA&user_id=is.null`,
+  { headers: H },
+)).json();
+check("katalog zna pracę na worku, tarcze i klincz",
+  Array.isArray(mma) &&
+  mma.some((e) => e.name.toLowerCase().includes("worku")) &&
+  mma.some((e) => e.name.toLowerCase().includes("tarcz")) &&
+  mma.some((e) => e.name.toLowerCase().includes("klincz")),
+  `pozycji MMA: ${Array.isArray(mma) ? mma.length : "?"}`);
+
+const szablonyMma = await (await fetch(
+  `${SB}/rest/v1/plans?select=name&is_template=eq.true&or=(name.ilike.*walka*,name.ilike.*obóz*)`,
+  { headers: H },
+)).json();
+check("są gotowe plany pod sporty walki",
+  Array.isArray(szablonyMma) && szablonyMma.length >= 2,
+  Array.isArray(szablonyMma) ? szablonyMma.map((p) => p.name).join(", ") : "");
+
+// Zapis planu z AI robi teraz jedna funkcja w transakcji.
+const zlyPlan = await fetch(APP + "/api/ai/plan/save", {
+  method: "POST", headers: { cookie, "Content-Type": "application/json" },
+  body: JSON.stringify({ requestId: "00000000-0000-0000-0000-000000000000" }),
+  redirect: "manual",
+});
+check("zapis nieistniejącego planu kończy się uczciwym 404",
+  zlyPlan.status === 404, `status ${zlyPlan.status}`);
+
 // 7n. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
 const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
 const eksportBody = eksport.status === 200 ? await eksport.json() : null;

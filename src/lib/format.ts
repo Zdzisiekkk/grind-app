@@ -1,19 +1,48 @@
-import { format, isToday, isYesterday, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { pl } from "date-fns/locale";
 
-/** Dzisiejsza data w formacie YYYY-MM-DD, w strefie czasowej urządzenia. */
-export function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
+/**
+ * Strefa, w której aplikacja liczy „dzień".
+ *
+ * NIE pytamy o nią urządzenia. Na telefonie urządzeniem jest telefon, ale przy
+ * renderowaniu na serwerze urządzeniem jest maszyna we Frankfurcie, a ta chodzi
+ * na UTC — latem dwie godziny za Polską. Bez stałej strefy wszystko zapisane
+ * między północą a drugą w nocy lądowało na wczoraj, a serwer i przeglądarka
+ * dawały różne odpowiedzi na pytanie „który dziś dzień".
+ *
+ * Powiadomienia robiły to dobrze od początku (pytają bazę o strefę z profilu);
+ * tutaj wyrównujemy do nich resztę aplikacji.
+ */
+export const APP_TIMEZONE = process.env.NEXT_PUBLIC_APP_TIMEZONE || "Europe/Warsaw";
+
+const ISO_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Data „teraz" w strefie aplikacji, jako YYYY-MM-DD. */
+export function dateInAppZone(instant: Date): string {
+  const parts = ISO_PARTS.formatToParts(instant);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+/** Dzisiejsza data w formacie YYYY-MM-DD. Ta sama na serwerze i w przeglądarce. */
+export function todayISO(): string {
+  return dateInAppZone(new Date());
+}
+
+/**
+ * Przesunięcie o dni. Liczone w UTC, bo to czysta arytmetyka na kalendarzu —
+ * doba w UTC zawsze ma 24 godziny, więc zmiana czasu nie potrafi tu zgubić dnia.
+ */
 export function addDaysISO(iso: string, days: number): string {
   const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(y, m - 1, d + days);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate(),
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    date.getUTCDate(),
   ).padStart(2, "0")}`;
 }
 
@@ -21,12 +50,18 @@ export function toDate(iso: string): Date {
   return parseISO(`${iso}T00:00:00`);
 }
 
-/** „dzisiaj” / „wczoraj” / „pon, 12 sie” */
+/**
+ * „dzisiaj” / „wczoraj” / „pon, 12 sie”
+ *
+ * Porównujemy napisy z datami, a nie obiekty Date przez date-fns: `isToday`
+ * pyta o dzisiaj urządzenie, więc serwer odpowiadałby inaczej niż przeglądarka.
+ */
 export function humanDate(iso: string): string {
-  const d = toDate(iso);
-  if (isToday(d)) return "dzisiaj";
-  if (isYesterday(d)) return "wczoraj";
-  return format(d, "EEE, d MMM", { locale: pl });
+  const today = todayISO();
+  if (iso === today) return "dzisiaj";
+  if (iso === addDaysISO(today, -1)) return "wczoraj";
+  if (iso === addDaysISO(today, 1)) return "jutro";
+  return format(toDate(iso), "EEE, d MMM", { locale: pl });
 }
 
 export function longDate(iso: string): string {

@@ -17,6 +17,9 @@ import type { Database } from "@/lib/database.types";
  */
 export const maxDuration = 60;
 
+/** Ile powiadomień leci równolegle w jednej paczce. */
+const BATCH = 50;
+
 type Due = {
   user_id: string;
   endpoint: string;
@@ -70,31 +73,54 @@ export async function POST(request: NextRequest) {
   let gone = 0;
   let failed = 0;
 
-  await Promise.all(
-    due.map(async (item) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: item.endpoint, keys: { p256dh: item.p256dh, auth: item.auth } },
-          JSON.stringify({ title: item.title, body: item.body, url: item.url, key: item.key }),
-          { TTL: 3600 },
-        );
-        sent++;
-        await supabase.rpc("push_ok", { p_secret: secret, p_endpoint: item.endpoint });
-      } catch (e) {
-        // 404 i 410 znaczą, że subskrypcja już nie istnieje — najczęściej ktoś
-        // odinstalował aplikację. Trzymanie takiego wpisu to wysyłanie w próżnię.
-        const status = (e as { statusCode?: number }).statusCode;
-        const isGone = status === 404 || status === 410;
-        if (isGone) gone++;
-        else failed++;
-        await supabase.rpc("push_failed", {
-          p_secret: secret,
-          p_endpoint: item.endpoint,
-          p_gone: isGone,
-        });
-      }
-    }),
-  );
+  const ok: string[] = [];
+  const dead: string[] = [];
+  const retry: string[] = [];
+
+  // Paczkami, nie wszystko naraz.
+  //
+  // Przy garstce ludzi jedno wielkie Promise.all nie robi różnicy. Przy tysiącu
+  // subskrypcji o pełnej godzinie to tysiąc równoczesnych połączeń w funkcji
+  // z limitem 60 sekund — i wtedy nie dochodzi ŻADNE powiadomienie, a nie tylko
+  // te nadmiarowe. Pięćdziesiąt naraz wysyca łącze i zostawia zapas czasu.
+  for (let i = 0; i < due.length; i += BATCH) {
+    await Promise.all(
+      due.slice(i, i + BATCH).map(async (item) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: item.endpoint, keys: { p256dh: item.p256dh, auth: item.auth } },
+            JSON.stringify({ title: item.title, body: item.body, url: item.url, key: item.key }),
+            { TTL: 3600 },
+          );
+          sent++;
+          ok.push(item.endpoint);
+        } catch (e) {
+          // 404 i 410 znaczą, że subskrypcja już nie istnieje — najczęściej ktoś
+          // odinstalował aplikację. Trzymanie takiego wpisu to wysyłanie w próżnię.
+          const status = (e as { statusCode?: number }).statusCode;
+          if (status === 404 || status === 410) {
+            gone++;
+            dead.push(item.endpoint);
+          } else {
+            failed++;
+            retry.push(item.endpoint);
+          }
+        }
+      }),
+    );
+  }
+
+  // Wynik zapisujemy zbiorczo. Wcześniej każde powiadomienie ciągnęło za sobą
+  // osobne zapytanie do bazy, czyli drugie tyle ruchu, co sama wysyłka.
+  await Promise.all([
+    ok.length ? supabase.rpc("push_ok_many", { p_secret: secret, p_endpoints: ok }) : null,
+    dead.length
+      ? supabase.rpc("push_failed_many", { p_secret: secret, p_endpoints: dead, p_gone: true })
+      : null,
+    retry.length
+      ? supabase.rpc("push_failed_many", { p_secret: secret, p_endpoints: retry, p_gone: false })
+      : null,
+  ]);
 
   return NextResponse.json({ sent, gone, failed });
 }

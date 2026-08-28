@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import type { ReactNode } from "react";
-import { PAIN_LEGEND, painStatus, type VizColors } from "@/lib/viz";
+import { PAIN_LEGEND, STATUS, painStatus, type VizColors } from "@/lib/viz";
 import { useVizColors } from "@/lib/useVizColors";
 import { num, shortDate } from "@/lib/format";
 import { SLEEP_LEGEND, sleepBand, sleepDuration } from "@/lib/sleep";
@@ -450,5 +450,94 @@ export function SleepScoreChart({ data }: { data: SleepPoint[] }) {
         />
       </LineChart>
     </ChartFrame>
+  );
+}
+
+/* --------------------------------- Nałogi --------------------------------- */
+
+export type VicePoint = {
+  /** Etykieta tygodnia, np. „12–18 sie". */
+  label: string;
+  /** Ile dni w tym tygodniu było czystych. */
+  clean: number;
+  /** Ile było wpadek. */
+  lapses: number;
+  /** Ile razy chęć została przeczekana. */
+  urges: number;
+};
+
+/**
+ * Czyste dni tydzień po tygodniu.
+ *
+ * Słupek mówi, ile dni się utrzymało; kolor mówi, czy w tym tygodniu była
+ * wpadka — dwie różne informacje, dwa różne kanały, więc nie trzeba czytać
+ * liczb, żeby zobaczyć, gdzie coś się posypało. Pokonane chęci są w podpowiedzi,
+ * bo to jedyna liczba w tej zakładce, która rośnie od porażek: żeby ją
+ * powiększyć, trzeba było najpierw poczuć, że się chce.
+ */
+export function ViceChart({ data }: { data: VicePoint[] }) {
+  const c = useVizColors();
+
+  const tipRows: TooltipRows = (p) => {
+    const rows: TooltipRow[] = [
+      { label: "Czyste dni", value: `${p.clean}/7` },
+      { label: "Wpadki", value: String(p.lapses) },
+    ];
+    if (Number(p.urges) > 0) rows.push({ label: "Przeczekane chęci", value: String(p.urges) });
+    return rows;
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartFrame
+        isEmpty={data.length === 0}
+        emptyTitle="Brak nałogów do pokazania"
+        emptyDescription="Dodaj nałóg w zakładce „Nawyki i nałogi”, a tutaj zobaczysz, jak wyglądały kolejne tygodnie."
+      >
+        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -28 }} barCategoryGap="20%">
+          <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+            tickLine={false}
+            axisLine={{ stroke: c.grid }}
+            minTickGap={16}
+          />
+          <YAxis
+            tick={{ fill: c.axis, fontSize: AXIS_FONT }}
+            tickLine={false}
+            axisLine={false}
+            width={44}
+            domain={[0, 7]}
+            ticks={[0, 1, 3, 5, 7]}
+          />
+          <Tooltip
+            content={<ChartTooltip colors={c} rows={tipRows} />}
+            cursor={{ fill: c.grid, fillOpacity: 0.35 }}
+          />
+          <Bar dataKey="clean" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+            {data.map((d) => (
+              <Cell
+                key={d.label}
+                fill={d.lapses > 0 ? STATUS.critical : STATUS.good}
+                stroke={c.surface}
+                strokeWidth={2}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ChartFrame>
+
+      {data.length > 0 && (
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 px-1">
+          <li className="flex items-center gap-1 text-[11px] text-muted">
+            <span aria-hidden style={{ color: STATUS.good }}>●</span> tydzień bez wpadki
+          </li>
+          <li className="flex items-center gap-1 text-[11px] text-muted">
+            <span aria-hidden style={{ color: STATUS.critical }}>■</span> tydzień z wpadką
+          </li>
+        </ul>
+      )}
+    </div>
   );
 }

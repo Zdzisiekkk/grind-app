@@ -20,8 +20,10 @@ import { clsx } from "@/lib/clsx";
 import {
   URGE_SECONDS,
   bestStreak,
+  breathPhase,
   cleanBand,
   cleanSince,
+  crisisStepAt,
   dayCells,
   dayWord,
   daysClean,
@@ -542,6 +544,43 @@ function ViceCard({
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Prowadnica oddechu 4-7-8.
+ *
+ * Okrąg rośnie na wdechu, stoi przy wstrzymaniu i maleje na wydechu — tempo
+ * widać, więc nie trzeba go liczyć. Rozmiar zmieniamy stylem, nie animacją
+ * CSS, bo faza musi się zgadzać z sekundą na zegarze, a nie biec własnym
+ * rytmem. Przy `prefers-reduced-motion` przejście i tak jest wyłączone
+ * globalnie w globals.css, a sama liczba sekund zostaje czytelna.
+ */
+function BreathingGuide({ elapsed }: { elapsed: number }) {
+  const { label, left, total, progress } = breathPhase(elapsed);
+
+  // Wdech rośnie, wydech maleje, wstrzymanie stoi u góry.
+  const scale =
+    label === "wdech" ? 0.55 + progress * 0.45
+    : label === "wstrzymaj" ? 1
+    : 1 - progress * 0.45;
+
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2">
+      <div className="flex size-[120px] items-center justify-center">
+        <div
+          className="flex items-center justify-center rounded-full bg-accent/15 ring-2 ring-accent/40 transition-transform duration-1000 ease-linear"
+          style={{ width: 120, height: 120, transform: `scale(${scale})` }}
+        >
+          <span className="tabular text-[26px] font-bold text-accent">{Math.ceil(left)}</span>
+        </div>
+      </div>
+      <p className="text-[13px] font-medium uppercase tracking-wide text-muted">
+        {label} · {total} s
+      </p>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
  * Panel na moment, w którym się chce.
  *
  * Fala chęci opada sama — problem w tym, że w jej środku nie da się w to
@@ -568,7 +607,9 @@ function CrisisPanel({
   const days = daysClean(vice, vice.events);
   const money = saved(vice, days);
   const triggers = topTriggers(vice.events, 1);
+  const resisted = urgesResisted(vice.events);
   const done = left <= 0;
+  const { step, index, count } = crisisStepAt(left);
 
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
@@ -594,6 +635,17 @@ function CrisisPanel({
           />
         </div>
       </div>
+
+      {!done && (
+        <div className="rounded-2xl border border-border p-4">
+          <p className="text-[12px] font-medium uppercase tracking-wide text-faint">
+            Do zrobienia teraz · {index + 1} z {count}
+          </p>
+          <h3 className="mt-1 text-[16px] font-semibold">{step.title}</h3>
+          <p className="mt-1 text-[14px] text-muted">{step.body}</p>
+          {step.breathing && <BreathingGuide elapsed={URGE_SECONDS - left} />}
+        </div>
+      )}
 
       {vice.motivation && (
         <div>
@@ -623,6 +675,13 @@ function CrisisPanel({
           Ostatnio łamał Cię najczęściej <strong>{triggers[0].trigger}</strong>. Jeśli to
           teraz to samo — wiesz już, że to minie.
         </Alert>
+      )}
+
+      {resisted > 0 && (
+        <p className="text-center text-[13px] text-muted">
+          Przeczekałeś już <strong className="text-text">{resisted}</strong>{" "}
+          {resisted === 1 ? "taką falę" : "takich fal"}. Ta niczym się od tamtych nie różni.
+        </p>
       )}
 
       <div className="flex flex-col gap-2">

@@ -68,21 +68,32 @@ async function guard(): Promise<
     };
   }
 
-  const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
-  if (!allowed) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        {
-          error: `Dzienny limit ${DAILY_LIMIT} zapytań do trenera został wyczerpany. Wróć jutro.`,
-          code: "daily_limit",
-        },
-        { status: 429 },
-      ),
-    };
-  }
-
   return { ok: true, supabase, userId: user.id };
+}
+
+/**
+ * Odnotowanie zapytania do modelu.
+ *
+ * Wołane dopiero TUŻ PRZED wywołaniem modelu, a nie w bramce. Za bramką są
+ * dwa wyjścia, które modelu nie dotykają: pusta wiadomość oraz skrót
+ * „nic nie wymaga poprawki”, dodany właśnie po to, żeby nie płacić za
+ * oczywistą odpowiedź. Zużywanie limitu w bramce znaczyło, że człowiek,
+ * u którego wszystko idzie dobrze, mógł wyczerpać dziesięć zapytań,
+ * nie dostawszy ani jednej analizy.
+ */
+async function consumeCall(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<NextResponse | null> {
+  const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
+  if (allowed) return null;
+
+  return NextResponse.json(
+    {
+      error: `Dzienny limit ${DAILY_LIMIT} zapytań do trenera został wyczerpany. Wróć jutro.`,
+      code: "daily_limit",
+    },
+    { status: 429 },
+  );
 }
 
 /** Wspólny błąd modelu — jeden komunikat zamiast surowego wyjątku na ekranie. */
@@ -197,9 +208,8 @@ export async function POST(request: Request) {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    await supabase
-      .from("coach_messages")
-      .insert({ user_id: userId, role: "user", content: question });
+    const overLimit = await consumeCall(supabase);
+    if (overLimit) return overLimit;
 
     try {
       const client = new Anthropic({ maxRetries: 1 });
@@ -243,9 +253,14 @@ export async function POST(request: Request) {
         .join("\n")
         .trim();
 
-      await supabase
-        .from("coach_messages")
-        .insert({ user_id: userId, role: "assistant", content: answer });
+      // Pytanie i odpowiedź zapisujemy RAZEM, po udanym wywołaniu. Zapis pytania
+      // przed wywołaniem zostawiał po nieudanej próbie sierotę: wiadomość bez
+      // odpowiedzi, na którą trener już nigdy nie odpowie, a przy następnym
+      // pytaniu do modelu szły dwie wiadomości użytkownika pod rząd.
+      await supabase.from("coach_messages").insert([
+        { user_id: userId, role: "user", content: question },
+        { user_id: userId, role: "assistant", content: answer },
+      ]);
       return NextResponse.json({ answer });
     } catch (error) {
       return modelError(error);
@@ -264,6 +279,9 @@ export async function POST(request: Request) {
       skippedModel: true,
     });
   }
+
+  const overLimit = await consumeCall(supabase);
+  if (overLimit) return overLimit;
 
   try {
     const client = new Anthropic({ maxRetries: 1 });
@@ -297,8 +315,11 @@ export async function POST(request: Request) {
     }
 
     // Wcześniejsze oczekujące propozycje przestają być aktualne — nowa analiza
-    // patrzy na świeższe dane. Zostawianie ich obok siebie tylko myli.
-    await supabase.from("coach_proposals").delete().eq("user_id", userId).eq("status", "pending");
+    // patrzy na świeższe dane. Ale ich NIE kasujemy: „miesiąc temu trener kazał
+    // zejść o 200 kcal, zrobiłeś to, waga ruszyła" to jedyna rzecz, której
+    // trener nie umiał powiedzieć o samym sobie, choć ma na to wszystkie dane.
+    // Dostają status 'superseded' i zostają w historii (migracja 0033).
+    await supabase.rpc("supersede_coach_proposals", {});
 
     if (analysis.proposals.length > 0) {
       await supabase.from("coach_proposals").insert(

@@ -9,6 +9,14 @@ import { humanDate } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
 import type { CoachMessage, CoachProposal } from "@/lib/database.types";
 
+/** Co się z radą stało. „Nieaktualna" znaczy: przyszła nowsza analiza. */
+const PAST_LABEL: Record<CoachProposal["status"], string> = {
+  pending: "czeka",
+  accepted: "zastosowana",
+  rejected: "odrzucona",
+  superseded: "nieaktualna",
+};
+
 const KIND_LABEL: Record<CoachProposal["kind"], { icon: string; label: string }> = {
   diet_kcal: { icon: "🍽️", label: "Zmiana celu kalorycznego" },
   training: { icon: "🏋️", label: "Rada treningowa" },
@@ -18,6 +26,7 @@ const KIND_LABEL: Record<CoachProposal["kind"], { icon: string; label: string }>
 export function CoachScreen({
   pro,
   proposals,
+  past,
   history,
   callsToday,
   dailyLimit,
@@ -25,6 +34,8 @@ export function CoachScreen({
 }: {
   pro: boolean;
   proposals: CoachProposal[];
+  /** Rady już rozstrzygnięte albo zastąpione nowszą analizą. */
+  past: CoachProposal[];
   history: CoachMessage[];
   callsToday: number;
   dailyLimit: number;
@@ -174,6 +185,36 @@ export function CoachScreen({
             </Card>
           ))}
         </div>
+      )}
+
+      {/* --- Historia rad --- */}
+      {past.length > 0 && (
+        <details className="rounded-[var(--radius)] border border-border bg-surface">
+          <summary className="cursor-pointer list-none px-4 py-3 text-[14px] font-semibold">
+            Co trener radził wcześniej
+            <span className="ml-2 font-normal text-faint">({past.length})</span>
+          </summary>
+          <ul className="flex flex-col divide-y divide-border border-t border-border">
+            {past.map((p) => (
+              <li key={p.id} className="flex items-start gap-3 px-4 py-3">
+                <span className="text-[16px]" aria-hidden>
+                  {KIND_LABEL[p.kind].icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium leading-tight">{p.title}</p>
+                  <p className="mt-1 text-[12px] text-muted">{p.rationale}</p>
+                  <p className="mt-1.5 text-[11px] text-faint">
+                    {humanDate(p.created_at.slice(0, 10))} · {PAST_LABEL[p.status]}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="border-t border-border px-4 py-3 text-[12px] text-faint">
+            Rada, która przestała być aktualna, nie znika — dopiero zestawienie jej z tym, co
+            potem zrobiła waga i objętość, mówi, czy trener miał rację.
+          </p>
+        </details>
       )}
 
       {/* --- Rozmowa --- */}

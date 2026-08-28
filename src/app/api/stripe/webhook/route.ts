@@ -109,6 +109,13 @@ export async function POST(request: NextRequest) {
       p_period_end: secondsToIso(item?.current_period_end),
       p_cancel_at_period_end: subscription?.cancel_at_period_end ?? false,
       p_trial_end: secondsToIso(subscription?.trial_end),
+      // Stripe NIE gwarantuje kolejności doręczeń i ponawia nieudane. Bez tych
+      // dwóch pól starsze zdarzenie potrafiło nadpisać nowszy stan: ktoś
+      // anuluje subskrypcję i od razu wykupuje ponownie, a jeśli anulowanie
+      // dotrze drugie — traci dostęp mimo opłaty. Baza mija teraz zdarzenia
+      // powtórzone i spóźnione (migracja 0031).
+      p_event_id: event.id,
+      p_event_at: new Date(event.created * 1000).toISOString(),
     });
 
     if (error || applied === false) {

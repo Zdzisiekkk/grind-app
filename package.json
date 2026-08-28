@@ -17,7 +17,8 @@
     "verify:plan": "node scripts/verify-plan-import.mjs",
     "test:analysis": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-analysis.mjs",
     "test:vices": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-vices.mjs",
-    "test:isbn": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-isbn.mjs"
+    "test:isbn": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-isbn.mjs",
+    "test:daty": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-daty.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

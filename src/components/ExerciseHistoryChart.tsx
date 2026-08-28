@@ -1,6 +1,7 @@
 "use client";
 
-import { StrengthChart, type StrengthPoint } from "@/components/charts/Charts";
+import { StrengthChart } from "@/components/charts/LazyCharts";
+import type { StrengthPoint } from "@/components/charts/Charts";
 
 /** Cienka klientowa otoczka — wykres potrzebuje przeglądarki, dane liczy serwer. */
 export function ExerciseHistoryChart({ data }: { data: StrengthPoint[] }) {

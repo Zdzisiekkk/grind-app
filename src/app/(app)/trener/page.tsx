@@ -16,7 +16,8 @@ export default async function CoachPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [access, { data: proposals }, { data: messages }, { data: usage }] = await Promise.all([
+  const [access, { data: proposals }, { data: past }, { data: messages }, { data: usage }] =
+    await Promise.all([
     getAccess(),
     supabase
       .from("coach_proposals")
@@ -24,6 +25,16 @@ export default async function CoachPage() {
       .eq("user_id", user.id)
       .eq("status", "pending")
       .order("created_at", { ascending: false }),
+    // Rady, które już zapadły albo zostały zastąpione. Do tej pory znikały
+    // bezpowrotnie przy każdej nowej analizie (migracja 0033) — a to właśnie
+    // one pokazują, czy trener miał rację.
+    supabase
+      .from("coach_proposals")
+      .select("*")
+      .eq("user_id", user.id)
+      .neq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20),
     supabase
       .from("coach_messages")
       .select("*")
@@ -42,6 +53,7 @@ export default async function CoachPage() {
     <CoachScreen
       pro={access.pro}
       proposals={(proposals ?? []) as CoachProposal[]}
+      past={(past ?? []) as CoachProposal[]}
       history={[...((messages ?? []) as CoachMessage[])].reverse()}
       callsToday={usage?.calls ?? 0}
       dailyLimit={DAILY_LIMIT}

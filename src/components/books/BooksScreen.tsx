@@ -698,6 +698,8 @@ function BookCover({ book }: { book: Book }) {
       src={book.cover_url}
       alt=""
       loading="lazy"
+      width={46}
+      height={68}
       onError={() => setBroken(true)}
       className="h-[68px] w-[46px] shrink-0 rounded-md bg-surface-2 object-cover"
     />

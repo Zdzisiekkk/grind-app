@@ -97,8 +97,20 @@ export default async function ExerciseDetailPage({
 
       {ex.image_url && (
         <figure className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ex.image_url} alt={`Ilustracja: ${ex.name}`} className="w-full object-contain" />
+          {/*
+            Kadr o stałych proporcjach rezerwuje miejsce, zanim zdjęcie
+            dojdzie. Ilustracje z wgera mają różne wymiary, więc nie podajemy
+            ich w atrybutach — object-contain wpisuje każdą w to samo pole,
+            bez przycinania i bez skoku układu.
+          */}
+          <div className="aspect-[4/3] w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ex.image_url}
+              alt={`Ilustracja: ${ex.name}`}
+              className="size-full object-contain"
+            />
+          </div>
           {ex.license && (
             <figcaption className="px-3 py-2 text-[11px] text-faint">
               {ex.license_author ? `Autor: ${ex.license_author}. ` : ""}

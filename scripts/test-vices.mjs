@@ -7,8 +7,9 @@
  *
  * Uruchom: npm run test:vices
  */
-import { bestStreak, cleanBand, dayCells, daysClean, formatMinutes, lapsesByPartOfDay,
-  nextMilestone, saved, topTriggers, urgesResisted } from "../src/lib/vices.ts";
+import { BREATH_CYCLE, bestStreak, breathPhase, cleanBand, crisisStepAt, dayCells, daysClean,
+  formatMinutes, lapsesByPartOfDay, nextMilestone, saved, topTriggers, urgesResisted,
+  viceWeeks, URGE_SECONDS } from "../src/lib/vices.ts";
 
 let fails = 0;
 const check = (label, cond, extra = "") => {
@@ -128,6 +129,48 @@ check("najczęstsza pora na pierwszym miejscu",
 check("puste pory nie zaśmiecają listy", pory.length === 2, JSON.stringify(pory));
 check("chęci nie liczą się jako wpadki",
   pory.reduce((sum, p) => sum + p.count, 0) === 3);
+
+console.log("\n  Tygodnie na wykres postępów\n");
+
+const vId = { ...vice(60), id: "v1" };
+const weeks = viceWeeks([vId], new Map([["v1", [
+  { kind: "lapse", occurred_at: ago(10), trigger: null },
+  { kind: "urge",  occurred_at: ago(10), trigger: null },
+]]]), 4);
+check("tyle tygodni, ile poproszono", weeks.length === 4);
+check("tydzień z wpadką ma ją policzoną",
+  weeks.reduce((s, w) => s + w.lapses, 0) === 1);
+check("pokonana chęć nie jest wpadką",
+  weeks.reduce((s, w) => s + w.urges, 0) === 1);
+check("czystych dni nigdy więcej niż siedem",
+  weeks.every((w) => w.clean >= 0 && w.clean <= 7), JSON.stringify(weeks.map((w) => w.clean)));
+check("bieżący tydzień liczy tylko dni, które już były",
+  weeks.at(-1).clean <= new Date().getUTCDay() || new Date().getUTCDay() === 0);
+
+const przedRzuceniem = viceWeeks([{ ...vice(3), id: "v2" }], new Map(), 4);
+check("tygodnie sprzed rzucenia nie udają sukcesu",
+  przedRzuceniem[0].clean === 0, JSON.stringify(przedRzuceniem.map((w) => w.clean)));
+
+console.log("\n  Panel kryzysowy\n");
+
+check("kwadrans zaczyna się od oddechu",
+  crisisStepAt(URGE_SECONDS).step.breathing === true);
+check("krok pierwszy jest pierwszy z czterech",
+  crisisStepAt(URGE_SECONDS).index === 0 && crisisStepAt(URGE_SECONDS).count === 4);
+check("po trzech minutach zmienia się na ruch",
+  crisisStepAt(URGE_SECONDS - 181).index === 1);
+check("ostatnie minuty mają własny krok",
+  crisisStepAt(30).index === 3);
+
+const fazy = Array.from({ length: BREATH_CYCLE }, (_, i) => breathPhase(i).label);
+check("oddech ma trzy fazy w kolejności 4-7-8",
+  fazy.filter((f) => f === "wdech").length === 4 &&
+  fazy.filter((f) => f === "wstrzymaj").length === 7 &&
+  fazy.filter((f) => f === "wydech").length === 8, fazy.join(","));
+check("cykl oddechu się zapętla",
+  breathPhase(0).label === breathPhase(BREATH_CYCLE).label);
+check("licznik fazy nigdy nie schodzi poniżej zera",
+  Array.from({ length: 60 }, (_, i) => breathPhase(i)).every((f) => f.left > 0 && f.left <= 8));
 
 console.log(fails ? `\n  BŁĘDÓW: ${fails}\n` : "\n  WSZYSTKO PRZESZŁO\n");
 process.exit(fails ? 1 : 0);

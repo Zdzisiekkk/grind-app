@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Chip, Field, NumberField, SegmentedControl, Select, Sheet, Spinner, Textarea } from "@/components/ui";
-import { EQUIPMENT_OPTIONS, type AiPlan, type PlanRequest } from "@/lib/ai/planSchema";
+import { EQUIPMENT_OPTIONS } from "@/lib/ai/planOptions";
+// Same typy — `import type` znika przy kompilacji, więc zod nie jedzie do przeglądarki.
+import type { AiPlan, PlanRequest } from "@/lib/ai/planSchema";
 import { DAY_TYPE_LABEL } from "@/lib/constants";
 import { clsx } from "@/lib/clsx";
 

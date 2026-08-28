@@ -53,14 +53,20 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nie zalogowano." }, { status: 401 });
 
-  const dane: Record<string, unknown> = {};
+  // Wszystkie tabele naraz, nie jedna po drugiej. Przy 29 zapytaniach po kolei
+  // czas eksportu to suma opóźnień sieci; równolegle to najwolniejsze z nich —
+  // a funkcja ma na wszystko 60 sekund.
+  //
+  // Plany i ich części nie mają user_id na każdym poziomie, więc pytamy bez
+  // filtra: RLS i tak pokaże wyłącznie własne i nie musimy zgadywać schematu.
+  const wyniki = await Promise.all(
+    TABLES.map(async (table) => {
+      const { data, error } = await supabase.from(table).select("*").limit(10000);
+      return [table, error ? { blad: error.message } : (data ?? [])] as const;
+    }),
+  );
 
-  for (const table of TABLES) {
-    // Plany i ich części nie mają user_id na każdym poziomie — RLS i tak
-    // pokaże tylko własne, więc pytamy bez filtra i nie zgadujemy schematu.
-    const { data, error } = await supabase.from(table).select("*").limit(10000);
-    dane[table] = error ? { blad: error.message } : (data ?? []);
-  }
+  const dane: Record<string, unknown> = Object.fromEntries(wyniki);
 
   const plik = {
     aplikacja: "Grind",

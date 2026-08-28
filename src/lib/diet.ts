@@ -34,35 +34,31 @@ export async function ensureMeal(
 /**
  * Zapisuje produkt z Open Food Facts do wspólnego cache'u (user_id = NULL),
  * żeby kolejne wyszukiwanie tego samego kodu było natychmiastowe i offline-owe.
+ *
+ * Idzie przez funkcję w bazie, a nie przez zwykły zapis do tabeli. Cache jest
+ * wspólny dla wszystkich, więc bezpośredni UPDATE znaczyłby, że jedna osoba
+ * może wpisać mleku 9000 kcal i popsuć liczenie każdemu. Funkcja umie tylko
+ * DOPISAĆ brakujący produkt; istniejącego nie rusza (migracja 0029).
  */
 export async function cacheOffProduct(supabase: Client, product: OffProduct): Promise<Food> {
-  const { data, error } = await supabase
-    .from("foods")
-    .upsert(
-      {
-        user_id: null,
-        source: "off",
-        off_id: product.off_id,
-        name: product.name,
-        brand: product.brand,
-        image_url: product.image_url,
-        kcal_100g: product.kcal_100g,
-        protein_100g: product.protein_100g,
-        carbs_100g: product.carbs_100g,
-        fat_100g: product.fat_100g,
-        fiber_100g: product.fiber_100g,
-        sugar_100g: product.sugar_100g,
-        salt_100g: product.salt_100g,
-        serving_size_g: product.serving_size_g,
-        serving_label: product.serving_label,
-      },
-      { onConflict: "off_id" },
-    )
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("cache_off_product", {
+    p_off_id: product.off_id,
+    p_name: product.name,
+    p_brand: product.brand,
+    p_image_url: product.image_url,
+    p_kcal_100g: product.kcal_100g,
+    p_protein_100g: product.protein_100g,
+    p_carbs_100g: product.carbs_100g,
+    p_fat_100g: product.fat_100g,
+    p_fiber_100g: product.fiber_100g,
+    p_sugar_100g: product.sugar_100g,
+    p_salt_100g: product.salt_100g,
+    p_serving_size_g: product.serving_size_g,
+    p_serving_label: product.serving_label,
+  });
 
   if (error) throw new Error(`Nie udało się zapisać produktu: ${error.message}`);
-  return data as Food;
+  return data as unknown as Food;
 }
 
 /** Dodaje produkt do posiłku. Makra są kopiowane „na sztywno” — późniejsza

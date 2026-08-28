@@ -1,5 +1,5 @@
 import { Button, Card, Chip, Field, Input } from "@/components/ui";
-import { BodyWeightChart } from "@/components/charts/Charts";
+import { BodyWeightChart } from "@/components/charts/LazyCharts";
 import { NotificationSettings } from "@/components/reminders/NotificationSettings";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { DataControls } from "@/components/legal/DataControls";

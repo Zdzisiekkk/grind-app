@@ -34,6 +34,7 @@ jobs:
           npm run test:analysis
           npm run test:vices
           npm run test:isbn
+          npm run test:daty
       - name: Budowanie
         run: npm run build
         env:

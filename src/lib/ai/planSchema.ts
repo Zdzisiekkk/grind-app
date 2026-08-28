@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EXPERIENCE_VALUES } from "@/lib/ai/planOptions";
 
 /**
  * Kształt planu, jakiego oczekujemy od modelu.
@@ -55,7 +56,7 @@ export type AiPlan = z.infer<typeof AiPlanSchema>;
 export const PlanRequestSchema = z.object({
   goal: z.string().min(3).max(500),
   days_per_week: z.number().int().min(1).max(7),
-  experience: z.enum(["beginner", "intermediate", "advanced"]),
+  experience: z.enum(EXPERIENCE_VALUES),
   session_minutes: z.number().int().min(15).max(180),
   equipment: z.array(z.string()).max(20),
   limitations: z.string().max(1000),
@@ -63,21 +64,10 @@ export const PlanRequestSchema = z.object({
 
 export type PlanRequest = z.infer<typeof PlanRequestSchema>;
 
-export const EQUIPMENT_OPTIONS = [
-  "sztanga",
-  "hantle",
-  "kettlebell",
-  "maszyny",
-  "wyciąg",
-  "drążek",
-  "gumy oporowe",
-  "piłka lekarska",
-  "rower / ergometr",
-  "tylko masa ciała",
-] as const;
-
-export const EXPERIENCE_LABEL: Record<PlanRequest["experience"], string> = {
-  beginner: "początkujący",
-  intermediate: "średniozaawansowany",
-  advanced: "zaawansowany",
-};
+/**
+ * Stałe formularza mieszkają w planOptions.ts (bez zoda), żeby przeglądarka
+ * mogła je wziąć, nie ciągnąc za sobą całej walidacji. Serwer i tak importuje
+ * ten plik, więc wystawiamy je dalej.
+ */
+export { EQUIPMENT_OPTIONS, EXPERIENCE_LABEL, EXPERIENCE_VALUES } from "@/lib/ai/planOptions";
+export type { Experience } from "@/lib/ai/planOptions";

@@ -311,8 +311,10 @@ export type CoachProposal = {
   facts: Record<string, unknown>;
   /** Co się stanie po akceptacji, np. { daily_kcal: 2200 }. Puste = nic. */
   action: Record<string, unknown>;
-  status: "pending" | "accepted" | "rejected";
+  /** 'superseded' = zastąpiona nowszą analizą; zostaje w historii, nie znika. */
+  status: "pending" | "accepted" | "rejected" | "superseded";
   decided_at: string | null;
+  superseded_at: string | null;
   created_at: string;
 };
 
@@ -770,6 +772,37 @@ export type Database = {
         Args: { p_secret: string; p_endpoint: string; p_gone: boolean };
         Returns: undefined;
       };
+      /** Wersje mnogie — cała paczka jednym zapytaniem zamiast jednego na sztukę. */
+      push_ok_many: { Args: { p_secret: string; p_endpoints: string[] }; Returns: number };
+      push_failed_many: {
+        Args: { p_secret: string; p_endpoints: string[]; p_gone: boolean };
+        Returns: number;
+      };
+      /** Dopisanie produktu z OFF do wspólnego cache'u. Istniejącego nie zmienia. */
+      cache_off_product: {
+        Args: {
+          p_off_id: string;
+          p_name: string;
+          p_brand?: string | null;
+          p_image_url?: string | null;
+          p_kcal_100g?: number | null;
+          p_protein_100g?: number | null;
+          p_carbs_100g?: number | null;
+          p_fat_100g?: number | null;
+          p_fiber_100g?: number | null;
+          p_sugar_100g?: number | null;
+          p_salt_100g?: number | null;
+          p_serving_size_g?: number | null;
+          p_serving_label?: string | null;
+        };
+        Returns: Food;
+      };
+      /** Zapis wygenerowanego planu w całości albo wcale. Zwraca id planu. */
+      save_ai_plan: { Args: { p_request_id: string }; Returns: string };
+      /** Odkłada oczekujące propozycje trenera do historii. Zwraca ile. */
+      supersede_coach_proposals: { Args: Record<string, never>; Returns: number };
+      /** Polityki, które nadal przeliczają auth.uid() dla każdego wiersza. */
+      policies_rechecking_uid: { Args: Record<string, never>; Returns: string[] };
       /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
       apply_subscription: {
         Args: {
@@ -782,6 +815,8 @@ export type Database = {
           p_period_end: string | null;
           p_cancel_at_period_end: boolean;
           p_trial_end: string | null;
+          p_event_id?: string | null;
+          p_event_at?: string | null;
         };
         Returns: boolean;
       };

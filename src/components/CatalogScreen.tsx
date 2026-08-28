@@ -112,6 +112,11 @@ export function CatalogScreen({
                     src={ex.image_thumb_url}
                     alt=""
                     loading="lazy"
+                    // Wymiary w atrybutach, nie tylko w klasie: przeglądarka
+                    // rezerwuje miejsce PRZED pobraniem zdjęcia i lista
+                    // przestaje podskakiwać pod palcem przy przewijaniu.
+                    width={56}
+                    height={56}
                     className="size-14 shrink-0 rounded-xl bg-surface-2 object-cover"
                   />
                 ) : (
