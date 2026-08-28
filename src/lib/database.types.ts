@@ -790,6 +790,33 @@ export type WygladLimit = {
   powod: "limit_miesiaca" | "odstep" | null;
 };
 
+/**
+ * Stan miesięcznego budżetu na AI — zwracany przez `ai_budzet_stan()`.
+ *
+ * Rejestr kosztów (`ai_wydatki`) świadomie NIE ma tu odpowiednika: tabela nie
+ * daje użytkownikowi żadnych uprawnień, więc typ opisujący zapytanie o nią
+ * opisywałby zapytanie, które zawsze kończy się odmową.
+ */
+export type AiBudzetStan = {
+  limit_pln: number;
+  limit_usd: number;
+  kurs: number;
+  wydano_usd: number;
+  wydano_pln: number;
+  zostalo_pln: number;
+  /** Ile wywołań weszło do puli w tym miesiącu. */
+  wywolan: number;
+  /** Konto administratora — próg nie obowiązuje, liczniki nadal prawdziwe. */
+  bez_limitu: boolean;
+  /** Kiedy budżet się odnowi (początek następnego miesiąca, czas polski). */
+  odnowa: string;
+};
+
+/** Odpowiedź `ai_koszt_rezerwuj()`. Przy `ok: false` nic nie zostało zapisane. */
+export type AiRezerwacja =
+  | { ok: true; id: string; szacunek_usd: number; stan: AiBudzetStan }
+  | { ok: false; powod: "limit_miesiaca" | "brak_logowania"; stan?: AiBudzetStan };
+
 export type SleepNap = {
   id: string;
   user_id: string;
@@ -886,6 +913,21 @@ export type Database = {
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
       wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
+      /** Ile z miesięcznego budżetu na AI zostało. */
+      ai_budzet_stan: { Args: Record<string, never>; Returns: AiBudzetStan };
+      /** Rezerwacja przed wywołaniem modelu. Odmowa nic nie zapisuje. */
+      ai_koszt_rezerwuj: { Args: { p_kategoria: string }; Returns: AiRezerwacja };
+      /** Wpisanie prawdziwego kosztu po wywołaniu. Kwota 0 zwalnia rezerwację. */
+      ai_koszt_rozlicz: {
+        Args: {
+          p_id: string;
+          p_model: string;
+          /** Null = nie wiadomo; zostaje pesymistyczna rezerwacja. */
+          p_koszt_usd: number | null;
+          p_tokeny: Record<string, unknown>;
+        };
+        Returns: boolean;
+      };
       /** Tabele w public bez RLS. Pusta tablica to jedyny poprawny wynik. */
       tables_without_rls: { Args: Record<string, never>; Returns: string[] };
       /** Trwałe usunięcie własnego konta. Działa tylko na koncie wywołującego. */

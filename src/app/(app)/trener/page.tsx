@@ -1,6 +1,7 @@
 import { CoachScreen } from "@/components/coach/CoachScreen";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess } from "@/lib/subscription";
+import { stanBudzetu } from "@/lib/ai/budzet";
 import { todayISO } from "@/lib/format";
 import type { CoachMessage, CoachProposal } from "@/lib/database.types";
 
@@ -16,9 +17,12 @@ export default async function CoachPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [access, { data: proposals }, { data: past }, { data: messages }, { data: usage }] =
+  const [access, budzet, { data: proposals }, { data: past }, { data: messages }, { data: usage }] =
     await Promise.all([
     getAccess(),
+    // Ile zostało z miesięcznego budżetu. Ekran musi to napisać, ZANIM ktoś
+    // napisze pytanie — odmowa po fakcie jest zwykłym marnowaniem czyjegoś czasu.
+    stanBudzetu(supabase),
     supabase
       .from("coach_proposals")
       .select("*")
@@ -57,6 +61,7 @@ export default async function CoachPage() {
       history={[...((messages ?? []) as CoachMessage[])].reverse()}
       callsToday={usage?.calls ?? 0}
       dailyLimit={DAILY_LIMIT}
+      budzet={budzet}
       configured={Boolean(process.env.ANTHROPIC_API_KEY)}
     />
   );

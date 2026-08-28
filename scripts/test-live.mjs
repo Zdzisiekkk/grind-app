@@ -877,6 +877,88 @@ check("ekran snu otwiera się z zapisanymi drzemkami", senEkran.status === 200,
   `status ${senEkran.status}`);
 
 
+console.log("\n  Miesięczny budżet na AI\n");
+
+// Stan budżetu ma być czytelny dla ekranu ZANIM ktokolwiek kliknie.
+const budzet = await (await fetch(`${SB}/rest/v1/rpc/ai_budzet_stan`, {
+  method: "POST", headers: H, body: "{}",
+})).json();
+check("stan budżetu jest czytelny dla ekranu",
+  typeof budzet?.limit_pln === "number" && typeof budzet?.zostalo_pln === "number",
+  JSON.stringify(budzet));
+check("próg wynosi 8 zł na miesiąc", Number(budzet?.limit_pln) === 8,
+  `limit_pln=${budzet?.limit_pln}`);
+check("nowe konto nie jest zwolnione z limitu", budzet?.bez_limitu === false,
+  JSON.stringify(budzet));
+check("nowe konto nie wydało jeszcze nic",
+  Number(budzet?.wydano_pln) === 0 && Number(budzet?.zostalo_pln) === 8,
+  JSON.stringify(budzet));
+
+/*
+ * Rejestr kosztów to jedyna tabela, której konto nie może tknąć. Odczyt daje
+ * identyfikatory trwających rezerwacji, zapis pozwala podrobić kwotę,
+ * a kasowanie zeruje limit. Sprawdzamy wszystkie trzy drogi z pominięciem
+ * aplikacji — limit, który da się obejść, nie jest limitem.
+ */
+const rejestrOdczyt = await fetch(`${SB}/rest/v1/ai_wydatki?select=id`, { headers: H });
+check("rejestru kosztów nie da się odczytać z pominięciem aplikacji",
+  rejestrOdczyt.status >= 400, `status ${rejestrOdczyt.status}`);
+
+const rejestrZapis = await fetch(`${SB}/rest/v1/ai_wydatki`, {
+  method: "POST", headers: { ...H, Prefer: "return=representation" },
+  body: JSON.stringify({ user_id: li.user.id, kategoria: "trener", szacunek_usd: 0 }),
+});
+check("nie da się dopisać sobie wywołania za zero", rejestrZapis.status >= 400,
+  `status ${rejestrZapis.status}`);
+
+const rejestrKasowanie = await fetch(`${SB}/rest/v1/ai_wydatki?user_id=eq.${li.user.id}`, {
+  method: "DELETE", headers: H,
+});
+check("nie da się skasować własnych wydatków, żeby wyzerować limit",
+  rejestrKasowanie.status >= 400, `status ${rejestrKasowanie.status}`);
+
+// Rezerwacja i zwolnienie przez przewidziane funkcje — tą samą drogą,
+// co trasa API. Po zwolnieniu budżet musi wrócić do stanu sprzed próby.
+const rezerwacja = await (await fetch(`${SB}/rest/v1/rpc/ai_koszt_rezerwuj`, {
+  method: "POST", headers: H, body: JSON.stringify({ p_kategoria: "trener" }),
+})).json();
+check("rezerwacja przed wywołaniem przechodzi", rezerwacja?.ok === true,
+  JSON.stringify(rezerwacja));
+
+const poRezerwacji = await (await fetch(`${SB}/rest/v1/rpc/ai_budzet_stan`, {
+  method: "POST", headers: H, body: "{}",
+})).json();
+check("nierozliczona rezerwacja od razu obciąża budżet",
+  Number(poRezerwacji?.wydano_usd) > 0, JSON.stringify(poRezerwacji));
+
+if (rezerwacja?.id) {
+  await fetch(`${SB}/rest/v1/rpc/ai_koszt_rozlicz`, {
+    method: "POST", headers: H,
+    body: JSON.stringify({ p_id: rezerwacja.id, p_model: "", p_koszt_usd: 0, p_tokeny: {} }),
+  });
+  const poZwolnieniu = await (await fetch(`${SB}/rest/v1/rpc/ai_budzet_stan`, {
+    method: "POST", headers: H, body: "{}",
+  })).json();
+  check("nieudane wywołanie oddaje rezerwację do budżetu",
+    Number(poZwolnieniu?.wydano_usd) === 0, JSON.stringify(poZwolnieniu));
+
+  // Drugie rozliczenie tego samego wywołania to droga do wyzerowania
+  // prawdziwego kosztu po fakcie.
+  const drugie = await (await fetch(`${SB}/rest/v1/rpc/ai_koszt_rozlicz`, {
+    method: "POST", headers: H,
+    body: JSON.stringify({ p_id: rezerwacja.id, p_model: "", p_koszt_usd: 0, p_tokeny: {} }),
+  })).json();
+  check("wywołania nie da się rozliczyć drugi raz", drugie === false, JSON.stringify(drugie));
+}
+
+// Ekran trenera musi pokazywać stan budżetu, a nie tylko licznik dzienny.
+const trenerEkran = await fetch(APP + "/trener", { headers: { cookie }, redirect: "manual" });
+const trenerHtml = trenerEkran.status === 200 ? await trenerEkran.text() : "";
+check("ekran trenera otwiera się z budżetem", trenerEkran.status === 200,
+  `status ${trenerEkran.status}`);
+check("na ekranie trenera widać, ile zostało z miesiąca",
+  /8,00 zł|z 8,00 zł/.test(trenerHtml), trenerHtml ? "brak kwoty w HTML" : "pusty HTML");
+
 // 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
 const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
 check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);

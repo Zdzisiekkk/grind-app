@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { CoachAnalysisSchema } from "@/lib/ai/coachSchema";
 import { analyseDietVsWeight, findStrengthStalls, type SetRow } from "@/lib/ai/analysis";
-import { zalogujKoszt } from "@/lib/ai/koszt";
+import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { sleepDuration } from "@/lib/sleep";
@@ -84,17 +84,26 @@ async function guard(): Promise<
  */
 async function consumeCall(
   supabase: Awaited<ReturnType<typeof createClient>>,
-): Promise<NextResponse | null> {
+): Promise<{ ok: true; id: string } | { ok: false; response: NextResponse }> {
   const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
-  if (allowed) return null;
+  if (!allowed) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: `Dzienny limit ${DAILY_LIMIT} zapytań do trenera został wyczerpany. Wróć jutro.`,
+          code: "daily_limit",
+        },
+        { status: 429 },
+      ),
+    };
+  }
 
-  return NextResponse.json(
-    {
-      error: `Dzienny limit ${DAILY_LIMIT} zapytań do trenera został wyczerpany. Wróć jutro.`,
-      code: "daily_limit",
-    },
-    { status: 429 },
-  );
+  // Dwa limity, bo pilnują dwóch różnych rzeczy. Dzienny chroni przed jedną
+  // osobą klikającą w kółko; miesięczny chroni rachunek — a te same dziesięć
+  // wywołań kosztuje od kilkunastu groszy do kilku złotych, zależnie od tego,
+  // czy ktoś zadaje pytania, czy generuje plany.
+  return rezerwuj(supabase, "trener");
 }
 
 /** Wspólny błąd modelu — jeden komunikat zamiast surowego wyjątku na ekranie. */
@@ -209,8 +218,8 @@ export async function POST(request: Request) {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    const overLimit = await consumeCall(supabase);
-    if (overLimit) return overLimit;
+    const limit = await consumeCall(supabase);
+    if (!limit.ok) return limit.response;
 
     try {
       const client = new Anthropic({ maxRetries: 1 });
@@ -241,9 +250,9 @@ export async function POST(request: Request) {
         { timeout: 110_000 },
       );
 
-      zalogujKoszt("trener", MODEL, response.usage);
+      await rozlicz(supabase, limit.id, "trener", MODEL, response.usage);
 
-    if (response.stop_reason === "refusal") {
+      if (response.stop_reason === "refusal") {
         return NextResponse.json(
           { error: "Model nie chce odpowiedzieć na to pytanie." },
           { status: 422 },
@@ -266,6 +275,7 @@ export async function POST(request: Request) {
       ]);
       return NextResponse.json({ answer });
     } catch (error) {
+      await zwolnij(supabase, limit.id);
       return modelError(error);
     }
   }
@@ -283,8 +293,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const overLimit = await consumeCall(supabase);
-  if (overLimit) return overLimit;
+  const limit = await consumeCall(supabase);
+  if (!limit.ok) return limit.response;
 
   try {
     const client = new Anthropic({ maxRetries: 1 });
@@ -305,7 +315,7 @@ export async function POST(request: Request) {
       { timeout: 110_000 },
     );
 
-    zalogujKoszt("trener", MODEL, response.usage);
+    await rozlicz(supabase, limit.id, "trener", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ error: "Model odmówił wykonania analizy." }, { status: 422 });
@@ -348,6 +358,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ summary: analysis.summary, proposals: analysis.proposals });
   } catch (error) {
+    await zwolnij(supabase, limit.id);
     return modelError(error);
   }
 }

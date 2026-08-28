@@ -39,6 +39,7 @@ jobs:
           npm run test:looks
           npm run test:barcode
           npm run test:sen
+          npm run test:budzet
       - name: Budowanie
         run: npm run build
         env:

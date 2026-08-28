@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { AiPlanSchema, EXPERIENCE_LABEL, PlanRequestSchema } from "@/lib/ai/planSchema";
-import { zalogujKoszt } from "@/lib/ai/koszt";
+import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 
 /** Układanie planu potrafi potrwać — dajemy zapas ponad domyślne 60 s Vercela. */
@@ -70,6 +70,13 @@ export async function POST(request: Request) {
     );
   }
 
+  // I ten sam miesięczny budżet. Plan jest najdroższą rzeczą w aplikacji —
+  // około 3500 tokenów wyjścia — więc rezerwacja jest pięć razy większa niż
+  // przy pytaniu do trenera. Bez tego dziesięć planów dziennie mieściłoby się
+  // w limicie wywołań i zjadało budżet miesiąca w jedno popołudnie.
+  const limit = await rezerwuj(supabase, "plan");
+  if (!limit.ok) return limit.response;
+
   const parsedInput = PlanRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsedInput.success) {
     return NextResponse.json({ error: "Nieprawidłowe dane formularza." }, { status: 400 });
@@ -135,7 +142,7 @@ export async function POST(request: Request) {
       { timeout: 280_000 },
     );
 
-    zalogujKoszt("plan", MODEL, response.usage);
+    await rozlicz(supabase, limit.id, "plan", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       throw new Error("Model odmówił wykonania tego zadania.");
@@ -154,6 +161,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ requestId: logRow?.id ?? null, draft });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Nieznany błąd.";
+
+    // Plan się nie ułożył — rezerwacja idzie z powrotem do budżetu.
+    await zwolnij(supabase, limit.id);
 
     if (logRow) {
       await supabase

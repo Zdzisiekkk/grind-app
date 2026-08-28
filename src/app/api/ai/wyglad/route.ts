@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { WygladAnalysisSchema } from "@/lib/ai/wygladSchema";
-import { zalogujKoszt } from "@/lib/ai/koszt";
+import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { sleepDuration } from "@/lib/sleep";
@@ -192,6 +192,17 @@ export async function POST(request: Request) {
     },
   ];
 
+  /*
+   * Skan trafia do tego samego rejestru kosztów co trener, ale NIE zjada jego
+   * budżetu (`liczone` w app_settings, migracja 0043). Ma własne, ostrzejsze
+   * ograniczenia — odstęp 7 dni i 5 skanów miesięcznie, czyli około 1,40 zł —
+   * więc wliczanie go do puli trenera odbierałoby pytania komuś, kto raz
+   * w tygodniu zrobił zdjęcie. Zapisujemy go po to, żeby rachunek za AI dało
+   * się zobaczyć w całości, a nie w kawałkach.
+   */
+  const limit = await rezerwuj(supabase, "wyglad");
+  if (!limit.ok) return limit.response;
+
   let analiza;
   try {
     const client = new Anthropic({ maxRetries: 1 });
@@ -218,7 +229,7 @@ export async function POST(request: Request) {
       { timeout: 110_000 },
     );
 
-    zalogujKoszt("skan_wygladu", MODEL, response.usage);
+    await rozlicz(supabase, limit.id, "wyglad", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ error: "Model odmówił oceny tych zdjęć." }, { status: 422 });
@@ -242,6 +253,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
+    await zwolnij(supabase, limit.id);
     return modelError(error);
   }
 

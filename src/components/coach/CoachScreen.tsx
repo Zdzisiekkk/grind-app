@@ -7,7 +7,7 @@ import { Alert, Button, Card, Chip, EmptyState, Input, Spinner } from "@/compone
 import { acceptProposal, rejectProposal } from "@/app/(app)/trener/actions";
 import { humanDate } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
-import type { CoachMessage, CoachProposal } from "@/lib/database.types";
+import type { AiBudzetStan, CoachMessage, CoachProposal } from "@/lib/database.types";
 
 /** Co się z radą stało. „Nieaktualna" znaczy: przyszła nowsza analiza. */
 const PAST_LABEL: Record<CoachProposal["status"], string> = {
@@ -30,6 +30,7 @@ export function CoachScreen({
   history,
   callsToday,
   dailyLimit,
+  budzet,
   configured,
 }: {
   pro: boolean;
@@ -39,6 +40,8 @@ export function CoachScreen({
   history: CoachMessage[];
   callsToday: number;
   dailyLimit: number;
+  /** Miesięczny budżet na AI. Null, gdy baza nie odpowiedziała. */
+  budzet: AiBudzetStan | null;
   /** Czy klucz do modelu jest w ogóle wpisany po stronie serwera. */
   configured: boolean;
 }) {
@@ -97,6 +100,15 @@ export function CoachScreen({
 
   const left = Math.max(0, dailyLimit - callsToday);
 
+  /*
+   * Dwa limity naraz i oba mogą zamknąć trenera, ale mówią o czym innym.
+   * Dzienny odnawia się jutro, miesięczny dopiero pierwszego. Wspólny komunikat
+   * „limit wyczerpany" kazałby zgadywać, na kiedy właściwie wracać.
+   */
+  const bezBudzetu = budzet ? !budzet.bez_limitu && Number(budzet.zostalo_pln) <= 0 : false;
+  const zablokowany = left === 0 || bezBudzetu;
+  const zl = (kwota: number) => `${Number(kwota).toFixed(2).replace(".", ",")} zł`;
+
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
@@ -106,13 +118,33 @@ export function CoachScreen({
             Proponuje. Decydujesz Ty — nic nie zmienia się samo.
           </p>
         </div>
-        <Chip tone={left > 2 ? "neutral" : "warn"}>{left} / {dailyLimit} dziś</Chip>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Chip tone={left > 2 ? "neutral" : "warn"}>
+            {left} / {dailyLimit} dziś
+          </Chip>
+          {budzet &&
+            (budzet.bez_limitu ? (
+              <Chip tone="neutral">bez limitu</Chip>
+            ) : (
+              <Chip tone={Number(budzet.zostalo_pln) > 1 ? "neutral" : "warn"}>
+                {zl(budzet.zostalo_pln)} z {zl(budzet.limit_pln)}
+              </Chip>
+            ))}
+        </div>
       </header>
 
       {!configured && (
         <Alert tone="warn">
           Klucz do modelu nie jest jeszcze wpisany po stronie serwera, więc trener nie ma czym
           myśleć. Reszta aplikacji działa normalnie.
+        </Alert>
+      )}
+      {bezBudzetu && (
+        <Alert tone="warn">
+          Miesięczny limit {zl(budzet!.limit_pln)} na AI jest wyczerpany — w tym miesiącu poszło{" "}
+          {zl(budzet!.wydano_pln)} przez {budzet!.wywolan} wywołań. Budżet odnowi się pierwszego
+          dnia przyszłego miesiąca. Reszta aplikacji działa normalnie: wykrywanie stagnacji,
+          liczenie diety i statystyki liczą się u Ciebie, bez modelu.
         </Alert>
       )}
       {error && <Alert>{error}</Alert>}
@@ -122,10 +154,14 @@ export function CoachScreen({
         size="lg"
         block
         loading={busy === "analyze"}
-        disabled={left === 0 || !configured}
+        disabled={zablokowany || !configured}
         onClick={() => call({ mode: "analyze" }, "analyze")}
       >
-        {left === 0 ? "Limit na dziś wyczerpany" : "Przeanalizuj ostatni miesiąc"}
+        {bezBudzetu
+          ? "Miesięczny budżet wyczerpany"
+          : left === 0
+            ? "Limit na dziś wyczerpany"
+            : "Przeanalizuj ostatni miesiąc"}
       </Button>
 
       {summary && (
@@ -250,13 +286,15 @@ export function CoachScreen({
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="np. dlaczego wyciskanie stoi od miesiąca?"
-            disabled={left === 0 || !configured}
+            placeholder={
+              bezBudzetu ? "Budżet na ten miesiąc wyczerpany" : "np. dlaczego wyciskanie stoi od miesiąca?"
+            }
+            disabled={zablokowany || !configured}
           />
           <Button
             type="submit"
             variant="primary"
-            disabled={!question.trim() || left === 0 || !configured}
+            disabled={!question.trim() || zablokowany || !configured}
           >
             {busy === "chat" ? <Spinner /> : "Wyślij"}
           </Button>

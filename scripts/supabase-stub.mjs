@@ -31,6 +31,14 @@ export const SUPABASE_STUB = `
   $$;
   grant usage on schema auth to authenticated;
 
+  -- Supabase nadaje domyślne uprawnienia na KAŻDĄ nową tabelę w public.
+  -- Bez tego migracja, która o tym zapomni, przechodzi lokalnie i wywala się
+  -- dopiero na produkcji — dokładnie tak było z rejestrem kosztów w 0043.
+  alter default privileges in schema public
+    grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public
+    grant all on sequences to anon, authenticated, service_role;
+
   -- Magazyn plików. Odwzorowane tyle, ile dotyka migracja 0039: kubełki,
   -- obiekty i foldername() — czyli funkcja, na której stoją polityki dostępu
   -- do zdjęć. Bez tego moduł „Wygląd" nie dałby się sprawdzić przed wdrożeniem.
