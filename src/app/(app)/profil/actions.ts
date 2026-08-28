@@ -99,6 +99,27 @@ export async function deleteAccount(): Promise<void> {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  /*
+   * Zdjęcia z modułu „Wygląd" najpierw, i to przez API magazynu.
+   *
+   * Kaskady w bazie zabierają wiersze, ale nie pliki — kubełek nie jest
+   * tabelą. Supabase w dodatku broni `storage.objects` przed bezpośrednim
+   * DELETE („Direct deletion from storage tables is not allowed"), więc
+   * jedyna droga prowadzi tędy. Robimy to PRZED skasowaniem konta, bo potem
+   * nie ma już sesji, która miałaby prawo tknąć te pliki.
+   */
+  const { data: pliki } = await supabase.storage.from("wyglad").list(user.id, { limit: 1000 });
+  if (pliki?.length) {
+    const sciezki: string[] = [];
+    for (const katalog of pliki) {
+      const { data: wSrodku } = await supabase.storage
+        .from("wyglad")
+        .list(`${user.id}/${katalog.name}`, { limit: 100 });
+      for (const plik of wSrodku ?? []) sciezki.push(`${user.id}/${katalog.name}/${plik.name}`);
+    }
+    if (sciezki.length) await supabase.storage.from("wyglad").remove(sciezki);
+  }
+
   const { error } = await supabase.rpc("delete_my_account", {});
   if (error) throw new Error(`Nie udało się usunąć konta: ${error.message}`);
 

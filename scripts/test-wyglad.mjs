@@ -102,12 +102,29 @@ r = await as(A, `insert into public.wyglad_skany (user_id) values ('${A}')`);
 check('szósty skan odrzucony przez bazę, nie przez ekran', !r.ok);
 await db.exec(`update public.app_settings set value = jsonb_set(value, '{odstep_dni}', '7') where key = 'wyglad'`);
 
-console.log('\n  Pliki po usunięciu konta\n');
-await db.exec(`insert into storage.objects (bucket_id, name) values ('wyglad', '${A}/${skanA}/front.jpg'), ('wyglad', '${B}/inny/front.jpg')`);
+console.log('\n  Po usunięciu konta\n');
+
+/*
+ * Baza gwarantuje kaskadę na wierszach — i tylko tyle.
+ *
+ * Pierwsza wersja migracji miała wyzwalacz kasujący też wiersze ze
+ * storage.objects. Supabase broni tej tabeli przed bezpośrednim DELETE, więc
+ * wyzwalacz wywracał usunięcie KAŻDEGO konta, także takiego bez jednego zdjęcia.
+ * PGlite tej blokady nie ma, dlatego test przechodził, a produkcja nie.
+ * Same pliki kasuje deleteAccount() przez API magazynu, przed skasowaniem konta.
+ */
+await db.exec(`insert into storage.objects (bucket_id, name) values ('wyglad', '${A}/${skanA}/front.jpg')`);
 await db.exec(`delete from auth.users where id = '${A}'`);
-const zostalo = (await db.query(`select name from storage.objects where bucket_id='wyglad'`)).rows;
-check('zdjęcia usuniętego konta znikają', zostalo.length === 1 && zostalo[0].name.startsWith(B), JSON.stringify(zostalo));
-check('zdjęcia drugiej osoby zostają nietknięte', zostalo.some(o => o.name.startsWith(B)));
+
+const poSkany = (await db.query(`select id from public.wyglad_skany where user_id = '${A}'`)).rows;
+const poZdjecia = (await db.query(`select id from public.wyglad_zdjecia where user_id = '${A}'`)).rows;
+const poRutyny = (await db.query(`select id from public.wyglad_rutyny where user_id = '${A}'`)).rows;
+check('skany usuniętego konta znikają kaskadą', poSkany.length === 0, `wierszy: ${poSkany.length}`);
+check('wiersze zdjęć znikają razem ze skanem', poZdjecia.length === 0, `wierszy: ${poZdjecia.length}`);
+check('rutyny znikają razem z kontem', poRutyny.length === 0, `wierszy: ${poRutyny.length}`);
+
+const drugieKonto = (await db.query(`select id from auth.users where id = '${B}'`)).rows;
+check('drugie konto zostaje nietknięte', drugieKonto.length === 1);
 
 console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : ' — WSZYSTKO PRZESZŁO'}\n`);
 process.exit(bad ? 1 : 0);

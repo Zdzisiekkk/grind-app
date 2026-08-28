@@ -485,41 +485,27 @@ grant execute on function public.wyglad_limit(), public.wyglad_moze_skanowac()
   to authenticated;
 
 -- ------------------------------------------------------------
--- Usunięcie konta zabiera też zdjęcia
+-- Usunięcie konta a zdjęcia — dlaczego NIE ma tu wyzwalacza
 --
 -- `delete_my_account()` z 0024 kasuje wiersz z `auth.users`, a kaskady
--- sprzątają tabele. Kubełek NIE jest kaskadą — pliki zostałyby na dysku po
--- koncie, którego już nie ma.
+-- sprzątają tabele. Kubełek nie jest tabelą, więc pliki zostałyby po koncie,
+-- którego już nie ma.
 --
--- Ten wyzwalacz kasuje wiersze z `storage.objects`, czyli odbiera dostęp
--- natychmiast. Same bajty usuwa dopiero API magazynu, dlatego trasa kasująca
--- konto woła `storage.remove()` PRZED `delete_my_account()`. To jest zapasowa
--- siatka na wypadek, gdyby konto zniknęło inną drogą (panel Supabase, ręcznie).
+-- Napisałem najpierw wyzwalacz kasujący wiersze ze `storage.objects` i była to
+-- pomyłka: Supabase pilnuje tej tabeli własnym wyzwalaczem i odrzuca każde
+-- bezpośrednie DELETE („Direct deletion from storage tables is not allowed").
+-- Efekt był taki, że usunięcie KAŻDEGO konta kończyło się błędem — także
+-- konta, które nigdy nie zrobiło żadnego skanu. Kasowanie wierszy i tak nie
+-- usuwałoby bajtów, więc pomysł był zły w dwie strony naraz.
+--
+-- Pliki kasuje `deleteAccount()` w `src/app/(app)/profil/actions.ts`, przez
+-- API magazynu, PRZED skasowaniem konta — bo potem nie ma już sesji, która
+-- miałaby do nich prawo.
+--
+-- `drop if exists` zostaje dla baz, na które trafiła pierwsza wersja.
 -- ------------------------------------------------------------
-create or replace function public.wyglad_sprzatnij_pliki()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, storage
-as $$
-begin
-  delete from storage.objects
-   where bucket_id = 'wyglad'
-     and (storage.foldername(name))[1] = old.id::text;
-  return old;
-end;
-$$;
-
-/*
- * Funkcja wyzwalacza nie ma czego szukać w API. Wywołana wprost i tak by się
- * wywaliła, ale nie ma powodu, żeby w ogóle była na liście.
- */
-revoke all on function public.wyglad_sprzatnij_pliki() from public, anon, authenticated;
-
 drop trigger if exists on_auth_user_deleted_wyglad on auth.users;
-create trigger on_auth_user_deleted_wyglad
-  before delete on auth.users
-  for each row execute function public.wyglad_sprzatnij_pliki();
+drop function if exists public.wyglad_sprzatnij_pliki();
 
 -- ------------------------------------------------------------
 -- Sprawdzenie na miejscu
