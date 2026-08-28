@@ -834,6 +834,49 @@ check("polityka prywatności mówi o zdjęciach twarzy",
   prywatnoscOZdjeciach.includes("Zdjęcia w module") ||
     prywatnoscOZdjeciach.includes("zdjęcia twarzy"));
 
+console.log("\n  Drzemki\n");
+
+// Trzy po 20 minut. Sedno całej zmiany: to NIE ma się zapisać jako jedna
+// godzinna drzemka, bo dla organizmu to co innego.
+const drzemkiZapis = await fetch(`${SB}/rest/v1/sleep_naps`, {
+  method: "POST", headers: { ...H, Prefer: "return=representation" },
+  body: JSON.stringify([
+    { user_id: li.user.id, date: nightDate, minutes: 20, start_time: "13:00" },
+    { user_id: li.user.id, date: nightDate, minutes: 20, start_time: "15:00" },
+    { user_id: li.user.id, date: nightDate, minutes: 20, start_time: "16:30" },
+  ]),
+});
+const drzemkiWiersze = await drzemkiZapis.json();
+check("trzy drzemki zapisane osobno", Array.isArray(drzemkiWiersze) && drzemkiWiersze.length === 3,
+  JSON.stringify(drzemkiWiersze).slice(0, 90));
+
+const widok = await (await fetch(
+  `${SB}/rest/v1/v_sleep?select=nap_min,nap_count,naps&date=eq.${nightDate}`, { headers: H },
+)).json();
+const w = Array.isArray(widok) ? widok[0] : null;
+check("widok podaje sumę minut", w?.nap_min === 60, `nap_min=${w?.nap_min}`);
+check("widok podaje liczbę drzemek, nie tylko sumę", w?.nap_count === 3, `nap_count=${w?.nap_count}`);
+check("widok podaje rozbicie z godzinami",
+  Array.isArray(w?.naps) && w.naps.length === 3 && w.naps[0].start_time?.startsWith("13:"),
+  JSON.stringify(w?.naps));
+
+const zaDluga = await fetch(`${SB}/rest/v1/sleep_naps`, {
+  method: "POST", headers: H,
+  body: JSON.stringify({ user_id: li.user.id, date: nightDate, minutes: 900 }),
+});
+check("baza odrzuca drzemkę dłuższą niż doba pracy", zaDluga.status === 400,
+  `status ${zaDluga.status}`);
+
+const cudzaDrzemka = await fetch(`${SB}/rest/v1/sleep_naps?select=id`, { headers: H });
+const mojeDrzemki = await cudzaDrzemka.json();
+check("widać wyłącznie własne drzemki", Array.isArray(mojeDrzemki) && mojeDrzemki.length === 3,
+  `wierszy: ${Array.isArray(mojeDrzemki) ? mojeDrzemki.length : "?"}`);
+
+const senEkran = await fetch(APP + "/sen", { headers: { cookie }, redirect: "manual" });
+check("ekran snu otwiera się z zapisanymi drzemkami", senEkran.status === 200,
+  `status ${senEkran.status}`);
+
+
 // 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
 const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
 check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);

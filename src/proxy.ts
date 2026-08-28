@@ -25,6 +25,10 @@ const PUBLIC_PATHS = [
   // inaczej zgoda przy rejestracji byłaby zgodą na coś, czego nie dało się zobaczyć.
   "/regulamin",
   "/prywatnosc",
+  // Sam skrót commita. Sprawdzenie „czy nowy kod już stoi" musi działać
+  // wcześniej niż cokolwiek, co wymaga sesji — bo służy właśnie do tego,
+  // żeby wiedzieć, kiedy bezpiecznie ruszyć migrację zależną od kolejności.
+  "/api/wersja",
 ];
 
 /**
