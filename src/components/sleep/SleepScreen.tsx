@@ -50,7 +50,12 @@ const EMPTY = {
   awake_min: 0,
   quality: 3,
   morning_energy: 3 as number | null,
-  nap_min: 0,
+  /*
+   * Drzemki osobno, nie jedną sumą. Trzy po 20 minut i jedna godzinna dają
+   * tę samą liczbę minut, ale nie to samo dla organizmu — a skoro wchodzą
+   * do wyniku nocy, muszą dać się rozróżnić.
+   */
+  naps: [] as Array<{ minutes: number; start: string | null }>,
   factors: [] as string[],
   note: "",
 };
@@ -154,7 +159,10 @@ export function SleepScreen({
             awake_min: existing.awake_min,
             quality: existing.quality,
             morning_energy: existing.morning_energy,
-            nap_min: existing.nap_min,
+            naps: (existing.naps ?? []).map((n) => ({
+              minutes: n.minutes,
+              start: n.start == null ? null : minToTime(n.start),
+            })),
             factors: existing.factors,
             note: existing.note ?? "",
           }
@@ -186,18 +194,45 @@ export function SleepScreen({
         awake_min: draft.awake_min,
         quality: draft.quality,
         morning_energy: draft.morning_energy,
-        nap_min: draft.nap_min,
         factors: draft.factors,
         note: draft.note.trim() || null,
       },
       { onConflict: "user_id,date" },
     );
 
-    setSaving(false);
     if (error) {
+      setSaving(false);
       setError(`Nie udało się zapisać: ${error.message}`);
       return;
     }
+
+    /*
+     * Drzemki: kasujemy dzień i wpisujemy od nowa.
+     *
+     * Drzemek jest kilka, nie kilkaset, więc porównywanie ich po jednej
+     * kosztowałoby więcej kodu niż daje. Ważniejsze, że po edycji w bazie
+     * zostaje dokładnie to, co widać na ekranie — bez sierot po skasowanym
+     * wierszu.
+     */
+    await supabase.from("sleep_naps").delete().eq("user_id", userId).eq("date", draft.date);
+
+    if (draft.naps.length > 0) {
+      const { error: napError } = await supabase.from("sleep_naps").insert(
+        draft.naps.map((n) => ({
+          user_id: userId,
+          date: draft.date,
+          minutes: n.minutes,
+          start_time: n.start,
+        })),
+      );
+      if (napError) {
+        setSaving(false);
+        setError(`Noc zapisana, ale drzemki nie: ${napError.message}`);
+        return;
+      }
+    }
+
+    setSaving(false);
     navigator.vibrate?.(12);
     setFormOpen(false);
     router.refresh();
@@ -560,16 +595,70 @@ export function SleepScreen({
             />
           </Field>
 
-          <Field label="Drzemka w ciągu dnia (opcjonalnie)">
-            <NumberStepper
-              ariaLabel="Minuty drzemki"
-              value={draft.nap_min}
-              onChange={(v) => setDraft({ ...draft, nap_min: Math.max(0, v ?? 0) })}
-              step={10}
-              min={0}
-              max={600}
-              suffix="min"
-            />
+          {/*
+            Każda drzemka osobno.
+            Godzina jest opcjonalna, bo nie każdy ją pamięta — a bez niej
+            drzemka i tak się liczy, tylko bez kary za późną porę.
+          */}
+          <Field
+            label="Drzemki w ciągu dnia (opcjonalnie)"
+            hint="Osobno każdą. Trzy po 20 minut to co innego niż jedna godzinna."
+          >
+            <div className="flex flex-col gap-2">
+              {draft.naps.map((nap, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <NumberStepper
+                    ariaLabel={`Minuty drzemki ${i + 1}`}
+                    value={nap.minutes}
+                    onChange={(v) =>
+                      setDraft({
+                        ...draft,
+                        naps: draft.naps.map((n, j) =>
+                          j === i ? { ...n, minutes: Math.min(600, Math.max(1, v ?? 1)) } : n,
+                        ),
+                      })
+                    }
+                    step={5}
+                    min={1}
+                    max={600}
+                    suffix="min"
+                  />
+                  <Input
+                    type="time"
+                    aria-label={`Godzina drzemki ${i + 1}`}
+                    className="w-[110px]"
+                    value={nap.start ?? ""}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        naps: draft.naps.map((n, j) =>
+                          j === i ? { ...n, start: e.target.value || null } : n,
+                        ),
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Usuń drzemkę ${i + 1}`}
+                    className="px-2 text-[13px] text-danger"
+                    onClick={() =>
+                      setDraft({ ...draft, naps: draft.naps.filter((_, j) => j !== i) })
+                    }
+                  >
+                    Usuń
+                  </button>
+                </div>
+              ))}
+
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  setDraft({ ...draft, naps: [...draft.naps, { minutes: 20, start: null }] })
+                }
+              >
+                {draft.naps.length === 0 ? "Dodaj drzemkę" : "Dodaj kolejną"}
+              </Button>
+            </div>
           </Field>
 
           <Field
@@ -743,7 +832,8 @@ function previewScore(draft: Draft, goalMin: number, reference: number | null): 
     awake_min: draft.awake_min,
     quality: draft.quality,
     morning_energy: draft.morning_energy,
-    nap_min: draft.nap_min,
+    nap_min: draft.naps.reduce((sum, n) => sum + n.minutes, 0),
+    naps: draft.naps.map((n) => ({ minutes: n.minutes, start: timeToMin(n.start) })),
     factors: draft.factors,
     note: draft.note,
   };

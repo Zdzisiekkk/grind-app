@@ -16,13 +16,24 @@ import { STATUS } from "@/lib/viz";
 
 export const DEFAULT_SLEEP_GOAL_MIN = 480; // 8 h
 
-/** Ile punktów może dać każda składowa. Suma = 100. */
+/**
+ * Ile punktów może dać każda składowa.
+ *
+ * Cztery pierwsze sumują się do 100 i tak zostaje, gdy nie było drzemek.
+ * Drzemki dokładają piątą, wyraźnie lżejszą — mają dawać sygnał, a nie
+ * przewracać oceny nocy. Reszta wag skaluje się wtedy sama, tym samym
+ * mechanizmem, który obsługuje brak regularności.
+ */
 export const SLEEP_WEIGHTS = {
   duration: 40,
   feeling: 25,
   continuity: 20,
   regularity: 15,
+  naps: 10,
 } as const;
+
+/** Jedna drzemka. `start` w minutach od północy — null, gdy nieznana. */
+export type Nap = { minutes: number; start: number | null };
 
 export type SleepNight = {
   date: string;
@@ -36,12 +47,14 @@ export type SleepNight = {
   quality: number;
   morning_energy: number | null;
   nap_min: number;
+  /** Rozbicie na pojedyncze drzemki. Puste = nie było żadnej. */
+  naps?: Nap[];
   factors: string[];
   note: string | null;
 };
 
 export type ScorePart = {
-  key: "duration" | "feeling" | "continuity" | "regularity";
+  key: "duration" | "feeling" | "continuity" | "regularity" | "naps";
   label: string;
   /** 0–1; mnożone przez wagę składowej. */
   ratio: number;
@@ -59,6 +72,19 @@ export type SleepScore = {
 };
 
 /* ------------------------------ Czas i godziny ----------------------------- */
+
+/**
+ * Drzemki z widoku `v_sleep` na postać, której używa liczenie wyniku.
+ *
+ * Jedno miejsce dla wszystkich trzech ekranów, które liczą wynik nocy. Gdyby
+ * każdy mapował to po swojemu, ta sama noc potrafiłaby dostać inny wynik
+ * na pulpicie i w postępach.
+ */
+export function napsFromView(
+  raw: Array<{ minutes: number; start_time: string | null }> | null | undefined,
+): Nap[] {
+  return (raw ?? []).map((n) => ({ minutes: n.minutes, start: timeToMin(n.start_time) }));
+}
 
 /** „23:30:00" → 1410. Zwraca null dla pustych wartości. */
 export function timeToMin(time: string | null | undefined): number | null {
@@ -132,6 +158,64 @@ function feelingRatio(quality: number, energy: number | null): number {
  * Kara jest odejmowana od pełnej puli, więc trzy drobne rzeczy naraz zabolą
  * tyle samo co jedna duża — i o to chodzi, bo tak właśnie czuje się taka noc.
  */
+/**
+ * Jakość pojedynczej drzemki po jej długości.
+ *
+ * Do 30 minut drzemka kończy się przed snem głębokim: budzisz się od razu
+ * sprawny, a wieczorem nadal chce ci się spać. Dłuższa wchodzi w sen głęboki
+ * i płaci się za to dwa razy — otępieniem po przebudzeniu i mniejszym
+ * ciśnieniem snu w nocy. Poniżej pięciu minut to nie jest drzemka, tylko
+ * przymknięcie oczu; nie karzemy, ale i nie liczymy jako pełnowartościowej.
+ */
+function napLengthRatio(minutes: number): number {
+  if (minutes < 5) return 0.85;
+  if (minutes <= 30) return 1;
+  if (minutes <= 60) return 1 - ((minutes - 30) / 30) * 0.45; // 1 → 0,55
+  if (minutes <= 90) return 0.55 - ((minutes - 60) / 30) * 0.25; // 0,55 → 0,3
+  return 0.3;
+}
+
+/**
+ * Kara za późną porę.
+ *
+ * Drzemka po siedemnastej zabiera ciśnienie snu tuż przed nocą — to ta,
+ * po której leży się o północy z otwartymi oczami. Bez zapisanej godziny
+ * nie zgadujemy: brak kary.
+ */
+function napTimeRatio(start: number | null): number {
+  if (start == null) return 1;
+  if (start >= 20 * 60) return 0.5;
+  if (start >= 17 * 60) return 0.75;
+  return 1;
+}
+
+/**
+ * Składowa „Drzemki".
+ *
+ * Liczona TYLKO wtedy, gdy w danym dniu była choć jedna — dzień bez drzemki
+ * nie jest ani lepszy, ani gorszy, więc waga rozdziela się na resztę.
+ *
+ * Dlaczego rozbicie w ogóle ma znaczenie: trzy drzemki po 20 minut i jedna
+ * sześćdziesięciominutowa dają tę samą sumę, ale nie to samo. Pierwsze trzy
+ * mieszczą się w oknie przed snem głębokim; ostatnia nie. Osobno liczy się
+ * jednak także sama liczba — cztery drzemki dziennie to już nie regeneracja,
+ * tylko objaw długu sennego, i wynik ma o tym mówić.
+ */
+function napsRatio(naps: Nap[]): number {
+  if (naps.length === 0) return 1;
+
+  const perNap =
+    naps.reduce((sum, n) => sum + napLengthRatio(n.minutes) * napTimeRatio(n.start), 0) /
+    naps.length;
+
+  const countRatio = naps.length <= 2 ? 1 : naps.length === 3 ? 0.85 : 0.7;
+
+  const total = naps.reduce((sum, n) => sum + n.minutes, 0);
+  const totalRatio = total <= 30 ? 1 : total <= 60 ? 0.9 : total <= 120 ? 0.75 : 0.55;
+
+  return clamp01(perNap * countRatio * totalRatio);
+}
+
 function continuityRatio(night: SleepNight): number {
   const wakePenalty = Math.min(0.6, night.awakenings * 0.2);
   const awakePenalty = Math.min(0.4, Math.max(0, night.awake_min - 10) / 100);
@@ -211,6 +295,30 @@ export function scoreNight(
   ];
 
   const skipped: ScorePart["key"][] = [];
+
+  /*
+   * Drzemki wchodzą do oceny tylko wtedy, gdy jakakolwiek była. Dzień bez
+   * drzemki nie jest z tego powodu lepszy ani gorszy, a doliczanie mu pełnych
+   * punktów „za brak" rozmyłoby całą składową.
+   */
+  const naps = night.naps ?? (night.nap_min > 0 ? [{ minutes: night.nap_min, start: null }] : []);
+
+  if (naps.length > 0) {
+    const suma = naps.reduce((sum, n) => sum + n.minutes, 0);
+    parts.push({
+      key: "naps",
+      label: "Drzemki",
+      ratio: napsRatio(naps),
+      points: 0,
+      max: SLEEP_WEIGHTS.naps,
+      hint:
+        naps.length === 1
+          ? `Jedna drzemka, ${sleepDuration(suma)}`
+          : `${naps.length} drzemki, razem ${sleepDuration(suma)}`,
+    });
+  } else {
+    skipped.push("naps");
+  }
 
   if (bedMin != null && reference != null) {
     parts.push({

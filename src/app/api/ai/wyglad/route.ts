@@ -197,7 +197,18 @@ export async function POST(request: Request) {
     const response = await client.messages.parse(
       {
         model: MODEL,
-        max_tokens: 4000,
+        /*
+         * Dużo więcej niż u trenera i nie bez powodu.
+         *
+         * Pierwsze prawdziwe skany wywalały się na „Unterminated string in
+         * JSON": model nie zdążył domknąć odpowiedzi przed limitem i parser
+         * dostawał urwany tekst. Ten schemat jest po prostu duży — do dziewięciu
+         * podocen z obserwacjami i do sześciu zaleceń po sześć kroków, wszystko
+         * po polsku — a przy myśleniu adaptacyjnym rozumowanie liczy się do tego
+         * samego limitu. Cięcie tego kosztuje jeden nieudany skan z limitu
+         * pięciu miesięcznie, więc zapas jest tańszy niż oszczędność.
+         */
+        max_tokens: 16000,
         thinking: { type: "adaptive" },
         output_config: { effort: "medium", format: zodOutputFormat(WygladAnalysisSchema) },
         system: SYSTEM,
@@ -208,6 +219,16 @@ export async function POST(request: Request) {
 
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ error: "Model odmówił oceny tych zdjęć." }, { status: 422 });
+    }
+
+    // Osobny komunikat, bo „spróbuj ponownie" przy uciętej odpowiedzi jest radą
+    // donikąd — powtórka skończy się tak samo, dopóki limit się nie zmieni.
+    if (response.stop_reason === "max_tokens") {
+      console.error("Skan wyglądu: odpowiedź ucięta na limicie tokenów");
+      return NextResponse.json(
+        { error: "Model nie zmieścił się z odpowiedzią. Zgłoś to — limit wymaga podniesienia." },
+        { status: 502 },
+      );
     }
 
     analiza = response.parsed_output;

@@ -274,7 +274,6 @@ export type SleepLog = {
   quality: number;
   /** Jak się obudziłeś, 1–5. Osobno, bo to nie to samo co jakość snu. */
   morning_energy: number | null;
-  nap_min: number;
   factors: string[];
   note: string | null;
   /** Kolumna generowana: różnica pobudka − położenie się, liczona przez północ. */
@@ -296,7 +295,12 @@ export type SleepView = {
   awake_min: number;
   quality: number;
   morning_energy: number | null;
+  /** Suma minut drzemek z tego dnia — liczona w widoku z tabeli sleep_naps. */
   nap_min: number;
+  /** Ile drzemek. Trzy po 20 minut to nie to samo co jedna godzinna. */
+  nap_count: number;
+  /** Rozbicie na pojedyncze drzemki, w kolejności godzin. */
+  naps: Array<{ minutes: number; start_time: string | null }>;
   factors: string[];
   note: string | null;
 };
@@ -784,6 +788,16 @@ export type WygladLimit = {
   powod: "limit_miesiaca" | "odstep" | null;
 };
 
+export type SleepNap = {
+  id: string;
+  user_id: string;
+  date: string;
+  /** Godzina rozpoczęcia, „HH:MM:SS". Null, gdy nieznana. */
+  start_time: string | null;
+  minutes: number;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -822,6 +836,7 @@ export type Database = {
         Omit<SleepLog, "time_in_bed_min">,
         "user_id" | "bedtime" | "wake_time" | "quality"
       > & { Row: SleepLog };
+      sleep_naps: Tbl<SleepNap, "user_id" | "minutes">;
       body_weight_logs: Tbl<BodyWeightLog, "user_id" | "weight_kg">;
       foods: Tbl<Food, "name" | "kcal_100g">;
       meals: Tbl<Meal, "user_id" | "meal_type">;

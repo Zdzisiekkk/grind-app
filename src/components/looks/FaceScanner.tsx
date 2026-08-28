@@ -48,6 +48,9 @@ const OPIS: Record<Ujecie, { tytul: string; jak: string; wymagane: boolean }> = 
 /** Dłuższy bok zdjęcia. Więcej pikseli nie poprawia oceny, a kosztuje przy każdym skanie. */
 const MAX_BOK = 1600;
 
+/** Ile sekund na dojście do kadru i opuszczenie ręki. */
+const ODLICZANIE_S = 5;
+
 type Etap = "podglad" | "wysylanie" | "analiza";
 
 /**
@@ -91,6 +94,8 @@ export function FaceScanner({
   const [blad, setBlad] = useState<string | null>(null);
   const [kameraOk, setKameraOk] = useState(false);
   const [status, setStatus] = useState("");
+  /** Sekundy do wyzwolenia migawki; null = nie odliczamy. */
+  const [odliczanie, setOdliczanie] = useState<number | null>(null);
 
   const ujecie = KOLEJNOSC[krok];
 
@@ -146,7 +151,8 @@ export function FaceScanner({
     return stopCamera;
   }, [open, stopCamera]);
 
-  async function zrobZdjecie() {
+  /** Sama migawka — bez odliczania, wołana z timera i z galerii. */
+  const zapiszKlatke = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
     const blob = await doJpega(video, video.videoWidth, video.videoHeight);
@@ -155,8 +161,31 @@ export function FaceScanner({
       return;
     }
     setZrobione((z) => ({ ...z, [ujecie]: blob }));
-    if (krok < KOLEJNOSC.length - 1) setKrok(krok + 1);
-  }
+    setKrok((k) => (k < KOLEJNOSC.length - 1 ? k + 1 : k));
+  }, [ujecie]);
+
+  /*
+   * Pięć sekund na ustawienie się.
+   *
+   * Do tej pory zdjęcie robiło się w momencie kliknięcia — czyli zawsze
+   * z ręką na ekranie i głową przekrzywioną w stronę przycisku. Przy skanie,
+   * którego cała wartość polega na powtarzalności kadru, to psuło każde ujęcie.
+   */
+  useEffect(() => {
+    if (odliczanie === null) return;
+
+    if (odliczanie === 0) {
+      const id = setTimeout(() => {
+        void zapiszKlatke();
+        setOdliczanie(null);
+      }, 350);
+      return () => clearTimeout(id);
+    }
+
+    const id = setTimeout(() => setOdliczanie(odliczanie - 1), 1000);
+    return () => clearTimeout(id);
+  }, [odliczanie, zapiszKlatke]);
+
 
   async function zPliku(plik: File) {
     const bitmap = await createImageBitmap(plik);
@@ -260,7 +289,13 @@ export function FaceScanner({
               type="button"
               role="tab"
               aria-selected={i === krok}
-              onClick={() => !pracuje && setKrok(i)}
+              onClick={() => {
+                if (pracuje) return;
+                // Zmiana ujęcia przerywa odliczanie — inaczej migawka
+                // strzeliłaby w kadr, którego nikt już nie ogląda.
+                setOdliczanie(null);
+                setKrok(i);
+              }}
               className={clsx(
                 "flex-1 rounded-lg px-2 py-1.5 text-[12px] font-medium transition",
                 i === krok ? "bg-accent-soft text-accent" : "bg-surface-2 text-muted",
@@ -298,19 +333,66 @@ export function FaceScanner({
             />
           )}
 
-          {/* Owal-prowadnica */}
-          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 300 400">
-            <ellipse
-              cx="150"
-              cy="180"
-              rx="95"
-              ry="125"
-              fill="none"
-              strokeWidth="2"
-              strokeDasharray="6 6"
-              className={clsx(kameraOk ? "stroke-[var(--accent)]" : "stroke-white/40")}
-            />
+          {/*
+            Prowadnica dopasowana do ujęcia.
+            Owal twarzy przy sylwetce był bez sensu: kadrujesz całą postać,
+            a na ekranie masz koło na wysokości głowy. Zarys postaci mówi
+            wprost, ile miejsca zostawić nad głową i pod stopami — a to od tego
+            zależy, czy zdjęcie sprzed trzech miesięcy da się nałożyć na dzisiejsze.
+          */}
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 300 400"
+            aria-hidden
+          >
+            {ujecie === "sylwetka" ? (
+              <g
+                fill="none"
+                strokeWidth="2"
+                strokeDasharray="6 6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={clsx(kameraOk ? "stroke-[var(--accent)]" : "stroke-white/40")}
+              >
+                {/* głowa */}
+                <circle cx="150" cy="52" r="24" />
+                {/* tułów: barki, talia, biodra */}
+                <path d="M126 82 L104 108 L98 190 L112 262" />
+                <path d="M174 82 L196 108 L202 190 L188 262" />
+                <path d="M126 82 Q150 74 174 82" />
+                {/* ręce swobodnie wzdłuż ciała */}
+                <path d="M104 110 L86 200 L82 250" />
+                <path d="M196 110 L214 200 L218 250" />
+                {/* nogi */}
+                <path d="M112 262 L108 336 L106 380" />
+                <path d="M188 262 L192 336 L194 380" />
+                <path d="M150 264 L150 330" />
+              </g>
+            ) : (
+              <ellipse
+                cx="150"
+                cy={ujecie === "profil" ? 180 : 180}
+                rx={ujecie === "profil" ? 80 : 95}
+                ry="125"
+                fill="none"
+                strokeWidth="2"
+                strokeDasharray="6 6"
+                className={clsx(kameraOk ? "stroke-[var(--accent)]" : "stroke-white/40")}
+              />
+            )}
           </svg>
+
+          {/* Odliczanie — duża cyfra na środku, widoczna z odległości ręki. */}
+          {odliczanie !== null && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span
+                className="text-[96px] font-bold leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)]"
+                aria-hidden
+              >
+                {odliczanie === 0 ? "📸" : odliczanie}
+              </span>
+            </div>
+          )}
 
           {zrobione[ujecie] && (
             <div className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[12px] text-white">
@@ -319,7 +401,11 @@ export function FaceScanner({
           )}
         </div>
 
-        <p className="text-[13px] text-muted">{OPIS[ujecie].jak}</p>
+        <p className="text-[13px] text-muted" aria-live="polite">
+          {odliczanie !== null
+            ? `Zdjęcie za ${odliczanie} s — ustaw się i opuść ręce.`
+            : OPIS[ujecie].jak}
+        </p>
         {duchy[ujecie] && (
           <p className="text-[12px] text-faint">
             Pod spodem widać poprzednie zdjęcie — dopasuj kadr, żeby porównanie miało sens.
@@ -341,11 +427,19 @@ export function FaceScanner({
           <div className="flex gap-2">
             {kameraOk ? (
               <Button
-                onClick={zrobZdjecie}
+                onClick={() => setOdliczanie(odliczanie === null ? ODLICZANIE_S : null)}
                 className="flex-1"
-                aria-label={`Zrób zdjęcie: ${OPIS[ujecie].tytul}`}
+                aria-label={
+                  odliczanie === null
+                    ? `Zrób zdjęcie za ${ODLICZANIE_S} sekund: ${OPIS[ujecie].tytul}`
+                    : "Przerwij odliczanie"
+                }
               >
-                {zrobione[ujecie] ? "Zrób ponownie" : "Zrób zdjęcie"}
+                {odliczanie !== null
+                  ? `Przerwij (${odliczanie})`
+                  : zrobione[ujecie]
+                    ? `Zrób ponownie (${ODLICZANIE_S} s)`
+                    : `Zrób zdjęcie (${ODLICZANIE_S} s)`}
               </Button>
             ) : (
               <Button onClick={() => void startCamera()} className="flex-1">
@@ -361,7 +455,9 @@ export function FaceScanner({
                 className="sr-only"
                 onChange={(e) => {
                   const plik = e.target.files?.[0];
-                  if (plik) void zPliku(plik);
+                  if (!plik) return;
+                  setOdliczanie(null);
+                  void zPliku(plik);
                 }}
               />
             </label>

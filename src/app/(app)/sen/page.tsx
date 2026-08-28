@@ -1,7 +1,7 @@
 import { SleepScreen } from "@/components/sleep/SleepScreen";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
-import { DEFAULT_SLEEP_GOAL_MIN, type SleepNight } from "@/lib/sleep";
+import { DEFAULT_SLEEP_GOAL_MIN, napsFromView, type SleepNight } from "@/lib/sleep";
 
 export const metadata = { title: "Sen" };
 
@@ -43,6 +43,7 @@ export default async function SleepPage() {
     quality: r.quality,
     morning_energy: r.morning_energy,
     nap_min: r.nap_min,
+    naps: napsFromView(r.naps),
     factors: r.factors,
     note: r.note,
   }));

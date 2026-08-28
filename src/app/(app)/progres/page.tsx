@@ -1,7 +1,7 @@
 import { ProgressScreen } from "@/components/ProgressScreen";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, shortDate, todayISO } from "@/lib/format";
-import { DEFAULT_SLEEP_GOAL_MIN, type SleepNight } from "@/lib/sleep";
+import { DEFAULT_SLEEP_GOAL_MIN, napsFromView, type SleepNight } from "@/lib/sleep";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/constants";
 import { DEFAULT_WORKOUTS_PER_WEEK } from "@/lib/health";
 import type { ExercisePr, PeriodSummary, Vice, ViceEvent } from "@/lib/database.types";
@@ -149,6 +149,7 @@ export default async function ProgresPage() {
     quality: r.quality,
     morning_energy: r.morning_energy,
     nap_min: r.nap_min,
+    naps: napsFromView(r.naps),
     factors: r.factors,
     note: r.note,
   }));

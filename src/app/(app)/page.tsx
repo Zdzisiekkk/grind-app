@@ -18,6 +18,7 @@ import { DEFAULT_WORKOUTS_PER_WEEK, healthScore } from "@/lib/health";
 import {
   DEFAULT_SLEEP_GOAL_MIN,
   medianBedtime,
+  napsFromView,
   scoreNight,
   sleepBand,
   sleepDuration,
@@ -170,6 +171,7 @@ export default async function DashboardPage() {
     quality: r.quality,
     morning_energy: r.morning_energy,
     nap_min: r.nap_min,
+    naps: napsFromView(r.naps),
     factors: r.factors,
     note: r.note,
   }));
