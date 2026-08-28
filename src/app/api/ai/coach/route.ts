@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { CoachAnalysisSchema } from "@/lib/ai/coachSchema";
 import { analyseDietVsWeight, findStrengthStalls, type SetRow } from "@/lib/ai/analysis";
+import { zalogujKoszt } from "@/lib/ai/koszt";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { sleepDuration } from "@/lib/sleep";
@@ -240,7 +241,9 @@ export async function POST(request: Request) {
         { timeout: 110_000 },
       );
 
-      if (response.stop_reason === "refusal") {
+      zalogujKoszt("trener", MODEL, response.usage);
+
+    if (response.stop_reason === "refusal") {
         return NextResponse.json(
           { error: "Model nie chce odpowiedzieć na to pytanie." },
           { status: 422 },
@@ -301,6 +304,8 @@ export async function POST(request: Request) {
       },
       { timeout: 110_000 },
     );
+
+    zalogujKoszt("trener", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ error: "Model odmówił wykonania analizy." }, { status: 422 });

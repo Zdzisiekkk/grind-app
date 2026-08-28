@@ -364,8 +364,18 @@ export function LooksScreen(dane: LooksDane) {
             {powodOdmowy && <p className="mt-2 text-[13px] text-muted">{powodOdmowy}</p>}
             {mozeSkanowac && dane.limit && (
               <p className="mt-2 text-[12px] text-faint">
-                W tym miesiącu: {dane.limit.w_miesiacu} z {dane.limit.limit_miesiaca}. Sensowna
-                kadencja to raz na tydzień — częściej mierzy się oświetlenie, nie zmianę.
+                {dane.limit.bez_limitu ? (
+                  <>
+                    Konto administratora — bez limitu. W tym miesiącu: {dane.limit.w_miesiacu}.
+                    Kadencja raz na tydzień nadal jest tą sensowną: częściej mierzy się
+                    oświetlenie, nie zmianę.
+                  </>
+                ) : (
+                  <>
+                    W tym miesiącu: {dane.limit.w_miesiacu} z {dane.limit.limit_miesiaca}. Sensowna
+                    kadencja to raz na tydzień — częściej mierzy się oświetlenie, nie zmianę.
+                  </>
+                )}
               </p>
             )}
           </Card>

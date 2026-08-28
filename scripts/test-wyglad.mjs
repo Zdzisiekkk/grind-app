@@ -102,6 +102,33 @@ r = await as(A, `insert into public.wyglad_skany (user_id) values ('${A}')`);
 check('szósty skan odrzucony przez bazę, nie przez ekran', !r.ok);
 await db.exec(`update public.app_settings set value = jsonb_set(value, '{odstep_dni}', '7') where key = 'wyglad'`);
 
+console.log('\n  Administrator bez limitu\n');
+
+/*
+ * Limity mają pilnować rachunku i chronić przed codziennym ocenianiem się.
+ * Osoba budująca aplikację musi móc sprawdzić skaner pięć razy pod rząd,
+ * więc zwolnienie idzie przez is_admin() — tę samą funkcję co reszta
+ * uprawnień, a nie przez osobną listę adresów.
+ */
+await db.exec(`update public.profiles set role = 'admin' where id = '${B}'`);
+
+// B ma już wyczerpany odstęp? Nie — B nie zrobił dotąd żadnego skanu.
+// Robimy dwa pod rząd: dla zwykłego konta drugi odbiłby się od reguły 7 dni.
+let r1 = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}') returning id`);
+let r2 = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}') returning id`);
+check('administrator robi dwa skany pod rząd', r1.ok && r2.ok, r2.err ?? '');
+
+r = await as(B, `select public.wyglad_limit() as l`);
+check('limit zgłasza brak ograniczeń', r.ok && r.rows[0].l.bez_limitu === true && r.rows[0].l.mozna === true,
+  JSON.stringify(r.rows?.[0]?.l));
+check('licznik miesiąca nadal mówi prawdę', r.ok && r.rows[0].l.w_miesiacu === 2,
+  `w_miesiacu=${r.rows?.[0]?.l?.w_miesiacu}`);
+
+// I odwrotnie: odebranie roli natychmiast przywraca limit.
+await db.exec(`update public.profiles set role = 'user' where id = '${B}'`);
+r = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}')`);
+check('po odebraniu roli limit wraca', !r.ok, r.ok ? 'ZAPISAŁO SIĘ' : '');
+
 console.log('\n  Po usunięciu konta\n');
 
 /*

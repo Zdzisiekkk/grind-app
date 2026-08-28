@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { WygladAnalysisSchema } from "@/lib/ai/wygladSchema";
+import { zalogujKoszt } from "@/lib/ai/koszt";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import { sleepDuration } from "@/lib/sleep";
@@ -216,6 +217,8 @@ export async function POST(request: Request) {
       },
       { timeout: 110_000 },
     );
+
+    zalogujKoszt("skan_wygladu", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       return NextResponse.json({ error: "Model odmówił oceny tych zdjęć." }, { status: 422 });

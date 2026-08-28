@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { AiPlanSchema, EXPERIENCE_LABEL, PlanRequestSchema } from "@/lib/ai/planSchema";
+import { zalogujKoszt } from "@/lib/ai/koszt";
 import { createClient } from "@/lib/supabase/server";
 
 /** Układanie planu potrafi potrwać — dajemy zapas ponad domyślne 60 s Vercela. */
@@ -133,6 +134,8 @@ export async function POST(request: Request) {
       },
       { timeout: 280_000 },
     );
+
+    zalogujKoszt("plan", MODEL, response.usage);
 
     if (response.stop_reason === "refusal") {
       throw new Error("Model odmówił wykonania tego zadania.");

@@ -785,6 +785,8 @@ export type WygladLimit = {
   ostatni_skan: string | null;
   nastepny_od: string;
   mozna: boolean;
+  /** Administrator nie podlega limitom — liczniki nadal są prawdziwe. */
+  bez_limitu?: boolean;
   powod: "limit_miesiaca" | "odstep" | null;
 };
 
