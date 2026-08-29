@@ -23,11 +23,19 @@ export const maxDuration = 60;
 /**
  * Sonnet, nie Opus.
  *
- * To jest najczęściej używana funkcja AI w aplikacji — kilka razy dziennie,
- * nie kilka razy w tygodniu. Opus kosztowałby ~0,034 zł za opis, czyli przy
- * czterech posiłkach dziennie ponad 4 zł miesięcznie: połowa całego budżetu
- * na jedną funkcję. Sonnet to ~0,014 zł i zna skład jedzenia równie dobrze —
- * to jest odtwarzanie tablic wartości odżywczych, nie rozumowanie.
+ * To najczęściej używana funkcja AI w aplikacji — kilka razy dziennie, nie
+ * kilka razy w tygodniu, więc cena za wywołanie decyduje o tym, czy da się
+ * z niej korzystać w ramach miesięcznego budżetu.
+ *
+ * ZMIERZONE na prawdziwych opisach, nie oszacowane: Sonnet bez myślenia
+ * kosztuje 0,012–0,019 zł za opis (niżej, gdy cache promptu jest ciepły).
+ * Przy czterech posiłkach dziennie to około 2 zł miesięcznie, czyli jedna
+ * czwarta budżetu. Opus liczy 2,5× więcej za token w obie strony — byłby
+ * przy 0,03–0,05 zł, czyli blisko 6 zł miesięcznie: trzy czwarte całej puli
+ * na jedną funkcję, i koniec pytań do trenera w połowie miesiąca.
+ *
+ * Jakość się nie różni, bo to nie jest zadanie na rozumowanie: odtworzenie
+ * tablic wartości odżywczych i przemnożenie przez gramaturę.
  */
 const MODEL = process.env.ANTHROPIC_MODEL_POSILEK || "claude-sonnet-5";
 
@@ -123,6 +131,19 @@ export async function POST(request: Request) {
       {
         model: MODEL,
         max_tokens: 2000,
+        // Myślenie wyłączone ŚWIADOMIE, wbrew domyślnym ustawieniom.
+        //
+        // Zmierzyłem obie wersje na tych samych posiłkach: z myśleniem
+        // ~830 tokenów wyjścia i 0,033 zł za opis, bez — ~340 tokenów
+        // i 0,019 zł. Prawie dwa razy taniej, przy identycznym wyniku:
+        // w obu seriach ani jedna pozycja nie wpadła w filtr spójności,
+        // a sumy kalorii mieściły się w tych samych widełkach.
+        //
+        // Nic dziwnego: model ma odtworzyć tablicę wartości odżywczych
+        // i pomnożyć przez gramaturę. Płacenie za rozumowanie nad tym,
+        // ile kalorii ma jajko, jest po prostu wyrzucaniem pieniędzy —
+        // a wyrzuca je z puli, z której idą też pytania do trenera.
+        thinking: { type: "disabled" },
         system: [
           {
             type: "text",

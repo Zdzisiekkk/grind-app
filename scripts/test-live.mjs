@@ -1016,14 +1016,21 @@ check("opis posiłku bez subskrypcji jest odrzucany",
   posilekBezPro.status === 402 && posilekBody?.code === "needs_subscription",
   `HTTP ${posilekBezPro.status} ${JSON.stringify(posilekBody).slice(0, 120)}`);
 
+// `redirect: "manual"` jest tu istotne. Bez tego fetch idzie za
+// przekierowaniem i POST-uje na /login, ktore nie ma obslugi POST — wychodzi
+// 405 i test mowi o /login zamiast o trasie, ktora mial sprawdzic.
 const posilekBezSesji = await fetch(APP + "/api/ai/posilek", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ opis: "dwa jajka" }),
+  redirect: "manual",
 });
-check("opis posiłku bez zalogowania jest odrzucany",
+check("opis posiłku bez zalogowania nie dociera do modelu",
   posilekBezSesji.status === 401 || posilekBezSesji.status === 307 || posilekBezSesji.status === 302,
   `HTTP ${posilekBezSesji.status}`);
+check("niezalogowany ląduje na logowaniu, a nie na trasie AI",
+  (posilekBezSesji.headers.get("location") || "").includes("/login"),
+  posilekBezSesji.headers.get("location") || "brak nagłówka");
 
 // Kategoria kosztu musi byc znana bazie, inaczej trasa wywalilaby sie dopiero
 // przy pierwszym prawdziwym uzyciu — czyli u czlowieka, nie w testach.
