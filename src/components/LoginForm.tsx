@@ -26,7 +26,16 @@ function translateError(message: string): string {
  */
 function useClearedOfflineCache() {
   useEffect(() => {
-    navigator.serviceWorker?.controller?.postMessage("grind:clear-cache");
+    // Przez `ready`, a nie przez `controller`. Ten drugi bywa null przez chwilę
+    // po twardym odświeżeniu i zaraz po aktualizacji workera — a wtedy
+    // wiadomość przepadała bez śladu i zapamiętane strony poprzedniej osoby
+    // zostawały na telefonie. Cichy brak, dokładnie w momencie, w którym
+    // czyszczenie jest potrzebne.
+    navigator.serviceWorker?.ready
+      .then((rejestracja) => rejestracja.active?.postMessage("grind:clear-cache"))
+      .catch(() => {
+        // Brak workera (np. tryb prywatny) znaczy, że nie ma czego czyścić.
+      });
   }, []);
 }
 
