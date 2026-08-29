@@ -38,6 +38,12 @@ export const SUPABASE_STUB = `
     grant all on tables to anon, authenticated, service_role;
   alter default privileges in schema public
     grant all on sequences to anon, authenticated, service_role;
+  -- Uprawnienie do WYWOLANIA funkcji Supabase nadaje roli anon JAWNIE,
+  -- a nie przez PUBLIC (sprawdzone w pg_default_acl: anon=X/postgres).
+  -- Bez tej linii revoke ... from public wygladal lokalnie na skuteczny,
+  -- a na produkcji zostawialby funkcje otwarte dla niezalogowanych.
+  alter default privileges in schema public
+    grant execute on functions to anon, authenticated, service_role;
 
   -- Magazyn plików. Odwzorowane tyle, ile dotyka migracja 0039: kubełki,
   -- obiekty i foldername() — czyli funkcja, na której stoją polityki dostępu
@@ -47,6 +53,11 @@ export const SUPABASE_STUB = `
     id text primary key,
     name text not null,
     public boolean not null default false,
+    -- Prawdziwy Supabase trzyma tu granice wgrywanych plikow. Bez tych dwoch
+    -- kolumn migracja, ktora je ustawia, przechodzi lokalnie i wywala sie
+    -- dopiero na produkcji -- dokladnie ten rozjazd co przy uprawnieniach.
+    file_size_limit bigint,
+    allowed_mime_types text[],
     created_at timestamptz default now()
   );
   create table if not exists storage.objects (

@@ -30,6 +30,7 @@ jobs:
         run: for f in scripts/*.mjs; do node --check "$f"; done
       - name: Testy jednostkowe
         run: |
+          npm run test:db
           npm run test:offline
           npm run test:analysis
           npm run test:vices

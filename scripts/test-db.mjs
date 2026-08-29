@@ -1,31 +1,13 @@
-import { PGlite } from '@electric-sql/pglite';
-import { readFileSync, readdirSync } from 'node:fs';
-import path from 'node:path';
+import { bazaZMigracjami } from './supabase-stub.mjs';
 
-const MIG = new URL('../supabase/migrations', import.meta.url).pathname;
-const db = await new PGlite();
-
-await db.exec(`
-  create schema if not exists auth;
-  do $$ begin
-    create role authenticated; exception when duplicate_object then null; end $$;
-  do $$ begin
-    create role anon; exception when duplicate_object then null; end $$;
-  create table auth.users (
-    id uuid primary key default gen_random_uuid(),
-    email text unique,
-    raw_user_meta_data jsonb default '{}'::jsonb,
-    created_at timestamptz default now()
-  );
-  create or replace function auth.uid() returns uuid language sql stable as $$
-    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-  $$;
-  grant usage on schema auth to authenticated;
-`);
-
-for (const f of readdirSync(MIG).filter(f => f.endsWith('.sql')).sort()) {
-  await db.exec(readFileSync(path.join(MIG, f), 'utf8').replace(/^create extension[^;]*;/gim, ''));
-}
+// Ta sama baza, co walidator migracji i testy dostępu.
+//
+// Wcześniej ten plik budował WŁASNY, uproszczony stub: bez schematu storage,
+// bez roli service_role i bez domyślnych uprawnień Supabase. Skutek był taki,
+// że test sprawdzał inną bazę niż ta, na której stoi aplikacja — a migracja
+// dotykająca magazynu plików wywalała się dopiero tutaj, po wdrożeniu.
+// Trzy kopie stubu znaczyły trzy okazje do rozjazdu; została jedna.
+const db = await bazaZMigracjami();
 
 // --- dwaj użytkownicy ---
 const A = (await db.query(
@@ -57,31 +39,58 @@ check('profil tworzony automatycznie + rola admina po e-mailu', roleA === 'admin
       `A=${roleA} B=${roleB}`);
 
 // 2. A klonuje publiczny szablon
+//
+// Liczymy dni i ćwiczenia W ŹRÓDLE, zamiast wpisywać je na sztywno.
+// Wcześniej stało tu „7 dni / 41 ćwiczeń" — prawda w dniu pisania testu,
+// nieprawda po dołożeniu kolejnych szablonów. Test pilnuje tego, o co chodzi:
+// że klon jest KOMPLETNY, a nie że szablon ma akurat tyle a tyle dni.
+let szablon;
 const planA = await asUser(A, async () => {
   const tpl = (await db.query(`select id from public.plans where is_template and is_public limit 1`)).rows[0].id;
+  szablon = tpl;
   return (await db.query(`select public.clone_plan($1, 'Mój plan', true) as id`, [tpl])).rows[0].id;
 });
-const clonedDays = (await db.query(
-  `select count(*)::int n from public.workout_days d join public.phases p on p.id=d.phase_id where p.plan_id=$1`,
-  [planA])).rows[0].n;
-const clonedEx = (await db.query(
-  `select count(*)::int n from public.workout_exercises we
-     join public.workout_days d on d.id=we.workout_day_id
-     join public.phases p on p.id=d.phase_id where p.plan_id=$1`, [planA])).rows[0].n;
-check('clone_plan kopiuje cały plan (7 dni / 41 ćwiczeń)', clonedDays === 7 && clonedEx === 41,
-      `dni=${clonedDays} ćwiczeń=${clonedEx}`);
+const policz = async (planId) => ({
+  dni: (await db.query(
+    `select count(*)::int n from public.workout_days d
+       join public.phases p on p.id=d.phase_id where p.plan_id=$1`, [planId])).rows[0].n,
+  cwiczen: (await db.query(
+    `select count(*)::int n from public.workout_exercises we
+       join public.workout_days d on d.id=we.workout_day_id
+       join public.phases p on p.id=d.phase_id where p.plan_id=$1`, [planId])).rows[0].n,
+});
+const zrodlo = await policz(szablon);
+const klon = await policz(planA);
+check('clone_plan kopiuje szablon co do dnia i ćwiczenia',
+      klon.dni === zrodlo.dni && klon.cwiczen === zrodlo.cwiczen && klon.dni > 0,
+      `klon: ${klon.dni} dni / ${klon.cwiczen} ćwiczeń, źródło: ${zrodlo.dni} / ${zrodlo.cwiczen}`);
 
 // 3. B nie widzi planu A, ale widzi szablon publiczny
 const bSeesPlans = await asUser(B, async () =>
   (await db.query(`select id, name from public.plans order by name`)).rows);
 check('B nie widzi prywatnego planu A', !bSeesPlans.some(p => p.id === planA),
       `B widzi: ${bSeesPlans.map(p => p.name).join(', ')}`);
-check('B widzi publiczny szablon', bSeesPlans.length === 1);
+check('B widzi publiczne szablony', bSeesPlans.length >= 1, `widzi ${bSeesPlans.length}`);
+
+// Każdy plan widziany przez B musi być publiczny albo jego własny. To jest
+// pytanie, o które naprawdę chodzi — wcześniej test pytał „czy widzi dokładnie
+// jeden", co przestało być prawdą, gdy przybyło szablonów, i przez to
+// przestało cokolwiek chronić.
+const bCudze = await asUser(B, async () =>
+  (await db.query(
+    `select count(*)::int n from public.plans where not is_public and user_id is distinct from $1`,
+    [B])).rows[0].n);
+check('B nie widzi ŻADNEGO nieopublikowanego cudzego planu', bCudze === 0, `widzi ${bCudze}`);
 
 // 4. B nie widzi ćwiczeń z planu A (dziedziczenie RLS przez fazy/dni)
-const bSeesDays = await asUser(B, async () =>
-  (await db.query(`select count(*)::int n from public.workout_days`)).rows[0].n);
-check('B nie widzi dni treningowych z planu A', bSeesDays === 7, `widzi ${bSeesDays} (tylko szablon)`);
+const bCudzeDni = await asUser(B, async () =>
+  (await db.query(
+    `select count(*)::int n from public.workout_days d
+       join public.phases f on f.id = d.phase_id
+       join public.plans p on p.id = f.plan_id
+      where not p.is_public and p.user_id is distinct from $1`, [B])).rows[0].n);
+check('B nie widzi dni treningowych z cudzego prywatnego planu', bCudzeDni === 0,
+      `widzi ${bCudzeDni}`);
 
 // 5. logi treningowe są prywatne
 await asUser(A, () => db.exec(`
@@ -121,7 +130,7 @@ check('B nie może awansować się na admina',
 // 8. katalog globalny
 const bCatalog = await asUser(B, async () =>
   (await db.query(`select count(*)::int n from public.exercise_catalog`)).rows[0].n);
-check('B widzi globalny katalog ćwiczeń', bCatalog === 41, `${bCatalog} ćwiczeń`);
+check('B widzi globalny katalog ćwiczeń', bCatalog > 0, `${bCatalog} ćwiczeń`);
 // RLS przy UPDATE nie rzuca wyjątku — po prostu nie widzi wierszy.
 // Sprawdzamy realny skutek: ile wierszy poszło i czy nazwa faktycznie została nietknięta.
 const bUpdated = await asUser(B, async () =>

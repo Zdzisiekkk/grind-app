@@ -687,6 +687,52 @@ const polityki = await (await fetch(`${SB}/rest/v1/rpc/policies_rechecking_uid`,
 check("żadna reguła dostępu nie przelicza tożsamości co wiersz",
   Array.isArray(polityki) && polityki.length === 0, JSON.stringify(polityki));
 
+// ---------------------------------------------------------------------------
+// Funkcje bazy widziane OCZAMI NIEZALOGOWANEGO.
+//
+// Sam klucz anon, bez tokenu sesji — czyli dokładnie to, co ma w ręku
+// ktokolwiek z internetu, bo ten klucz jest publiczny z założenia.
+// Do migracji 0045 wszystkie te funkcje dawały odpowiedź: has_pro pytana
+// o CUDZY identyfikator zdradzała czyjąś subskrypcję, a tables_without_rls
+// wypisywała schemat bazy.
+// ---------------------------------------------------------------------------
+const ANON = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
+
+async function anonRpc(nazwa, ciało = {}) {
+  const r = await fetch(`${SB}/rest/v1/rpc/${nazwa}`, {
+    method: "POST", headers: ANON, body: JSON.stringify(ciało),
+  });
+  return { status: r.status, tekst: (await r.text()).slice(0, 120) };
+}
+
+for (const [nazwa, ciało] of [
+  ["has_pro", { p_user: li.user.id }],
+  ["tables_without_rls", {}],
+  ["policies_rechecking_uid", {}],
+  ["is_admin", {}],
+  ["my_role", {}],
+  ["consume_ai_call", { p_limit: 10 }],
+  ["ai_budzet_stan", {}],
+  ["ai_koszt_rezerwuj", { p_kategoria: "trener" }],
+  ["book_owner", { p_book_id: "00000000-0000-0000-0000-000000000000" }],
+  ["cache_off_product", { p_off_id: "0000", p_name: "x" }],
+]) {
+  const { status, tekst } = await anonRpc(nazwa, ciało);
+  check(`niezalogowany nie wywoła ${nazwa}()`, status === 401 || status === 403 || status === 404,
+    `HTTP ${status} ${tekst}`);
+}
+
+// Druga strona tej samej monety: sześć funkcji MUSI zostać otwartych, bo
+// serwer woła je kluczem anon i uwierzytelnia osobnym sekretem. Gdyby revoke
+// poszedł za szeroko, opłacona subskrypcja przestałaby się zapisywać —
+// i nic w aplikacji by tego nie pokazało.
+const zlySekret = await anonRpc("push_due", { p_secret: "zly-sekret" });
+check("budzik powiadomień odpowiada niezalogowanemu, ale odrzuca zły sekret",
+  zlySekret.status === 200 || zlySekret.status === 400,
+  `HTTP ${zlySekret.status} ${zlySekret.tekst}`);
+check("zły sekret nie zwraca listy powiadomień do wysłania",
+  !zlySekret.tekst.includes("endpoint"), zlySekret.tekst);
+
 // Nagłówki bezpieczeństwa: wcześniej nie było ŻADNEGO.
 const naglowki = await fetch(APP + "/login", { redirect: "manual" });
 check("strona nie da się osadzić w cudzej ramce",
