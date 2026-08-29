@@ -980,6 +980,70 @@ const bezSesjiSzukanie = await fetch(`${SB}/rest/v1/rpc/szukaj_produktow`, {
 check("niezalogowany nie przeszuka bazy produktów",
   bezSesjiSzukanie.status >= 400, `status ${bezSesjiSzukanie.status}`);
 
+console.log("\n  Posiłek z opisu\n");
+
+// Straznik z 0046. To jest to samo pytanie, ktore zadaje sprawdzenie
+// w migracji, tylko zadane NA PRODUKCJI i przy kazdym przebiegu testow —
+// czyli takze wtedy, gdy ktos doda funkcje bez `revoke`.
+const otwarte = await (await fetch(`${SB}/rest/v1/rpc/funkcje_dla_anona`, {
+  method: "POST", headers: H, body: "{}",
+})).json();
+check("żadnej funkcji nie da się wywołać bez logowania",
+  Array.isArray(otwarte) && otwarte.length === 0,
+  Array.isArray(otwarte) && otwarte.length ? `otwarte: ${otwarte.join(", ")}` : JSON.stringify(otwarte));
+
+// Licznik dzienny musi byc poza zasiegiem konta — inaczej wyzerowanie go
+// znaczy brak licznika. Ta sama zasada co przy rejestrze kosztow z 0043.
+for (const [co, opcje] of [
+  ["odczytać", { headers: H }],
+  ["dopisać", { method: "POST", headers: H, body: JSON.stringify({ user_id: li.user.id, kategoria: "jedzenie", wywolan: 0 }) }],
+  ["skasować", { method: "DELETE", headers: H }],
+]) {
+  const r = await fetch(`${SB}/rest/v1/ai_licznik${co === "skasować" ? "?kategoria=eq.jedzenie" : ""}`, opcje);
+  check(`licznika dziennego nie da się ${co} z pominięciem aplikacji`,
+    r.status === 401 || r.status === 403 || r.status === 404, `HTTP ${r.status}`);
+}
+
+// Bramka platnosci. Konto testowe nie ma Pro, wiec ma dostac 402 — a nie
+// policzony posilek na cudzy rachunek.
+const posilekBezPro = await fetch(APP + "/api/ai/posilek", {
+  method: "POST",
+  headers: { cookie, "Content-Type": "application/json" },
+  body: JSON.stringify({ opis: "dwa jajka sadzone i kromka chleba" }),
+});
+const posilekBody = await posilekBezPro.json().catch(() => ({}));
+check("opis posiłku bez subskrypcji jest odrzucany",
+  posilekBezPro.status === 402 && posilekBody?.code === "needs_subscription",
+  `HTTP ${posilekBezPro.status} ${JSON.stringify(posilekBody).slice(0, 120)}`);
+
+const posilekBezSesji = await fetch(APP + "/api/ai/posilek", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ opis: "dwa jajka" }),
+});
+check("opis posiłku bez zalogowania jest odrzucany",
+  posilekBezSesji.status === 401 || posilekBezSesji.status === 307 || posilekBezSesji.status === 302,
+  `HTTP ${posilekBezSesji.status}`);
+
+// Kategoria kosztu musi byc znana bazie, inaczej trasa wywalilaby sie dopiero
+// przy pierwszym prawdziwym uzyciu — czyli u czlowieka, nie w testach.
+const rezJedzenie = await (await fetch(`${SB}/rest/v1/rpc/ai_koszt_rezerwuj`, {
+  method: "POST", headers: H, body: JSON.stringify({ p_kategoria: "jedzenie" }),
+})).json();
+check("baza zna kategorię kosztu „jedzenie”", rezJedzenie?.ok === true,
+  JSON.stringify(rezJedzenie).slice(0, 160));
+if (rezJedzenie?.id) {
+  await fetch(`${SB}/rest/v1/rpc/ai_koszt_rozlicz`, {
+    method: "POST", headers: H,
+    body: JSON.stringify({ p_id: rezJedzenie.id, p_model: "", p_koszt_usd: 0, p_tokeny: {} }),
+  });
+}
+
+const rezBzdura = await fetch(`${SB}/rest/v1/rpc/ai_koszt_rezerwuj`, {
+  method: "POST", headers: H, body: JSON.stringify({ p_kategoria: "cokolwiek" }),
+});
+check("wymyślona kategoria kosztu jest odrzucana", !rezBzdura.ok, `HTTP ${rezBzdura.status}`);
+
 console.log("\n  Miesięczny budżet na AI\n");
 
 // Stan budżetu ma być czytelny dla ekranu ZANIM ktokolwiek kliknie.

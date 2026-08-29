@@ -61,12 +61,18 @@ begin
   end loop;
 end $$;
 
--- Nowe funkcje mają startować bez anona, żeby ta migracja nie była
--- jednorazowym sprzątaniem, po którym problem wraca przy następnym `create`.
+-- Domyślne uprawnienia dla NOWYCH funkcji.
 --
--- `from public` NIE WYSTARCZA: Supabase trzyma dla anona osobny, jawny wpis
--- w pg_default_acl (sprawdzone: defaclobjtype='f' zawiera `anon=X/postgres`).
--- Sam revoke z PUBLIC przechodziłby lokalnie i nie robił nic na produkcji.
+-- `from public` samo nie wystarcza: Supabase trzyma dla anona osobny, jawny
+-- wpis w pg_default_acl (sprawdzone: defaclobjtype='f' zawierało
+-- `anon=X/postgres`), więc revoke z PUBLIC nie ruszałby go wcale.
+--
+-- UWAGA — to NIE JEST gwarancja, że nowa funkcja urodzi się zamknięta.
+-- Sprawdziłem: wpisy domyślnych uprawnień są przypisane do roli, która tworzy
+-- obiekt, a wpis `supabase_admin` nadal daje anonowi prawo wywołania. Dlatego
+-- każda migracja musi robić jawny `revoke ... from public, anon`, a od 0046
+-- pilnuje tego strażnik `funkcje_dla_anona()` — sprawdzany na produkcji przy
+-- każdym przebiegu testów, zamiast obiecywany w komentarzu.
 alter default privileges in schema public revoke execute on functions from public;
 alter default privileges in schema public revoke execute on functions from anon;
 

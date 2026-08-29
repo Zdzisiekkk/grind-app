@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Chip, EmptyState, Field, Input, SegmentedControl, Sheet, Spinner } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { BarcodeSheet } from "@/components/diet/BarcodeSheet";
-import { addMealEntry, cacheOffProduct, ensureMeal } from "@/lib/diet";
+import { addMealEntry, addOpisaneEntries, cacheOffProduct, ensureMeal } from "@/lib/diet";
+import { OpisPosilkuTab } from "@/components/diet/OpisPosilkuTab";
 import type { Food, MealEntry, MealType, RecipeTotals } from "@/lib/database.types";
 import { portionGrams, recipeAsFood } from "@/lib/recipes";
 import type { OffProduct } from "@/lib/off";
@@ -55,7 +56,7 @@ export function AddFoodSheet({
   onAdded: (entry: MealEntry) => void;
 }) {
   const supabase = createClient();
-  const [tab, setTab] = useState<"search" | "dishes" | "custom">("search");
+  const [tab, setTab] = useState<"search" | "dishes" | "custom" | "opis">("search");
   const [query, setQuery] = useState("");
   const [mine, setMine] = useState<Food[]>([]);
   const [offRaw, setOffRaw] = useState<OffProduct[]>([]);
@@ -192,11 +193,24 @@ export function AddFoodSheet({
             options={[
               { value: "search", label: "Szukaj" },
               { value: "dishes", label: "Dania" },
+              { value: "opis", label: "Opisz" },
               { value: "custom", label: "Własne" },
             ]}
           />
 
-          {tab === "dishes" ? (
+          {tab === "opis" ? (
+            <OpisPosilkuTab
+              onDodaj={async (skladniki) => {
+                const mealId = await ensureMeal(supabase, userId, date, mealType);
+                const wpisy = await addOpisaneEntries(supabase, { userId, mealId, skladniki });
+                // Ekran rodzica dolicza wpisy pojedynczo — dokładnie tak samo
+                // jak przy produkcie z wyszukiwarki, więc bilans dnia i sumy
+                // makr aktualizują się bez osobnej ścieżki.
+                for (const wpis of wpisy) onAdded(wpis as MealEntry);
+                onClose();
+              }}
+            />
+          ) : tab === "dishes" ? (
             <DishList
               dishes={dishes}
               recipes={recipes}
@@ -281,7 +295,7 @@ export function AddFoodSheet({
                 <EmptyState
                   icon="🔍"
                   title="Nie znaleziono produktu"
-                  description="Dodaj go ręcznie w zakładce „Własny produkt” — zostanie u Ciebie na stałe."
+                  description="Opisz go słowami w zakładce „Opisz” albo wpisz wartości ręcznie w „Własne”."
                 />
               )}
             </>

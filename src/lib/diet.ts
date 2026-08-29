@@ -92,6 +92,51 @@ export async function addMealEntry(
   return data;
 }
 
+/**
+ * Zapis pozycji policzonych z opisu.
+ *
+ * Bez `food_id` i bez zakładania wierszy w `foods`. „Dwa jajka sadzone"
+ * z wczorajszego śniadania nie są produktem, do którego ktoś wróci — są
+ * jednorazowym wpisem. Zakładanie dla nich produktu zaśmiecałoby wyszukiwarkę
+ * setkami jednorazowych pozycji, a `meal_entries` i tak trzyma pełny snapshot
+ * wartości, więc wpis jest kompletny sam z siebie.
+ *
+ * Kolumna `food_id` jest nullowalna od pierwszej migracji (`on delete set
+ * null`), więc dziennik od początku umie żyć z wpisem bez produktu.
+ */
+export async function addOpisaneEntries(
+  supabase: Client,
+  params: {
+    userId: string;
+    mealId: string;
+    skladniki: Array<{
+      nazwa: string;
+      gramatura: number;
+      kcal_100g: number;
+      bialko_100g: number;
+      wegle_100g: number;
+      tluszcz_100g: number;
+    }>;
+  },
+) {
+  const wiersze = params.skladniki.map((s) => ({
+    user_id: params.userId,
+    meal_id: params.mealId,
+    food_id: null,
+    food_name: s.nazwa,
+    grams: s.gramatura,
+    kcal_100g: s.kcal_100g,
+    protein_100g: s.bialko_100g,
+    carbs_100g: s.wegle_100g,
+    fat_100g: s.tluszcz_100g,
+  }));
+
+  const { data, error } = await supabase.from("meal_entries").insert(wiersze).select();
+
+  if (error) throw new Error(`Nie udało się dodać posiłku: ${error.message}`);
+  return data;
+}
+
 export type MacroTotals = { kcal: number; protein: number; carbs: number; fat: number };
 
 export function sumMacros(entries: { kcal: number; protein: number; carbs: number; fat: number }[]): MacroTotals {

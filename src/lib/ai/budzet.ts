@@ -22,8 +22,15 @@ import type { createClient } from "@/lib/supabase/server";
 
 type Klient = Awaited<ReturnType<typeof createClient>>;
 
-/** Co obciąża budżet. Skan wyglądu jest zapisywany, ale ma własne limity. */
-export type KategoriaAI = "trener" | "plan" | "wyglad";
+/**
+ * Co obciąża budżet.
+ *
+ * Skan wyglądu jest zapisywany, ale ma własne twarde limity (odstęp 7 dni,
+ * 5 miesięcznie), więc stoi poza wspólną pulą. Opis posiłku wchodzi do puli:
+ * nie ma żadnego naturalnego sufitu, a przy kilku posiłkach dziennie to
+ * najczęściej używana funkcja AI w aplikacji.
+ */
+export type KategoriaAI = "trener" | "plan" | "wyglad" | "jedzenie";
 
 type Uzycie = {
   input_tokens?: number | null;

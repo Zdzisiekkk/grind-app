@@ -923,6 +923,22 @@ export type Database = {
       };
       /** Ile z miesięcznego budżetu na AI zostało. */
       ai_budzet_stan: { Args: Record<string, never>; Returns: AiBudzetStan };
+      /**
+       * Zużycie jednego wywołania w kategorii; false = dzienny limit wyczerpany.
+       * Osobny od `consume_ai_call`, bo tamten ma JEDEN licznik na konto —
+       * opisy posiłków zjadałyby wtedy pytania do trenera (migracja 0046).
+       */
+      ai_licznik_zuzyj: { Args: { p_kategoria: string; p_limit: number }; Returns: boolean };
+      /** Ile z dziennej puli kategorii zostało — dla ekranu, przed kliknięciem. */
+      ai_licznik_stan: {
+        Args: { p_kategoria: string; p_limit: number };
+        Returns: { limit: number; wywolan: number; bez_limitu: boolean };
+      };
+      /**
+       * Funkcje wywoływalne bez logowania, poza sześcioma serwisowymi.
+       * Ma zwracać pustą tablicę — patrz migracje 0045 i 0046.
+       */
+      funkcje_dla_anona: { Args: Record<string, never>; Returns: string[] };
       /** Rezerwacja przed wywołaniem modelu. Odmowa nic nie zapisuje. */
       ai_koszt_rezerwuj: { Args: { p_kategoria: string }; Returns: AiRezerwacja };
       /** Wpisanie prawdziwego kosztu po wywołaniu. Kwota 0 zwalnia rezerwację. */
