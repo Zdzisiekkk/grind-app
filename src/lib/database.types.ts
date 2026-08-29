@@ -913,6 +913,14 @@ export type Database = {
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
       wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
+      /**
+       * Produkty pasujące do frazy — po słowach, bez ogonków, także po marce.
+       * SECURITY INVOKER, więc RLS nadal zasłania cudze produkty własne.
+       */
+      szukaj_produktow: {
+        Args: { p_fraza?: string; p_limit?: number };
+        Returns: Food[];
+      };
       /** Ile z miesięcznego budżetu na AI zostało. */
       ai_budzet_stan: { Args: Record<string, never>; Returns: AiBudzetStan };
       /** Rezerwacja przed wywołaniem modelu. Odmowa nic nie zapisuje. */

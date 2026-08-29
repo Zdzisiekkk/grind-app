@@ -877,6 +877,63 @@ check("ekran snu otwiera się z zapisanymi drzemkami", senEkran.status === 200,
   `status ${senEkran.status}`);
 
 
+console.log("\n  Wyszukiwanie produktów po nazwie\n");
+
+/*
+ * Skaner zapisuje produkt w `foods`, więc szukanie po słowach musi go potem
+ * znajdować. Poprzednia wersja (`name ilike '%fraza%'`) przegrywała z polskimi
+ * ogonkami i z kolejnością słów — te dwa przypadki są tu wprost.
+ */
+const szukaj = async (fraza, limit = 25) =>
+  (await fetch(`${SB}/rest/v1/rpc/szukaj_produktow`, {
+    method: "POST", headers: H,
+    body: JSON.stringify({ p_fraza: fraza, p_limit: limit }),
+  })).json();
+
+const zOgonkiem = await szukaj("żurek");
+const bezOgonka = await szukaj("zurek");
+check("„zurek” bez ogonka znajduje to samo co „żurek”",
+  Array.isArray(bezOgonka) && Array.isArray(zOgonkiem) &&
+    bezOgonka.length === zOgonkiem.length && bezOgonka.length > 0,
+  `bez: ${bezOgonka?.length}, z: ${zOgonkiem?.length}`);
+
+const kolejnoscA = await szukaj("sałatka cezar");
+const kolejnoscB = await szukaj("cezar sałatka");
+check("kolejność słów nie ma znaczenia",
+  Array.isArray(kolejnoscA) && Array.isArray(kolejnoscB) &&
+    kolejnoscA.length === kolejnoscB.length && kolejnoscA.length > 0,
+  `${kolejnoscA?.length} vs ${kolejnoscB?.length}`);
+
+const bezSensu = await szukaj("qqqzzzxxx");
+check("fraza bez trafień zwraca pustą listę, a nie wszystko",
+  Array.isArray(bezSensu) && bezSensu.length === 0, JSON.stringify(bezSensu).slice(0, 80));
+
+const pusta = await szukaj("", 5);
+check("pusta fraza zwraca ostatnio używane, nie pustkę",
+  Array.isArray(pusta) && pusta.length > 0 && pusta.length <= 5, `wierszy: ${pusta?.length}`);
+
+// Produkt własny konta testowego — nie może wyciekać do innych kont, a więc
+// wyszukiwarka musi respektować RLS, nie omijać go.
+const wlasny = await fetch(`${SB}/rest/v1/foods`, {
+  method: "POST", headers: { ...H, Prefer: "return=representation" },
+  body: JSON.stringify({
+    user_id: li.user.id, source: "custom",
+    name: "Tajna owsianka testowa", kcal_100g: 300,
+  }),
+});
+check("własny produkt się zapisuje", wlasny.ok, `status ${wlasny.status}`);
+const mojeTrafienia = await szukaj("tajna owsianka");
+check("wyszukiwarka znajduje własny produkt",
+  Array.isArray(mojeTrafienia) && mojeTrafienia.some((f) => f.name === "Tajna owsianka testowa"),
+  JSON.stringify(mojeTrafienia).slice(0, 120));
+
+const bezSesjiSzukanie = await fetch(`${SB}/rest/v1/rpc/szukaj_produktow`, {
+  method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" },
+  body: JSON.stringify({ p_fraza: "owsianka" }),
+});
+check("niezalogowany nie przeszuka bazy produktów",
+  bezSesjiSzukanie.status >= 400, `status ${bezSesjiSzukanie.status}`);
+
 console.log("\n  Miesięczny budżet na AI\n");
 
 // Stan budżetu ma być czytelny dla ekranu ZANIM ktokolwiek kliknie.

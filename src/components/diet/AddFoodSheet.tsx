@@ -114,9 +114,13 @@ export function AddFoodSheet({
     if (!open) return;
     let cancelled = false;
     (async () => {
-      let req = supabase.from("foods").select("*").order("updated_at", { ascending: false }).limit(25);
-      if (query.trim()) req = req.ilike("name", `%${query.trim()}%`);
-      const { data } = await req;
+      // Szukanie po słowach, nie po fragmencie tekstu: „wiejski serek" ma
+      // znaleźć to samo co „serek wiejski", a „zurek" ma znaleźć „Żurek".
+      // Pusta fraza zwraca ostatnio używane — to sensowny stan startowy.
+      const { data } = await supabase.rpc("szukaj_produktow", {
+        p_fraza: query.trim(),
+        p_limit: 25,
+      });
       if (!cancelled) setMine((data ?? []) as Food[]);
     })();
     return () => {

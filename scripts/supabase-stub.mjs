@@ -66,17 +66,38 @@ export const SUPABASE_STUB = `
   end
   $fn$;
   grant usage on schema storage to authenticated;
+
+  -- U Supabase rozszerzenia siedzą w osobnym schemacie, nie w public.
+  -- Migracje muszą móc się do nich odwołać tą samą nazwą co na produkcji.
+  create schema if not exists extensions;
+  grant usage on schema extensions to authenticated, anon;
 `;
+
+/*
+ * Pusta baza z odwzorowanym Supabase.
+ *
+ * Rozszerzenia ładujemy tutaj, a nie zostawiamy migracjom, bo `create extension`
+ * jest z nich wycinane (pgcrypto i pg_cron nie mają odpowiednika w PGlite).
+ * Gdyby wyciąć również pg_trgm, wyszukiwarka produktów przechodziłaby lokalnie
+ * na innym silniku niż na produkcji — czyli test sprawdzałby co innego.
+ */
+export async function pustaBaza() {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const { pg_trgm } = await import('@electric-sql/pglite/contrib/pg_trgm');
+
+  const db = await new PGlite({ extensions: { pg_trgm } });
+  await db.exec(SUPABASE_STUB);
+  await db.exec('create extension if not exists pg_trgm with schema extensions;');
+  return db;
+}
 
 /** Świeża baza z nałożonymi wszystkimi migracjami. */
 export async function bazaZMigracjami() {
-  const { PGlite } = await import('@electric-sql/pglite');
   const { readFileSync, readdirSync } = await import('node:fs');
   const path = (await import('node:path')).default;
 
   const MIG = new URL('../supabase/migrations', import.meta.url).pathname;
-  const db = await new PGlite();
-  await db.exec(SUPABASE_STUB);
+  const db = await pustaBaza();
   for (const f of readdirSync(MIG).filter((f) => f.endsWith('.sql')).sort()) {
     await db.exec(readFileSync(path.join(MIG, f), 'utf8').replace(/^create extension[^;]*;/gim, ''));
   }

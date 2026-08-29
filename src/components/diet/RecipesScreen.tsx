@@ -201,11 +201,10 @@ function RecipeSheet({
       setFound([]);
       return;
     }
-    const { data } = await supabase
-      .from("foods")
-      .select("*")
-      .ilike("name", `%${phrase.trim()}%`)
-      .limit(15);
+    const { data } = await supabase.rpc("szukaj_produktow", {
+      p_fraza: phrase.trim(),
+      p_limit: 15,
+    });
     setFound((data ?? []) as Food[]);
   }
 

@@ -23,6 +23,7 @@
     "test:looks": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-looks.mjs",
     "test:wyglad": "node --no-warnings scripts/test-wyglad.mjs",
     "test:budzet": "node --no-warnings scripts/test-budzet.mjs",
+    "test:produkty": "node --no-warnings scripts/test-produkty.mjs",
     "test:daty": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-daty.mjs"
   },
   "dependencies": {

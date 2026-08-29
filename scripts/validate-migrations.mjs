@@ -1,14 +1,13 @@
-import { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { SUPABASE_STUB } from './supabase-stub.mjs';
+import { pustaBaza } from './supabase-stub.mjs';
 
 const MIG = new URL('../supabase/migrations', import.meta.url).pathname;
-const db = await new PGlite();
 
-// --- Stub środowiska Supabase (wspólny z testami dostępu) ---
-await db.exec(SUPABASE_STUB);
-
+// Środowisko Supabase wspólne z testami dostępu — łącznie z rozszerzeniami.
+// Dwie osobne konfiguracje znaczyłyby, że walidator sprawdza inną bazę
+// niż testy, a rozjazd wyszedłby dopiero na produkcji.
+const db = await pustaBaza();
 
 const files = readdirSync(MIG).filter(f => f.endsWith('.sql')).sort();
 let failed = false;
