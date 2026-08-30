@@ -520,13 +520,14 @@ export function SleepScreen({
             </div>
           </div>
 
-          {/* Sen ma pole daty od początku, więc dopisanie wstecz nie potrzebuje
-              przełącznika dnia - wystarczyło zamknąć je w oknie DNI_WSTECZ
-              i pokazać, kiedy noc przestaje być dzisiejsza. */}
+          {/* Pole daty jest tu od początku; okno DNI_WSTECZ tylko domyka je od
+              dołu. Pusta data to stan wyjściowy formularza, zanim ktokolwiek go
+              otworzy - i wtedy nie ma czego nazywać po ludzku. Bez tego warunku
+              humanDate("") wywracał renderowanie całego ekranu na serwerze. */}
           <Field
             label="Data poranka"
             hint={
-              draft.date === today
+              !draft.date || draft.date === today
                 ? "Noc z wtorku na środę zapisz jako środę."
                 : `Zapisujesz noc z poranka ${humanDate(draft.date)}. Cofnąć możesz się o ${DNI_WSTECZ} dni.`
             }
@@ -537,7 +538,7 @@ export function SleepScreen({
               min={najstarszaData(today)}
               max={today}
               onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-              className={clsx(draft.date !== today && "border-warn text-warn")}
+              className={clsx(draft.date && draft.date !== today && "border-warn text-warn")}
             />
           </Field>
 
