@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, ProgressRing, Sheet, Textarea } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
+import { DateNav } from "@/components/DateNav";
 import { HABIT_ICONS, WEEKDAYS, habitDueOn } from "@/lib/constants";
+import { humanDate } from "@/lib/format";
 import { useLocalBoolean } from "@/lib/localSetting";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
@@ -13,8 +15,9 @@ import type { Habit } from "@/lib/database.types";
 
 type DayMark = { date: string; count: number; due: boolean };
 
-export type HabitWithToday = Habit & {
-  todayCount: number;
+export type HabitWithDay = Habit & {
+  /** Ile razy odhaczone w dniu, który jest na ekranie - niekoniecznie dzisiaj. */
+  dayCount: number;
   /** Ostatnie 7 dni, od najstarszego: ile razy odhaczone. */
   week: DayMark[];
   /** Ostatnie 28 dni - siatka 4 tygodni pod nazwą nawyku. */
@@ -37,13 +40,17 @@ const EMPTY = {
 export function HabitsScreen({
   userId,
   habits,
+  date,
   today,
   perfectStreak,
   reading,
   vices,
 }: {
   userId: string;
-  habits: HabitWithToday[];
+  habits: HabitWithDay[];
+  /** Dzień oglądany i odhaczany. */
+  date: string;
+  /** Dzisiaj - potrzebne, żeby odróżnić bieżący dzień od dopisywanego wstecz. */
   today: string;
   /** Ile dni z rzędu domknięte zostało wszystko, co było na liście. */
   perfectStreak: number;
@@ -56,7 +63,7 @@ export function HabitsScreen({
   const supabase = createClient();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<HabitWithToday | null>(null);
+  const [editing, setEditing] = useState<HabitWithDay | null>(null);
   const [draft, setDraft] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +73,11 @@ export function HabitsScreen({
   // nie musi tego robić codziennie przed odhaczeniem.
   const [listOpen, setListOpen] = useLocalBoolean("grind:habits-open", false);
 
-  const dueToday = habits.filter((h) => habitDueOn(h.days_of_week, today));
-  const restToday = habits.filter((h) => !habitDueOn(h.days_of_week, today));
-  const doneToday = dueToday.filter((h) => h.todayCount >= h.target_per_day).length;
-  const allDone = dueToday.length > 0 && doneToday === dueToday.length;
+  const jestDzis = date === today;
+  const dueOnDay = habits.filter((h) => habitDueOn(h.days_of_week, date));
+  const restOnDay = habits.filter((h) => !habitDueOn(h.days_of_week, date));
+  const doneOnDay = dueOnDay.filter((h) => h.dayCount >= h.target_per_day).length;
+  const allDone = dueOnDay.length > 0 && doneOnDay === dueOnDay.length;
   const bestOverall = habits.reduce((max, h) => Math.max(max, h.bestStreak), 0);
 
   function openNew() {
@@ -79,7 +87,7 @@ export function HabitsScreen({
     setFormOpen(true);
   }
 
-  function openEdit(habit: HabitWithToday) {
+  function openEdit(habit: HabitWithDay) {
     setEditing(habit);
     setDraft({
       name: habit.name,
@@ -95,20 +103,20 @@ export function HabitsScreen({
   }
 
   /** Odhaczenie: jeden wiersz na nawyk i dzień, więc podbijamy licznik. */
-  async function bump(habit: HabitWithToday, delta: number) {
-    const next = Math.max(0, Math.min(habit.target_per_day, habit.todayCount + delta));
-    if (next === habit.todayCount) return;
+  async function bump(habit: HabitWithDay, delta: number) {
+    const next = Math.max(0, Math.min(habit.target_per_day, habit.dayCount + delta));
+    if (next === habit.dayCount) return;
 
     setBusy(habit.id);
     const { error } = await supabase.from("habit_logs").upsert(
-      { user_id: userId, habit_id: habit.id, date: today, count: next },
+      { user_id: userId, habit_id: habit.id, date, count: next },
       { onConflict: "user_id,habit_id,date" },
     );
     setBusy(null);
 
     if (error) setError(`Nie udało się zapisać: ${error.message}`);
     else {
-      if (next > habit.todayCount) navigator.vibrate?.(12);
+      if (next > habit.dayCount) navigator.vibrate?.(12);
       router.refresh();
     }
   }
@@ -142,7 +150,7 @@ export function HabitsScreen({
     router.refresh();
   }
 
-  async function remove(habit: HabitWithToday) {
+  async function remove(habit: HabitWithDay) {
     if (!confirm(`Usunąć nawyk "${habit.name}" razem z historią odhaczeń?`)) return;
     const { error } = await supabase.from("habits").delete().eq("id", habit.id);
     if (error) setError(`Nie udało się usunąć: ${error.message}`);
@@ -161,30 +169,43 @@ export function HabitsScreen({
   return (
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
-        <h1 className="text-2xl font-bold">Nawyki i nałogi</h1>
+        <h1 className="text-2xl font-bold">
+          {jestDzis ? "Nawyki i nałogi" : `Nawyki - ${humanDate(date)}`}
+        </h1>
         <Button variant="primary" onClick={openNew}>
           + Dodaj
         </Button>
       </header>
 
+      {/* Przełącznik dnia: to samo, co w diecie, tyle że zamknięte w oknie
+          wpisywania wstecz - passy liczą się z historii, więc dopisanie dnia
+          sprzed pół roku przepisałoby rekord po cichu. */}
+      <DateNav date={date} basePath="/nawyki" ograniczWstecz />
+
       {/* Pasek postępu dnia - jedna liczba, po którą sięga się najczęściej. */}
-      {dueToday.length > 0 && (
+      {dueOnDay.length > 0 && (
         <Card className={clsx(allDone && "border-success/50")}>
           <div className="flex items-center gap-4">
-            <ProgressRing value={doneToday} max={dueToday.length} size={72} />
+            <ProgressRing value={doneOnDay} max={dueOnDay.length} size={72} />
 
             <div className="min-w-0 flex-1">
               <p className="text-[17px] font-bold leading-tight">
                 {allDone
-                  ? "Komplet na dziś 🎉"
-                  : doneToday === 0
-                    ? "Jeszcze nic dziś"
-                    : `Zostało ${dueToday.length - doneToday}`}
+                  ? jestDzis
+                    ? "Komplet na dziś 🎉"
+                    : `Komplet: ${humanDate(date)} 🎉`
+                  : doneOnDay === 0
+                    ? jestDzis
+                      ? "Jeszcze nic dziś"
+                      : `Nic nie odhaczone: ${humanDate(date)}`
+                    : `Zostało ${dueOnDay.length - doneOnDay}`}
               </p>
               <p className="mt-0.5 text-[13px] text-muted">
                 {perfectStreak > 0
                   ? `🔥 ${perfectStreak} ${dayWord(perfectStreak)} z rzędu w komplecie`
-                  : "Domknij wszystko dziś, żeby zacząć passę."}
+                  : jestDzis
+                    ? "Domknij wszystko dziś, żeby zacząć passę."
+                    : "Dopisany dzień liczy się do passy tak samo jak wpisany na czas."}
               </p>
 
               {bestOverall > 0 && (
@@ -275,7 +296,7 @@ export function HabitsScreen({
               <p className="text-[15px] font-semibold leading-tight">Moje nawyki</p>
               <p className="truncate text-[13px] text-muted">
                 {viceOrHabitWord(habits.length)}
-                {dueToday.length > 0 && ` · ${doneToday}/${dueToday.length} dziś`}
+                {dueOnDay.length > 0 && ` · ${doneOnDay}/${dueOnDay.length} dziś`}
               </p>
             </div>
             <span
@@ -298,7 +319,7 @@ export function HabitsScreen({
               listOpen ? "flex" : "hidden",
             )}
           >
-              {dueToday.map((habit) => (
+              {dueOnDay.map((habit) => (
                 <HabitCard
                   key={habit.id}
                   habit={habit}
@@ -309,12 +330,14 @@ export function HabitsScreen({
                 />
               ))}
 
-              {restToday.length > 0 && (
+              {restOnDay.length > 0 && (
                 <>
                   <p className="mt-1 px-1 text-[12px] font-medium uppercase tracking-wide text-faint">
-                    Nie na dziś - wróci w swoim dniu tygodnia
+                    {jestDzis
+                      ? "Nie na dziś - wróci w swoim dniu tygodnia"
+                      : "Nie na ten dzień tygodnia"}
                   </p>
-                  {restToday.map((habit) => (
+                  {restOnDay.map((habit) => (
                     <HabitCard
                       key={habit.id}
                       habit={habit}
@@ -457,14 +480,14 @@ function HabitCard({
   onEdit,
   onDelete,
 }: {
-  habit: HabitWithToday;
+  habit: HabitWithDay;
   muted?: boolean;
   busy: boolean;
   onBump: (delta: number) => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const done = habit.todayCount >= habit.target_per_day;
+  const done = habit.dayCount >= habit.target_per_day;
   const days = habit.days_of_week.length
     ? WEEKDAYS.filter((d) => habit.days_of_week.includes(d.value)).map((d) => d.short).join(" ")
     : "codziennie";
@@ -493,7 +516,7 @@ function HabitCard({
 
           <p className="mt-0.5 text-[12px] text-muted">
             {habit.target_per_day > 1
-              ? `${habit.todayCount}/${habit.target_per_day}${habit.unit ? ` ${habit.unit}` : ""} · ${days}`
+              ? `${habit.dayCount}/${habit.target_per_day}${habit.unit ? ` ${habit.unit}` : ""} · ${days}`
               : days}
             {habit.reminder_at && ` · ⏰ ${habit.reminder_at.slice(0, 5)}`}
             {habit.bestStreak > habit.streak && ` · rekord ${habit.bestStreak}`}

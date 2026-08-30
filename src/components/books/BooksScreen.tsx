@@ -19,7 +19,8 @@ import { NumberStepper } from "@/components/training/NumberStepper";
 import { BOOK_STATUSES, bookProgress, bookStatus, pagesLabel } from "@/lib/books";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
-import { humanDate, plural, todayISO } from "@/lib/format";
+import { addDaysISO, humanDate, plural, todayISO } from "@/lib/format";
+import { DataWpisu } from "@/components/DataWpisu";
 import type { Book, BookNote, BookStatus } from "@/lib/database.types";
 import { IsbnScanner } from "@/components/books/IsbnScanner";
 import type { IsbnBook } from "@/lib/isbn";
@@ -62,6 +63,7 @@ export function BooksScreen({
   const [detail, setDetail] = useState<Book | null>(null);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [czytanieDnia, setCzytanieDnia] = useState(todayISO());
   const [error, setError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
@@ -140,13 +142,15 @@ export function BooksScreen({
   }
 
   /**
-   * Dopisanie stron przeczytanych dzisiaj.
+   * Dopisanie przeczytanych stron.
    *
    * Aktualizuje książkę i osobno zapisuje sesję - dzięki temu passa liczy się
-   * z faktu "czytałem dziś", a nie z tego, czy ktoś pamiętał zmienić numer strony.
+   * z faktu "czytałem tego dnia", a nie z tego, czy ktoś pamiętał zmienić
+   * numer strony.
    */
   async function addPages(book: Book, pages: number) {
-    const today = todayISO();
+    // Dzień czytania, nie dzień wpisu: wieczorna lektura bywa zapisana rano.
+    const today = czytanieDnia;
     const next = book.pages
       ? Math.min(book.pages, book.current_page + pages)
       : book.current_page + pages;
@@ -256,6 +260,35 @@ export function BooksScreen({
       {/* --- Co czytam teraz --- */}
       {reading.length > 0 && (
         <div className="flex flex-col gap-2">
+          {/* Domyślnie nic tu nie ma, bo "+10 str." ma zostać jednym
+              tapnięciem. Pole daty pojawia się dopiero, gdy ktoś świadomie
+              nadrabia zaległy dzień. */}
+          {czytanieDnia === todayISO() ? (
+            <button
+              type="button"
+              onClick={() => setCzytanieDnia(addDaysISO(todayISO(), -1))}
+              className="self-start px-1 text-[12px] font-medium text-faint underline"
+            >
+              Nie zdążyłem wpisać? Dodaj z innego dnia
+            </button>
+          ) : (
+            <Card className="border-warn/50">
+              <DataWpisu
+                label="Strony dopiszę do dnia"
+                value={czytanieDnia}
+                onChange={setCzytanieDnia}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3"
+                onClick={() => setCzytanieDnia(todayISO())}
+              >
+                Wróć do dzisiaj
+              </Button>
+            </Card>
+          )}
+
           {reading.map((book) => {
             const progress = bookProgress(book);
             return (

@@ -3,9 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, Select, Sheet, Textarea } from "@/components/ui";
+import { DataWpisu } from "@/components/DataWpisu";
 import { LIST_ICONS, TODO_PRIORITIES, dueLabel, priorityTone } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
+import { dateInAppZone, todayISO } from "@/lib/format";
+import { znacznikDnia } from "@/lib/wstecz";
 import type { Todo, TodoList } from "@/lib/database.types";
 
 const INBOX = "__inbox__";
@@ -446,6 +449,12 @@ function TodoDetails({
   const [due, setDue] = useState(todo.due_date ?? "");
   const [priority, setPriority] = useState(todo.priority);
   const [listId, setListId] = useState(todo.list_id ?? "");
+  // Odhaczenie zapisuje moment tapnięcia, a zadanie bywa zrobione dzień
+  // wcześniej. Data zrobienia decyduje o kolejności na liście "Zrobione",
+  // więc da się ją przesunąć - ale tylko w zadaniu już odhaczonym.
+  const [doneDate, setDoneDate] = useState(
+    todo.done_at ? dateInAppZone(new Date(todo.done_at)) : todayISO(),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -484,6 +493,10 @@ function TodoDetails({
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
       </Field>
 
+      {todo.done_at && (
+        <DataWpisu label="Zrobione dnia" value={doneDate} onChange={setDoneDate} />
+      )}
+
       <div className="flex items-center gap-2">
         <Chip tone={priorityTone(priority)}>
           {TODO_PRIORITIES.find((p) => p.value === priority)?.label}
@@ -502,6 +515,7 @@ function TodoDetails({
             due_date: due || null,
             priority,
             list_id: listId || null,
+            ...(todo.done_at ? { done_at: znacznikDnia(doneDate) } : {}),
           })
         }
       >

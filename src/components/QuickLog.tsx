@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Alert, Button, Field, Sheet } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { PainPicker } from "@/components/injuries/PainPicker";
+import { DataWpisu } from "@/components/DataWpisu";
 import { createClient } from "@/lib/supabase/client";
 import { todayISO } from "@/lib/format";
 import type { Injury } from "@/lib/database.types";
@@ -25,6 +26,9 @@ export function QuickLog({
   const router = useRouter();
   const [open, setOpen] = useState<"weight" | "pain" | null>(null);
   const [weight, setWeight] = useState<number | null>(lastWeightKg ?? 80);
+  // Waga i ból mają osobne daty: ważysz się rano, a o kolanie wiesz wieczorem.
+  const [weightDate, setWeightDate] = useState(todayISO());
+  const [painDate, setPainDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +40,7 @@ export function QuickLog({
     const { error } = await createClient()
       .from("body_weight_logs")
       .upsert(
-        { user_id: userId, date: todayISO(), weight_kg: weight },
+        { user_id: userId, date: weightDate, weight_kg: weight },
         { onConflict: "user_id,date" },
       );
 
@@ -52,17 +56,30 @@ export function QuickLog({
   return (
     <>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="secondary" onClick={() => setOpen("weight")}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setWeightDate(todayISO());
+            setOpen("weight");
+          }}
+        >
           ⚖️ Waga
         </Button>
-        <Button variant="secondary" onClick={() => setOpen("pain")} disabled={injuries.length === 0}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setPainDate(todayISO());
+            setOpen("pain");
+          }}
+          disabled={injuries.length === 0}
+        >
           🩹 {injuries.length === 0 ? "Brak kontuzji" : "Ból"}
         </Button>
       </div>
 
       <Sheet open={open === "weight"} onClose={() => setOpen(null)} title="Waga ciała">
         <div className="flex flex-col gap-4">
-          <Field label="Dzisiejsza waga">
+          <Field label={weightDate === todayISO() ? "Dzisiejsza waga" : "Waga tamtego dnia"}>
             <NumberStepper
               ariaLabel="Waga w kilogramach"
               value={weight}
@@ -75,6 +92,8 @@ export function QuickLog({
               size="lg"
             />
           </Field>
+          <DataWpisu value={weightDate} onChange={setWeightDate} />
+
           {error && <Alert>{error}</Alert>}
           <Button variant="primary" size="lg" block loading={saving} onClick={saveWeight}>
             Zapisz wagę
@@ -82,17 +101,27 @@ export function QuickLog({
         </div>
       </Sheet>
 
-      <Sheet open={open === "pain"} onClose={() => setOpen(null)} title="Jak dziś boli?">
-        <PainPicker
-          userId={userId}
-          date={todayISO()}
-          injuries={injuries}
-          initial={painToday}
-          onSaved={() => {
-            setOpen(null);
-            router.refresh();
-          }}
-        />
+      <Sheet
+        open={open === "pain"}
+        onClose={() => setOpen(null)}
+        title={painDate === todayISO() ? "Jak dziś boli?" : "Jak bolało"}
+      >
+        <div className="flex flex-col gap-4">
+          <DataWpisu label="Dzień" value={painDate} onChange={setPainDate} />
+
+          <PainPicker
+            key={painDate}
+            userId={userId}
+            date={painDate}
+            injuries={injuries}
+            // Podpowiedź z dzisiejszych ocen pasuje tylko do dzisiaj.
+            initial={painDate === todayISO() ? painToday : undefined}
+            onSaved={() => {
+              setOpen(null);
+              router.refresh();
+            }}
+          />
+        </div>
       </Sheet>
     </>
   );

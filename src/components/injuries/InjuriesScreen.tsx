@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, Select, Sheet, Textarea } from "@/components/ui";
 import { PainPicker } from "@/components/injuries/PainPicker";
+import { DataWpisu } from "@/components/DataWpisu";
 import {
   BODY_PARTS,
   INJURY_SIDES,
@@ -49,6 +50,7 @@ export function InjuriesScreen({
   const [editing, setEditing] = useState<InjuryWithPain | null>(null);
   const [draft, setDraft] = useState(EMPTY);
   const [rating, setRating] = useState<InjuryWithPain | null>(null);
+  const [painDate, setPainDate] = useState(today);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +157,13 @@ export function InjuriesScreen({
                 <InjuryCard
                   key={injury.id}
                   injury={injury}
-                  onRate={() => setRating(injury)}
+                  onRate={() => {
+                    // Arkusz zawsze otwiera się na dzisiaj: cofnięcie daty ma
+                    // być świadomym ruchem, a nie pozostałością po poprzedniej
+                    // ocenie.
+                    setPainDate(today);
+                    setRating(injury);
+                  }}
                   onEdit={() => openEdit(injury)}
                   onDelete={() => remove(injury)}
                 />
@@ -291,16 +299,30 @@ export function InjuriesScreen({
         title={rating ? `Ocena bólu - ${rating.name}` : ""}
       >
         {rating && (
-          <PainPicker
-            userId={userId}
-            date={today}
-            injuries={[rating]}
-            initial={rating.lastDate === today && rating.lastLevel !== null ? { [rating.id]: rating.lastLevel } : undefined}
-            onSaved={() => {
-              setRating(null);
-              router.refresh();
-            }}
-          />
+          <div className="flex flex-col gap-4">
+            {/* Ból ocenia się wieczorem albo następnego dnia, gdy już wiadomo,
+                jak kolano zniosło trening. Data w arkuszu, bo cały ekran to
+                lista kontuzji, a nie dziennik jednego dnia. */}
+            <DataWpisu label="Dzień" value={painDate} onChange={setPainDate} />
+
+            <PainPicker
+              // Zmiana dnia to inna ocena: bez klucza suwak zostałby na
+              // wartości wpisanej dla poprzedniej daty.
+              key={painDate}
+              userId={userId}
+              date={painDate}
+              injuries={[rating]}
+              initial={
+                rating.lastDate === painDate && rating.lastLevel !== null
+                  ? { [rating.id]: rating.lastLevel }
+                  : undefined
+              }
+              onSaved={() => {
+                setRating(null);
+                router.refresh();
+              }}
+            />
+          </div>
         )}
       </Sheet>
     </div>

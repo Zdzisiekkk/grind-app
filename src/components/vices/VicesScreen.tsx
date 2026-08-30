@@ -15,7 +15,10 @@ import {
   Textarea,
   Toast,
 } from "@/components/ui";
+import { DataWpisu } from "@/components/DataWpisu";
 import { createClient } from "@/lib/supabase/client";
+import { todayISO } from "@/lib/format";
+import { znacznikDnia } from "@/lib/wstecz";
 import { clsx } from "@/lib/clsx";
 import {
   URGE_SECONDS,
@@ -66,6 +69,7 @@ export function VicesScreen({
   const [crisis, setCrisis] = useState<ViceWithEvents | null>(null);
   const [lapseTrigger, setLapseTrigger] = useState("");
   const [lapseNote, setLapseNote] = useState("");
+  const [lapseDate, setLapseDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; seq: number } | null>(null);
@@ -151,6 +155,10 @@ export function VicesScreen({
       user_id: userId,
       vice_id: lapsing.id,
       kind: "lapse",
+      // Wpadkę zwykle zapisuje się później, czasem następnego dnia. Data
+      // z arkusza decyduje o tym, od kiedy licznik czystych dni rusza od nowa,
+      // więc wczorajsza wpadka wpisana dziś nie kasuje dzisiejszego dnia.
+      occurred_at: znacznikDnia(lapseDate),
       trigger: lapseTrigger.trim() || null,
       note: lapseNote.trim() || null,
     });
@@ -164,6 +172,7 @@ export function VicesScreen({
     setCrisis(null);
     setLapseTrigger("");
     setLapseNote("");
+    setLapseDate(todayISO());
     showToast("Zapisane. Licznik startuje od nowa.");
     router.refresh();
   }
@@ -311,6 +320,8 @@ export function VicesScreen({
             Zapisanie wpadki to nie kara. Bez niej licznik kłamie, a wzorzec - to, co ją
             wywołuje - nigdy nie wyjdzie na jaw.
           </Alert>
+
+          <DataWpisu label="Kiedy" value={lapseDate} onChange={setLapseDate} />
 
           <Field label="Co to wywołało" hint="Krótko i tak samo za każdym razem, np. stres, alkohol, nuda.">
             <Input

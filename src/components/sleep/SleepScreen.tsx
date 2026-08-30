@@ -22,6 +22,7 @@ import { BEDTIME_PRESETS, SLEEP_FACTORS, WAKE_PRESETS, sleepFactor } from "@/lib
 import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
 import { addDaysISO, humanDate, plural, shortDate } from "@/lib/format";
+import { DNI_WSTECZ, najstarszaData } from "@/lib/wstecz";
 import {
   ENERGY_LABELS,
   QUALITY_LABELS,
@@ -499,12 +500,24 @@ export function SleepScreen({
             </div>
           </div>
 
-          <Field label="Data poranka" hint="Noc z wtorku na środę zapisz jako środę.">
+          {/* Sen ma pole daty od początku, więc dopisanie wstecz nie potrzebuje
+              przełącznika dnia - wystarczyło zamknąć je w oknie DNI_WSTECZ
+              i pokazać, kiedy noc przestaje być dzisiejsza. */}
+          <Field
+            label="Data poranka"
+            hint={
+              draft.date === today
+                ? "Noc z wtorku na środę zapisz jako środę."
+                : `Zapisujesz noc z poranka ${humanDate(draft.date)}. Cofnąć możesz się o ${DNI_WSTECZ} dni.`
+            }
+          >
             <Input
               type="date"
               value={draft.date}
+              min={najstarszaData(today)}
               max={today}
               onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+              className={clsx(draft.date !== today && "border-warn text-warn")}
             />
           </Field>
 

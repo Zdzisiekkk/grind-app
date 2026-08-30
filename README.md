@@ -324,6 +324,7 @@ uruchomić ponownie. Po imporcie **usuń service role key z `.env.local`**.
 | `npm run lint` | ESLint + reguły React Compilera |
 | `npm run validate:sql` | uruchamia wszystkie migracje w PGlite (Postgres w WASM) - łapie błędy SQL bez stawiania bazy |
 | `npm run test:db` | 15 testów schematu i Row Level Security: izolacja danych między kontami, rola admina, kopiowanie planu, liczenie makro, podsumowania |
+| `npm run test:wstecz` | 30 sprawdzeń wpisywania wstecz: okno siedmiu dni, passa po dopisaniu zaległego dnia, zapis z datą wsteczną w bazie |
 | `npm run db:push` | uruchamia wszystkie migracje na zdalnym projekcie Supabase (wymaga `SUPABASE_ACCESS_TOKEN` i `SUPABASE_PROJECT_REF`) |
 | `npm run test:live` | test end-to-end na żywym wdrożeniu: rejestracja, logowanie, wszystkie ekrany, skopiowanie planu, zapis serii, podsumowanie - z posprzątaniem po sobie |
 | `npm run verify:plan` | sprawdza, czy plan w bazie zgadza się co do znaku z `plan_treningowy.json` |

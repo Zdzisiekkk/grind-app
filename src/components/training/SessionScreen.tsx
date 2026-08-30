@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Chip, Sheet } from "@/components/ui";
+import { Alert, Button, Card, Chip, Sheet } from "@/components/ui";
+import { DataWpisu } from "@/components/DataWpisu";
 import { ExerciseCard, type NewSet } from "@/components/training/ExerciseCard";
 import { RestTimer } from "@/components/training/RestTimer";
 import { PainPicker } from "@/components/injuries/PainPicker";
@@ -12,7 +13,7 @@ import type { CatalogExercise, Injury, WorkoutLog } from "@/lib/database.types";
 import { DEFAULT_REST_SECONDS, DEFAULT_WEIGHT_STEP } from "@/lib/constants";
 import { useLocalNumber } from "@/lib/localSetting";
 import { createClient } from "@/lib/supabase/client";
-import { longDate, sets as setsLabel, volume } from "@/lib/format";
+import { addDaysISO, longDate, sets as setsLabel, volume } from "@/lib/format";
 
 const STEP_KEY = "grind:weight-step";
 /** Sesja bez jawnego startu (np. wznowiona) - liczymy najwyżej 6 h treningu. */
@@ -63,6 +64,7 @@ export function SessionScreen({
   const [painOpen, setPainOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [dataSesji, setDataSesji] = useState(session.date);
   const [weightStep, changeWeightStep] = useLocalNumber(STEP_KEY, DEFAULT_WEIGHT_STEP);
 
   // Wyjście z treningu przez pomyłkę = utrata kontekstu, więc ostrzegamy.
@@ -215,11 +217,18 @@ export function SessionScreen({
 
   async function closeSession() {
     setFinishing(true);
+    // Czas trwania liczymy od faktycznego startu, nawet gdy sesja idzie na
+    // wcześniejszy dzień: trening trwał tyle, ile trwał, niezależnie od tego,
+    // pod jaką datą go zapisujemy.
     const minutes = elapsedMinutes(session.date);
 
     const { error } = await supabase
       .from("workout_sessions")
-      .update({ finished_at: new Date().toISOString(), duration_min: minutes })
+      .update({
+        finished_at: new Date().toISOString(),
+        duration_min: minutes,
+        ...(dataSesji !== session.date ? { date: dataSesji } : {}),
+      })
       .eq("id", session.id);
 
     setFinishing(false);
@@ -296,9 +305,36 @@ export function SessionScreen({
       )}
 
       {!session.finishedAt && (
-        <Button variant="primary" size="lg" block loading={finishing} onClick={finishSession}>
-          Zakończ trening
-        </Button>
+        <>
+          {/* Trening prowadzi się na żywo, więc data jest domyślnie dzisiejsza.
+              Zmiana przydaje się w jednym przypadku: trenowałeś wczoraj, a
+              wpisujesz dziś. Pole chowa się, dopóki nie jest potrzebne. */}
+          {dataSesji === session.date ? (
+            <button
+              type="button"
+              onClick={() => setDataSesji(addDaysISO(session.date, -1))}
+              className="self-center px-1 text-[12px] font-medium text-faint underline"
+            >
+              To był wcześniejszy dzień
+            </button>
+          ) : (
+            <Card className="border-warn/50">
+              <DataWpisu label="Dzień treningu" value={dataSesji} onChange={setDataSesji} />
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3"
+                onClick={() => setDataSesji(session.date)}
+              >
+                Jednak dzisiaj
+              </Button>
+            </Card>
+          )}
+
+          <Button variant="primary" size="lg" block loading={finishing} onClick={finishSession}>
+            Zakończ trening
+          </Button>
+        </>
       )}
 
       {timer && (
