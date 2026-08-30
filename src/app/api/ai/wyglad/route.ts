@@ -8,14 +8,14 @@ import { addDaysISO, todayISO } from "@/lib/format";
 import { sleepDuration } from "@/lib/sleep";
 import type { PeriodSummary, PoraDnia } from "@/lib/database.types";
 
-/** Analiza obrazu trwa dłużej niż tekst — dajemy zapas ponad domyślne 60 s. */
+/** Analiza obrazu trwa dłużej niż tekst - dajemy zapas ponad domyślne 60 s. */
 export const maxDuration = 120;
 
 /*
  * Osobna zmienna niż trener.
  *
  * Trener rozumuje na liczbach i zostaje na Opusie. Skan w dużej mierze polega
- * na opisaniu tego, co widać na zdjęciu — a analiza obrazu jest wielokrotnie
+ * na opisaniu tego, co widać na zdjęciu - a analiza obrazu jest wielokrotnie
  * droższa od tekstu. Jeden model dla obu znaczyłby, że nie da się potanieć
  * tam, gdzie to nic nie kosztuje jakościowo.
  */
@@ -27,19 +27,19 @@ const MODEL = process.env.ANTHROPIC_MODEL_WYGLAD || "claude-sonnet-5";
  * Ten licznik jest wspólny z trenerem i ma limit dzienny. Skan ma własne,
  * ostrzejsze ograniczenia w bazie (odstęp 7 dni, 5 w miesiącu), więc dokładanie
  * go do puli trenera odbierałoby pytania komuś, kto raz w tygodniu zrobił
- * zdjęcie — bez żadnego zysku dla rachunku.
+ * zdjęcie - bez żadnego zysku dla rachunku.
  */
 
 const SYSTEM = `Jesteś doświadczonym konsultantem wizerunku i pielęgnacji, rozmawiasz po polsku z osobą, która sama poprosiła o ocenę swojego wyglądu i prowadzi w aplikacji dziennik treningu, diety, snu i nawyków.
 
 Jak pracujesz:
 1. Oceniasz WYŁĄCZNIE to, co widać na zdjęciu i co wynika z liczb w sekcji FAKTY. Nie zgadujesz wieku, pochodzenia, statusu ani charakteru.
-2. Każda podocena musi mieć konkretną obserwację. „Cienie podoczodołowe i lekki obrzęk powiek" zamiast „zmęczony wygląd".
-3. Wszystkie liczby w FAKTACH są już policzone. Nie przeliczaj ich — wyjaśnij je i połącz z tym, co widzisz. Jeżeli widzisz stan skóry, a FAKTY mówią o 5h snu i alkoholu 3× w tygodniu, powiedz to wprost.
-4. Plan zawiera maksymalnie sześć zaleceń, uszeregowanych po realnym wpływie. Podajesz uczciwy horyzont czasowy: pielęgnacja skóry 8–12 tygodni, skład ciała 12–24 tygodnie, włosy 16+ tygodni.
-5. Mewing i ćwiczenia mięśni twarzy opisujesz uczciwie: to praca nad postawą języka, żuchwy i szyi. U dorosłych nie przebudowują kości — dają umiarkowaną poprawę napięcia i linii żuchwy, zwłaszcza przy niskim poziomie tkanki tłuszczowej. Nie obiecujesz zmiany budowy czaszki.
-6. NIGDY nie proponujesz: zabiegów chirurgicznych, sterydów anaboliczno-androgennych, leków na receptę, głodówek, „bone smashing" ani żadnego urazu zadawanego celowo. Przy podejrzeniu problemu medycznego (nasilony trądzik, gwałtowne wypadanie włosów, zmiana barwnikowa) piszesz jedno zdanie o wizycie u dermatologa i przechodzisz dalej.
-7. Nie porównujesz użytkownika do innych ludzi ani do żadnych „średnich". Punktem odniesienia jest wyłącznie jego własny poprzedni skan.
+2. Każda podocena musi mieć konkretną obserwację. "Cienie podoczodołowe i lekki obrzęk powiek" zamiast "zmęczony wygląd".
+3. Wszystkie liczby w FAKTACH są już policzone. Nie przeliczaj ich - wyjaśnij je i połącz z tym, co widzisz. Jeżeli widzisz stan skóry, a FAKTY mówią o 5h snu i alkoholu 3× w tygodniu, powiedz to wprost.
+4. Plan zawiera maksymalnie sześć zaleceń, uszeregowanych po realnym wpływie. Podajesz uczciwy horyzont czasowy: pielęgnacja skóry 8-12 tygodni, skład ciała 12-24 tygodnie, włosy 16+ tygodni.
+5. Mewing i ćwiczenia mięśni twarzy opisujesz uczciwie: to praca nad postawą języka, żuchwy i szyi. U dorosłych nie przebudowują kości - dają umiarkowaną poprawę napięcia i linii żuchwy, zwłaszcza przy niskim poziomie tkanki tłuszczowej. Nie obiecujesz zmiany budowy czaszki.
+6. NIGDY nie proponujesz: zabiegów chirurgicznych, sterydów anaboliczno-androgennych, leków na receptę, głodówek, "bone smashing" ani żadnego urazu zadawanego celowo. Przy podejrzeniu problemu medycznego (nasilony trądzik, gwałtowne wypadanie włosów, zmiana barwnikowa) piszesz jedno zdanie o wizycie u dermatologa i przechodzisz dalej.
+7. Nie porównujesz użytkownika do innych ludzi ani do żadnych "średnich". Punktem odniesienia jest wyłącznie jego własny poprzedni skan.
 8. Gdy zdjęcie jest złej jakości (prześwietlone, rozmyte, w cieniu, twarz częściowo zasłonięta), ustawiasz jakosc_zdjecia.wystarczajaca = false, obniżasz pewność ocen i mówisz, co poprawić. Nie zmyślasz obserwacji, których nie widać.
 9. Piszesz zwięźle i bezpośrednio. Bez motywacyjnych ogólników, bez komplementów z grzeczności i bez straszenia.
 10. Każde zalecenie dostaje stały klucz (małe litery i podkreślenia). Ten sam nawyk przy kolejnym skanie ma dostać TEN SAM klucz, żeby lista wieczorna się nie rozmnażała.`;
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
   /* ------------------------------ Zdjęcia ---------------------------------- */
 
-  // RLS pilnuje, żeby to był własny skan — nie trzeba sprawdzać drugi raz.
+  // RLS pilnuje, żeby to był własny skan - nie trzeba sprawdzać drugi raz.
   const { data: zdjecia } = await supabase
     .from("wyglad_zdjecia")
     .select("ujecie, storage_path")
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
   /*
    * Skan trafia do tego samego rejestru kosztów co trener, ale NIE zjada jego
    * budżetu (`liczone` w app_settings, migracja 0043). Ma własne, ostrzejsze
-   * ograniczenia — odstęp 7 dni i 5 skanów miesięcznie, czyli około 1,40 zł —
+   * ograniczenia - odstęp 7 dni i 5 skanów miesięcznie, czyli około 1,40 zł -
    * więc wliczanie go do puli trenera odbierałoby pytania komuś, kto raz
    * w tygodniu zrobił zdjęcie. Zapisujemy go po to, żeby rachunek za AI dało
    * się zobaczyć w całości, a nie w kawałkach.
@@ -212,11 +212,11 @@ export async function POST(request: Request) {
         /*
          * Dużo więcej niż u trenera i nie bez powodu.
          *
-         * Pierwsze prawdziwe skany wywalały się na „Unterminated string in
+         * Pierwsze prawdziwe skany wywalały się na "Unterminated string in
          * JSON": model nie zdążył domknąć odpowiedzi przed limitem i parser
-         * dostawał urwany tekst. Ten schemat jest po prostu duży — do dziewięciu
+         * dostawał urwany tekst. Ten schemat jest po prostu duży - do dziewięciu
          * podocen z obserwacjami i do sześciu zaleceń po sześć kroków, wszystko
-         * po polsku — a przy myśleniu adaptacyjnym rozumowanie liczy się do tego
+         * po polsku - a przy myśleniu adaptacyjnym rozumowanie liczy się do tego
          * samego limitu. Cięcie tego kosztuje jeden nieudany skan z limitu
          * pięciu miesięcznie, więc zapas jest tańszy niż oszczędność.
          */
@@ -235,12 +235,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Model odmówił oceny tych zdjęć." }, { status: 422 });
     }
 
-    // Osobny komunikat, bo „spróbuj ponownie" przy uciętej odpowiedzi jest radą
-    // donikąd — powtórka skończy się tak samo, dopóki limit się nie zmieni.
+    // Osobny komunikat, bo "spróbuj ponownie" przy uciętej odpowiedzi jest radą
+    // donikąd - powtórka skończy się tak samo, dopóki limit się nie zmieni.
     if (response.stop_reason === "max_tokens") {
       console.error("Skan wyglądu: odpowiedź ucięta na limicie tokenów");
       return NextResponse.json(
-        { error: "Model nie zmieścił się z odpowiedzią. Zgłoś to — limit wymaga podniesienia." },
+        { error: "Model nie zmieścił się z odpowiedzią. Zgłoś to - limit wymaga podniesienia." },
         { status: 502 },
       );
     }
@@ -273,11 +273,11 @@ export async function POST(request: Request) {
     .eq("id", skanId);
 
   /*
-   * Rutyny z planu — upsert po kluczu, nigdy insert.
+   * Rutyny z planu - upsert po kluczu, nigdy insert.
    *
-   * Zalecenie „wieczorny retinoid" wraca przy każdym skanie. Bez klucza po
+   * Zalecenie "wieczorny retinoid" wraca przy każdym skanie. Bez klucza po
    * pięciu skanach lista wieczorna miałaby pięć prawie identycznych pozycji
-   * i nikt by jej nie otworzył. Rutyn stworzonych ręcznie nie ruszamy —
+   * i nikt by jej nie otworzył. Rutyn stworzonych ręcznie nie ruszamy -
    * upsert dotyczy wyłącznie tych ze źródłem 'ai'.
    */
   const doRutyn = analiza.plan.filter((z) =>
@@ -313,8 +313,8 @@ export async function POST(request: Request) {
    * Protokołów NIE włączamy automatycznie.
    *
    * Mewing i ćwiczenia twarzy to zobowiązanie na kilka miesięcy. Włączone bez
-   * pytania stają się listą, której nikt nie wybrał — a passa, której się nie
-   * zaczęło świadomie, nic nie znaczy. Raport pokazuje przycisk „Włącz protokół"
+   * pytania stają się listą, której nikt nie wybrał - a passa, której się nie
+   * zaczęło świadomie, nic nie znaczy. Raport pokazuje przycisk "Włącz protokół"
    * i to jest właściwe miejsce na tę decyzję.
    */
 

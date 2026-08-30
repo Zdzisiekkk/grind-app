@@ -18,7 +18,7 @@ export function QuickLog({
 }: {
   userId: string;
   lastWeightKg: number | null;
-  /** Kontuzje, o które apka pyta — puste, gdy użytkownik żadnej nie śledzi. */
+  /** Kontuzje, o które apka pyta - puste, gdy użytkownik żadnej nie śledzi. */
   injuries: Injury[];
   painToday?: Record<string, number>;
 }) {

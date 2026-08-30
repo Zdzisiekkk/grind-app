@@ -5,7 +5,7 @@ import { PAIN_LEGEND } from "@/lib/viz";
 import { clsx } from "@/lib/clsx";
 
 /**
- * Skala 0–10 jako rząd przycisków. Wydzielona osobno, bo używa jej i arkusz po
+ * Skala 0-10 jako rząd przycisków. Wydzielona osobno, bo używa jej i arkusz po
  * treningu, i szybki wpis z pulpitu, i edycja wpisu z kalendarza.
  */
 export function PainScale({
@@ -17,7 +17,7 @@ export function PainScale({
   value: number | null;
   onChange: (level: number) => void;
   size?: "sm" | "md";
-  /** Opis progów pod skalą — kolor nigdy nie jest jedynym nośnikiem znaczenia. */
+  /** Opis progów pod skalą - kolor nigdy nie jest jedynym nośnikiem znaczenia. */
   legend?: boolean;
 }) {
   return (
@@ -32,7 +32,7 @@ export function PainScale({
             type="button"
             onClick={() => onChange(i)}
             aria-pressed={active}
-            aria-label={`${i} z 10 — ${d.label}`}
+            aria-label={`${i} z 10 - ${d.label}`}
             className={clsx(
               "tabular flex items-center justify-center rounded-xl font-bold transition-transform active:scale-95",
               size === "sm" ? "min-h-9 text-[13px]" : "min-h-12 text-[16px]",

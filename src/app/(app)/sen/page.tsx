@@ -5,7 +5,7 @@ import { DEFAULT_SLEEP_GOAL_MIN, napsFromView, type SleepNight } from "@/lib/sle
 
 export const metadata = { title: "Sen" };
 
-/** Pół roku wstecz — tyle wystarczy na trendy i wnioski o czynnikach. */
+/** Pół roku wstecz - tyle wystarczy na trendy i wnioski o czynnikach. */
 const HISTORY_DAYS = 180;
 
 export default async function SleepPage() {

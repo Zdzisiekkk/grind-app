@@ -4,7 +4,7 @@ import { bazaZMigracjami } from './supabase-stub.mjs';
 //
 // Wcześniej ten plik budował WŁASNY, uproszczony stub: bez schematu storage,
 // bez roli service_role i bez domyślnych uprawnień Supabase. Skutek był taki,
-// że test sprawdzał inną bazę niż ta, na której stoi aplikacja — a migracja
+// że test sprawdzał inną bazę niż ta, na której stoi aplikacja - a migracja
 // dotykająca magazynu plików wywalała się dopiero tutaj, po wdrożeniu.
 // Trzy kopie stubu znaczyły trzy okazje do rozjazdu; została jedna.
 const db = await bazaZMigracjami();
@@ -41,7 +41,7 @@ check('profil tworzony automatycznie + rola admina po e-mailu', roleA === 'admin
 // 2. A klonuje publiczny szablon
 //
 // Liczymy dni i ćwiczenia W ŹRÓDLE, zamiast wpisywać je na sztywno.
-// Wcześniej stało tu „7 dni / 41 ćwiczeń" — prawda w dniu pisania testu,
+// Wcześniej stało tu "7 dni / 41 ćwiczeń" - prawda w dniu pisania testu,
 // nieprawda po dołożeniu kolejnych szablonów. Test pilnuje tego, o co chodzi:
 // że klon jest KOMPLETNY, a nie że szablon ma akurat tyle a tyle dni.
 let szablon;
@@ -73,7 +73,7 @@ check('B nie widzi prywatnego planu A', !bSeesPlans.some(p => p.id === planA),
 check('B widzi publiczne szablony', bSeesPlans.length >= 1, `widzi ${bSeesPlans.length}`);
 
 // Każdy plan widziany przez B musi być publiczny albo jego własny. To jest
-// pytanie, o które naprawdę chodzi — wcześniej test pytał „czy widzi dokładnie
+// pytanie, o które naprawdę chodzi - wcześniej test pytał "czy widzi dokładnie
 // jeden", co przestało być prawdą, gdy przybyło szablonów, i przez to
 // przestało cokolwiek chronić.
 const bCudze = await asUser(B, async () =>
@@ -131,7 +131,7 @@ check('B nie może awansować się na admina',
 const bCatalog = await asUser(B, async () =>
   (await db.query(`select count(*)::int n from public.exercise_catalog`)).rows[0].n);
 check('B widzi globalny katalog ćwiczeń', bCatalog > 0, `${bCatalog} ćwiczeń`);
-// RLS przy UPDATE nie rzuca wyjątku — po prostu nie widzi wierszy.
+// RLS przy UPDATE nie rzuca wyjątku - po prostu nie widzi wierszy.
 // Sprawdzamy realny skutek: ile wierszy poszło i czy nazwa faktycznie została nietknięta.
 const bUpdated = await asUser(B, async () =>
   (await db.query(`update public.exercise_catalog set name='zepsute' where user_id is null returning id`)).rows.length);

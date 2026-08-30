@@ -36,7 +36,7 @@ export default async function BooksPage() {
       .gte("date", addDaysISO(today, -400)),
   ]);
 
-  // Notatki grupujemy po stronie serwera — komponent dostaje je gotowe,
+  // Notatki grupujemy po stronie serwera - komponent dostaje je gotowe,
   // zamiast filtrować całą listę przy każdym otwarciu książki.
   const byBook: Record<string, BookNote[]> = {};
   for (const note of (notes ?? []) as BookNote[]) {

@@ -12,7 +12,7 @@ let cached: ReturnType<typeof createBrowserClient<Database>> | null = null;
  *
  * Podstawiamy własny `fetch`, który przy braku sieci odkłada zapisy do kolejki
  * w IndexedDB zamiast rzucać błędem. Dzięki temu każdy ekran zapisuje offline
- * bez własnej obsługi — a seria wbita w piwnicy nie przepada.
+ * bez własnej obsługi - a seria wbita w piwnicy nie przepada.
  */
 export function createClient() {
   if (!cached) {

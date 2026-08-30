@@ -17,7 +17,7 @@ export type WaterReminder = {
 const STORAGE_KEY = "grind:reminders-fired";
 const CHECK_EVERY_MS = 30_000;
 
-/** „14:30" → 870 minut od północy. */
+/** "14:30" → 870 minut od północy. */
 function toMinutes(hhmm: string): number | null {
   const m = /^(\d{2}):(\d{2})/.exec(hhmm);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
@@ -33,7 +33,7 @@ function todayKey(): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
-/** Co już dziś wystrzeliło — żeby nie powtarzać przy każdym sprawdzeniu. */
+/** Co już dziś wystrzeliło - żeby nie powtarzać przy każdym sprawdzeniu. */
 function readFired(): Set<string> {
   try {
     const raw = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}");
@@ -60,11 +60,11 @@ function notify(title: string, body: string, tag: string) {
  * Przypomnienia o nawykach i piciu wody.
  *
  * Powiadomienia wystrzeliwuje przeglądarka, więc docierają tylko wtedy, gdy
- * aplikacja jest otwarta (na iPhonie — gdy jest dodana do ekranu głównego i
+ * aplikacja jest otwarta (na iPhonie - gdy jest dodana do ekranu głównego i
  * uruchomiona). Prawdziwe powiadomienia w tle wymagają Web Push z serwerem
  * wysyłkowym; struktura danych jest na to gotowa, sama wysyłka to osobny krok.
  *
- * Niezależnie od powiadomień systemowych zaległe rzeczy widać w aplikacji —
+ * Niezależnie od powiadomień systemowych zaległe rzeczy widać w aplikacji -
  * na pulpicie i w zakładce z dietą.
  */
 export function Reminders({
@@ -77,7 +77,7 @@ export function Reminders({
   sleep: SleepReminder;
 }) {
   // Świeże dane bez restartowania interwału przy każdym renderze.
-  // Ref aktualizujemy w efekcie — pisanie do niego w trakcie renderu
+  // Ref aktualizujemy w efekcie - pisanie do niego w trakcie renderu
   // łamie reguły Reacta.
   const dataRef = useRef({ habits, water, sleep });
   useEffect(() => {
@@ -99,13 +99,13 @@ export function Reminders({
         if (!habit.due) continue;
         const at = toMinutes(habit.at);
         if (at === null) continue;
-        // Okno 15 minut — jeśli apka była zamknięta o równej godzinie,
+        // Okno 15 minut - jeśli apka była zamknięta o równej godzinie,
         // przypomnienie i tak dotrze przy najbliższym otwarciu.
         if (minutes < at || minutes > at + 15) continue;
 
         const key = `habit:${habit.id}`;
         if (fired.has(key)) continue;
-        if (notify("Grind — nawyk", `${habit.icon} ${habit.name}`, key)) fired.add(key);
+        if (notify("Grind - nawyk", `${habit.icon} ${habit.name}`, key)) fired.add(key);
       }
 
       const w = dataRef.current.water;
@@ -113,24 +113,24 @@ export function Reminders({
         const from = w.from ? toMinutes(w.from) : 8 * 60;
         const to = w.to ? toMinutes(w.to) : 22 * 60;
         if (from !== null && to !== null && minutes >= from && minutes <= to) {
-          // Kubełkujemy po interwale, żeby w oknie 8–22 co godzinę wyszło
+          // Kubełkujemy po interwale, żeby w oknie 8-22 co godzinę wyszło
           // dokładnie jedno przypomnienie.
           const slot = Math.floor((minutes - from) / w.everyMin);
           const key = `water:${slot}`;
-          if (!fired.has(key) && notify("Grind — nawodnienie", "Czas na wodę 💧", key)) {
+          if (!fired.has(key) && notify("Grind - nawodnienie", "Czas na wodę 💧", key)) {
             fired.add(key);
           }
         }
       }
 
       // Pora spać. Okno jest szersze niż przy nawykach (60 minut), bo to
-      // przypomnienie ma sens także wtedy, gdy sięgnąłeś po telefon później —
+      // przypomnienie ma sens także wtedy, gdy sięgnąłeś po telefon później -
       // wtedy właśnie jest najbardziej na miejscu.
       const sleepReminder = dataRef.current.sleep;
       if (sleepReminder) {
         const at = toMinutes(sleepReminder.at);
         if (at !== null && minutes >= at && minutes <= at + 60 && !fired.has("sleep")) {
-          if (notify("Grind — pora spać", `${sleepReminder.goalLabel} 😴`, "sleep")) {
+          if (notify("Grind - pora spać", `${sleepReminder.goalLabel} 😴`, "sleep")) {
             fired.add("sleep");
           }
         }

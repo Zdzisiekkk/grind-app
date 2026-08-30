@@ -5,18 +5,18 @@ import { Alert, Button, Card } from "@/components/ui";
 import { deleteAccount, withdrawHealthConsent } from "@/app/(app)/profil/actions";
 
 /**
- * Prawo do kopii danych i prawo do bycia zapomnianym — działające, nie
+ * Prawo do kopii danych i prawo do bycia zapomnianym - działające, nie
  * obiecane w regulaminie.
  *
  * Usunięcie konta jest za dwoma zaporami: świadomym kliknięciem i przepisaniem
  * słowa. Nie chodzi o utrudnianie, tylko o to, że operacji nie da się cofnąć,
- * a przycisk „usuń" bywa klikany kciukiem w kieszeni.
+ * a przycisk "usuń" bywa klikany kciukiem w kieszeni.
  */
 export function DataControls({
   hasSubscription,
   healthConsentAt,
 }: {
-  /** Aktywna subskrypcja Stripe — usunięcie konta jej nie anuluje. */
+  /** Aktywna subskrypcja Stripe - usunięcie konta jej nie anuluje. */
   hasSubscription: boolean;
   healthConsentAt: string | null;
 }) {
@@ -39,7 +39,7 @@ export function DataControls({
           </a>
           <p className="text-[12px] leading-relaxed text-faint">
             Jeden plik JSON: treningi, dieta, sen, nawyki, zadania, książki i notatki.
-            Warto go czasem zgrać — aplikacja może kiedyś przestać działać, Twoje dwa lata
+            Warto go czasem zgrać - aplikacja może kiedyś przestać działać, Twoje dwa lata
             treningów nie powinny.
           </p>
         </div>
@@ -52,7 +52,7 @@ export function DataControls({
         >
           <div className="flex flex-col gap-3">
             <p className="text-[13px] text-muted">
-              Cofnięcie zgody usuwa te dane — dziennik snu, oceny bólu, kontuzje i pomiary
+              Cofnięcie zgody usuwa te dane - dziennik snu, oceny bólu, kontuzje i pomiary
               wagi. Treningi, plany i zadania zostają.
             </p>
             <Button
@@ -69,13 +69,13 @@ export function DataControls({
         </Card>
       )}
 
-      <Card title="Usunięcie konta" subtitle="Nieodwracalne. Bez kopii „na wszelki wypadek”.">
+      <Card title="Usunięcie konta" subtitle="Nieodwracalne. Nie zostawiamy żadnych kopii.">
         <div className="flex flex-col gap-3">
           {error && <Alert>{error}</Alert>}
 
           {hasSubscription && (
             <Alert tone="warn">
-              Masz aktywną subskrypcję. Usunięcie konta <strong>jej nie anuluje</strong> —
+              Masz aktywną subskrypcję. Usunięcie konta <strong>jej nie anuluje</strong> -
               wypowiedz ją najpierw w panelu płatności, inaczej karta będzie dalej obciążana.
             </Alert>
           )}
@@ -88,7 +88,7 @@ export function DataControls({
             <>
               <p className="text-[13px] leading-relaxed">
                 Znikną wszystkie treningi, posiłki, noce, nawyki, zadania, książki i notatki.
-                Nie da się tego przywrócić. Jeśli chcesz zachować kopię, pobierz ją wyżej —
+                Nie da się tego przywrócić. Jeśli chcesz zachować kopię, pobierz ją wyżej -
                 to zajmuje sekundę.
               </p>
               <label className="block">

@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { clsx } from "@/lib/clsx";
 
 /**
- * Siedem zakładek to absolutne maksimum na wąskim telefonie — dlatego etykiety
- * są krótkie („Sen", nie „Sleep score"). W nawigacji siedzą rzeczy, które
+ * Siedem zakładek to absolutne maksimum na wąskim telefonie - dlatego etykiety
+ * są krótkie ("Sen", nie "Sleep score"). W nawigacji siedzą rzeczy, które
  * uzupełnia się codziennie. Ekrany przeglądowe (Postępy, Kalendarz, Kontuzje)
- * zostają w „Więcej" i na pulpicie.
+ * zostają w "Więcej" i na pulpicie.
  *
  * `line2` to druga linijka etykiety. Na pasek szerokości jednej siódmej ekranu
- * „Nawyki i nałogi" nie wchodzi w jednej linii — a ucięte „Nawyki i na…"
+ * "Nawyki i nałogi" nie wchodzi w jednej linii - a ucięte "Nawyki i na..."
  * jest gorsze niż dwie krótkie linijki.
  */
 const ITEMS = [
@@ -26,7 +26,7 @@ const ITEMS = [
 
 /**
  * Kropka pod ikoną: pełna, gdy zakładka jest aktywna, pulsująca, gdy trwa
- * przejście. Ma stały rozmiar i zawsze jest w drzewie — zmienia się tylko
+ * przejście. Ma stały rozmiar i zawsze jest w drzewie - zmienia się tylko
  * przezroczystość, więc nic nie skacze.
  */
 function TabIndicator({ active }: { active: boolean }) {
@@ -63,7 +63,7 @@ export function BottomNav() {
                 className={clsx(
                   "flex min-h-[58px] touch-manipulation flex-col items-center justify-center gap-0.5",
                   "px-0.5 text-center text-[10px] font-medium leading-tight transition-colors duration-100",
-                  // Natychmiastowa reakcja na dotyk — nie czekamy na odpowiedź serwera.
+                  // Natychmiastowa reakcja na dotyk - nie czekamy na odpowiedź serwera.
                   "active:bg-surface-2",
                   active ? "text-accent" : "text-faint",
                 )}

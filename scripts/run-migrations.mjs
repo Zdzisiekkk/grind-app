@@ -21,7 +21,7 @@ const files = (await readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
 
 for (const file of files) {
   const query = await readFile(join(dir, file), "utf8");
-  process.stdout.write(`→ ${file} … `);
+  process.stdout.write(`→ ${file} ... `);
 
   const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
     method: "POST",

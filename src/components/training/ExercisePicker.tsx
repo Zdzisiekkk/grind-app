@@ -5,7 +5,7 @@ import { EmptyState, Input, Spinner } from "@/components/ui";
 import type { CatalogExercise } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/client";
 
-/** Wyszukiwarka po katalogu ćwiczeń — globalnym i własnym. */
+/** Wyszukiwarka po katalogu ćwiczeń - globalnym i własnym. */
 export function ExercisePicker({ onPick }: { onPick: (exercise: CatalogExercise) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CatalogExercise[]>([]);
@@ -40,7 +40,7 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: CatalogExercise)
         autoFocus
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Szukaj ćwiczenia…"
+        placeholder="Szukaj ćwiczenia..."
       />
 
       {loading ? (

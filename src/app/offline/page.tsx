@@ -22,7 +22,7 @@ export default function OfflinePage() {
       <Card>
         <p className="text-[14px] leading-relaxed">
           <span className="font-semibold">Twoje zapisy są bezpieczne.</span> Wszystko, co wpiszesz
-          bez zasięgu — serie, wodę, nawyki, sen — czeka w telefonie i wyśle się samo, gdy sieć
+          bez zasięgu - serie, wodę, nawyki, sen - czeka w telefonie i wyśle się samo, gdy sieć
           wróci. Nie musisz nic klikać ani trzymać aplikacji otwartej.
         </p>
         <p className="mt-3 text-[13px] text-muted">

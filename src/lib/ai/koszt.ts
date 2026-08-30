@@ -1,13 +1,13 @@
 /**
  * Ile kosztowało jedno wywołanie modelu.
  *
- * Powstało z prostego pytania „ile to właściwie kosztuje", na które dało się
+ * Powstało z prostego pytania "ile to właściwie kosztuje", na które dało się
  * odpowiedzieć tylko szacunkiem: tokeny wejścia da się policzyć z góry za
- * darmo, ale rozumowania modelu — nie. Liczy się ono do wyjścia i przy myśleniu
+ * darmo, ale rozumowania modelu - nie. Liczy się ono do wyjścia i przy myśleniu
  * adaptacyjnym potrafi być większe niż sama odpowiedź.
  *
  * Dlatego każde wywołanie zapisuje w logu, co naprawdę zużyło. Po tygodniu
- * używania mamy prawdziwe liczby zamiast widełek — a przy zmianie promptu od
+ * używania mamy prawdziwe liczby zamiast widełek - a przy zmianie promptu od
  * razu widać, czy podrożał.
  *
  * Ceny z platform.claude.com/docs/en/about-claude/pricing, w dolarach za milion
@@ -30,7 +30,7 @@ type Uzycie = {
   cache_read_input_tokens?: number | null;
 };
 
-/** Kwota w dolarach. Null, gdy modelu nie ma w cenniku — lepiej nic niż zmyślona liczba. */
+/** Kwota w dolarach. Null, gdy modelu nie ma w cenniku - lepiej nic niż zmyślona liczba. */
 export function kosztUSD(model: string, uzycie: Uzycie): number | null {
   const c = CENNIK[model];
   if (!c) return null;
@@ -46,7 +46,7 @@ export function kosztUSD(model: string, uzycie: Uzycie): number | null {
 /**
  * Jedna linijka w logu serwera.
  *
- * Bez żadnych danych użytkownika — sam kształt zapytania. Log z liczbami
+ * Bez żadnych danych użytkownika - sam kształt zapytania. Log z liczbami
  * o czyimś śnie czy wadze byłby kolejnym miejscem, w którym te dane leżą.
  */
 export function zalogujKoszt(co: string, model: string, uzycie: Uzycie): void {

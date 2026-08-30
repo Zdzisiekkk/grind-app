@@ -6,13 +6,13 @@ import { clsx } from "@/lib/clsx";
 /**
  * Duże +/- po bokach pola liczbowego.
  *
- * Przyciski są celowo szerokie — trafia się w nie kciukiem, bez patrzenia,
+ * Przyciski są celowo szerokie - trafia się w nie kciukiem, bez patrzenia,
  * ze spoconymi rękami, w połowie serii.
  *
  * WPISYWANIE Z KLAWIATURY jest tu równoprawne z przyciskami i to ono
  * decydowało o kształcie tego komponentu. Wcześniej wartość była obcinana do
  * zakresu przy KAŻDYM naciśnięciu klawisza: przy wadze ciała (minimum 20 kg)
- * wpisanie „8" natychmiast zamieniało się w „20" i nie dało się dojść do 85
+ * wpisanie "8" natychmiast zamieniało się w "20" i nie dało się dojść do 85
  * inaczej niż klikając plus sześćset pięćdziesiąt razy.
  *
  * Dlatego w trakcie pisania trzymamy surowy tekst i nie ruszamy go. Do
@@ -51,7 +51,7 @@ export function NumberStepper({
   // null = nikt teraz nie pisze, pokazujemy wartość z zewnątrz.
   const [draft, setDraft] = useState<string | null>(null);
 
-  /** Zamiana tekstu na liczbę — przecinek jest u nas równie poprawny co kropka. */
+  /** Zamiana tekstu na liczbę - przecinek jest u nas równie poprawny co kropka. */
   const parse = (raw: string): number | null => {
     const n = Number(raw.replace(",", "."));
     return raw.trim() === "" || !Number.isFinite(n) ? null : n;
@@ -86,7 +86,7 @@ export function NumberStepper({
         <input
           // type="text" zamiast "number": na telefonie i tak decyduje
           // inputMode, a "number" dokłada strzałki, walidację przeglądarki
-          // i blokuje przecinek — którego Polacy używają częściej niż kropki.
+          // i blokuje przecinek - którego Polacy używają częściej niż kropki.
           type="text"
           inputMode={decimals > 0 ? "decimal" : "numeric"}
           aria-label={ariaLabel}

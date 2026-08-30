@@ -16,7 +16,7 @@ export default async function RecipesPage() {
     supabase.from("recipe_items").select("*").eq("user_id", user.id).order("order_index"),
   ]);
 
-  // Grupujemy po stronie serwera — komponent dostaje gotowe listy zamiast
+  // Grupujemy po stronie serwera - komponent dostaje gotowe listy zamiast
   // filtrować wszystko przy każdym otwarciu przepisu.
   const byRecipe: Record<string, RecipeItem[]> = {};
   for (const item of (items ?? []) as RecipeItem[]) {

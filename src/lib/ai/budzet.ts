@@ -1,5 +1,5 @@
 /**
- * Miesięczny budżet na AI — strona aplikacji.
+ * Miesięczny budżet na AI - strona aplikacji.
  *
  * Dzienny licznik z 0016 liczy wywołania. To nie to samo co pieniądze: pytanie
  * do trenera kosztuje około 3 groszy, ułożenie planu bywa trzydzieści razy
@@ -8,12 +8,12 @@
  * Kolejność jest zawsze ta sama i wynika z tego, że koszt znany jest DOPIERO
  * PO wywołaniu:
  *
- *   1. `rezerwuj()`  — przed wywołaniem, na pesymistyczną kwotę,
- *   2. `rozlicz()`   — po udanym wywołaniu, na kwotę policzoną z `usage`,
- *   3. `zwolnij()`   — po nieudanym, żeby nie płacić za brak odpowiedzi.
+ *   1. `rezerwuj()`  - przed wywołaniem, na pesymistyczną kwotę,
+ *   2. `rozlicz()`   - po udanym wywołaniu, na kwotę policzoną z `usage`,
+ *   3. `zwolnij()`   - po nieudanym, żeby nie płacić za brak odpowiedzi.
  *
  * Sam próg pilnuje baza (migracja 0043). Ten plik go nie zna i nie może
- * przekłamać — od niego zależy tylko to, czy odmowa wygląda po ludzku.
+ * przekłamać - od niego zależy tylko to, czy odmowa wygląda po ludzku.
  */
 import { NextResponse } from "next/server";
 import { kosztUSD, zalogujKoszt } from "./koszt";
@@ -41,7 +41,7 @@ type Uzycie = {
 
 const zl = (kwota: number) => `${kwota.toFixed(2).replace(".", ",")} zł`;
 
-/** „1 września" — dzień, w którym budżet się odnowi. */
+/** "1 września" - dzień, w którym budżet się odnowi. */
 function dzienOdnowy(iso: string | undefined): string {
   if (!iso) return "pierwszego dnia przyszłego miesiąca";
   const data = new Date(iso);
@@ -56,8 +56,8 @@ function dzienOdnowy(iso: string | undefined): string {
 /**
  * Rezerwacja przed wywołaniem modelu.
  *
- * Przy odmowie zwraca gotową odpowiedź HTTP zamiast rzucać wyjątkiem — trasa
- * ma ją tylko oddać. Komunikat podaje kwotę i datę odnowienia, bo „limit
+ * Przy odmowie zwraca gotową odpowiedź HTTP zamiast rzucać wyjątkiem - trasa
+ * ma ją tylko oddać. Komunikat podaje kwotę i datę odnowienia, bo "limit
  * wyczerpany" bez tych dwóch liczb nie mówi człowiekowi nic, czego mógłby użyć.
  */
 export async function rezerwuj(
@@ -68,7 +68,7 @@ export async function rezerwuj(
 
   if (error || !data) {
     // Baza nie odpowiedziała. Przepuszczenie wywołania znaczyłoby, że awaria
-    // licznika kasuje limit — czyli dokładnie wtedy, kiedy najbardziej trzeba.
+    // licznika kasuje limit - czyli dokładnie wtedy, kiedy najbardziej trzeba.
     console.error("Budżet AI:", error?.message ?? "brak odpowiedzi");
     return {
       ok: false,
@@ -97,7 +97,7 @@ export async function rezerwuj(
  * Wpisanie prawdziwego kosztu po wywołaniu.
  *
  * Wołane także tam, gdzie odpowiedź przyszła, ale jej nie przyjęliśmy (odmowa
- * modelu, zły format) — tokeny zostały wtedy zużyte naprawdę i rachunek za nie
+ * modelu, zły format) - tokeny zostały wtedy zużyte naprawdę i rachunek za nie
  * przyszedł, więc ukrycie tego byłoby oszukiwaniem własnego licznika.
  */
 export async function rozlicz(
@@ -142,7 +142,7 @@ export async function zwolnij(supabase: Klient, id: string): Promise<void> {
   if (error) console.error("Budżet AI (zwolnienie):", error.message);
 }
 
-/** Stan dla ekranu. Null, gdy baza nie odpowiedziała — ekran po prostu nic nie pokaże. */
+/** Stan dla ekranu. Null, gdy baza nie odpowiedziała - ekran po prostu nic nie pokaże. */
 export async function stanBudzetu(supabase: Klient): Promise<AiBudzetStan | null> {
   const { data } = await supabase.rpc("ai_budzet_stan", {});
   return (data as AiBudzetStan | null) ?? null;

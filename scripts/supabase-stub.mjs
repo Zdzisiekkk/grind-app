@@ -4,7 +4,7 @@
  * Migracje piszemy pod bazę, która ma schematy `auth` i `storage`, role
  * `authenticated`/`anon` oraz `auth.uid()`. PGlite tego nie ma, więc przed
  * sprawdzeniem czegokolwiek trzeba to podstawić. Jeden plik dla walidatora
- * i dla testów dostępu — dwie kopie tego stubu rozjechałyby się przy pierwszej
+ * i dla testów dostępu - dwie kopie tego stubu rozjechałyby się przy pierwszej
  * zmianie i test sprawdzałby inną bazę niż walidator.
  */
 export const SUPABASE_STUB = `
@@ -33,7 +33,7 @@ export const SUPABASE_STUB = `
 
   -- Supabase nadaje domyślne uprawnienia na KAŻDĄ nową tabelę w public.
   -- Bez tego migracja, która o tym zapomni, przechodzi lokalnie i wywala się
-  -- dopiero na produkcji — dokładnie tak było z rejestrem kosztów w 0043.
+  -- dopiero na produkcji - dokładnie tak było z rejestrem kosztów w 0043.
   alter default privileges in schema public
     grant all on tables to anon, authenticated, service_role;
   alter default privileges in schema public
@@ -46,8 +46,8 @@ export const SUPABASE_STUB = `
     grant execute on functions to anon, authenticated, service_role;
 
   -- Magazyn plików. Odwzorowane tyle, ile dotyka migracja 0039: kubełki,
-  -- obiekty i foldername() — czyli funkcja, na której stoją polityki dostępu
-  -- do zdjęć. Bez tego moduł „Wygląd" nie dałby się sprawdzić przed wdrożeniem.
+  -- obiekty i foldername() - czyli funkcja, na której stoją polityki dostępu
+  -- do zdjęć. Bez tego moduł "Wygląd" nie dałby się sprawdzić przed wdrożeniem.
   create schema if not exists storage;
   create table if not exists storage.buckets (
     id text primary key,
@@ -90,7 +90,7 @@ export const SUPABASE_STUB = `
  * Rozszerzenia ładujemy tutaj, a nie zostawiamy migracjom, bo `create extension`
  * jest z nich wycinane (pgcrypto i pg_cron nie mają odpowiednika w PGlite).
  * Gdyby wyciąć również pg_trgm, wyszukiwarka produktów przechodziłaby lokalnie
- * na innym silniku niż na produkcji — czyli test sprawdzałby co innego.
+ * na innym silniku niż na produkcji - czyli test sprawdzałby co innego.
  */
 export async function pustaBaza() {
   const { PGlite } = await import('@electric-sql/pglite');

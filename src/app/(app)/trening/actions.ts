@@ -7,7 +7,7 @@ import { todayISO } from "@/lib/format";
 
 /**
  * Rozpoczyna (albo wznawia) trening danego dnia planu.
- * Jeśli dziś istnieje już niezakończona sesja tego samego dnia — wracamy do niej,
+ * Jeśli dziś istnieje już niezakończona sesja tego samego dnia - wracamy do niej,
  * zamiast tworzyć duplikat.
  */
 export async function startSession(formData: FormData) {

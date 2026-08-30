@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Dostęp do funkcji płatnych.
  *
- * Pytamy o to bazę (public.has_pro), a nie liczymy sami po stanie z tabeli —
+ * Pytamy o to bazę (public.has_pro), a nie liczymy sami po stanie z tabeli -
  * ta sama funkcja obsługuje później polityki RLS, więc odpowiedź musi być
  * jedna. Administrator ma dostęp z urzędu: to konto właściciela aplikacji.
  */
@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export type Access = {
   pro: boolean;
   status: string;
-  /** Do kiedy opłacone — null, gdy nigdy nie było subskrypcji. */
+  /** Do kiedy opłacone - null, gdy nigdy nie było subskrypcji. */
   until: string | null;
   cancelAtPeriodEnd: boolean;
   /** Dostęp z tytułu roli administratora, a nie płatności. */
@@ -76,7 +76,7 @@ export async function getPricing(): Promise<Pricing> {
   return { ...FALLBACK_PRICING, ...((data?.value as Partial<Pricing>) ?? {}) };
 }
 
-/** „29 zł / mies." — do pokazania na ekranie. */
+/** "29 zł / mies." - do pokazania na ekranie. */
 export function priceLabel(pricing: Pricing): string {
   const amount = (pricing.amount / 100).toLocaleString("pl-PL", {
     minimumFractionDigits: pricing.amount % 100 === 0 ? 0 : 2,

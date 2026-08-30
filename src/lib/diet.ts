@@ -61,7 +61,7 @@ export async function cacheOffProduct(supabase: Client, product: OffProduct): Pr
   return data as unknown as Food;
 }
 
-/** Dodaje produkt do posiłku. Makra są kopiowane „na sztywno” — późniejsza
+/** Dodaje produkt do posiłku. Makra są kopiowane "na sztywno" - późniejsza
  *  korekta produktu w bazie nie zmieni tego, co już zjadłeś. */
 export async function addMealEntry(
   supabase: Client,
@@ -95,8 +95,8 @@ export async function addMealEntry(
 /**
  * Zapis pozycji policzonych z opisu.
  *
- * Bez `food_id` i bez zakładania wierszy w `foods`. „Dwa jajka sadzone"
- * z wczorajszego śniadania nie są produktem, do którego ktoś wróci — są
+ * Bez `food_id` i bez zakładania wierszy w `foods`. "Dwa jajka sadzone"
+ * z wczorajszego śniadania nie są produktem, do którego ktoś wróci - są
  * jednorazowym wpisem. Zakładanie dla nich produktu zaśmiecałoby wyszukiwarkę
  * setkami jednorazowych pozycji, a `meal_entries` i tak trzyma pełny snapshot
  * wartości, więc wpis jest kompletny sam z siebie.

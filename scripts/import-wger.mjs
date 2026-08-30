@@ -3,14 +3,14 @@
  *
  * wger to otwarty projekt fitness (AGPL); opisy i zdjęcia ćwiczeń są na licencji
  * CC-BY-SA, dlatego zapisujemy przy każdym rekordzie autora, licencję i link do
- * źródła — aplikacja pokazuje je pod ilustracją.
+ * źródła - aplikacja pokazuje je pod ilustracją.
  *
  * Uruchomienie (jednorazowo, lokalnie):
  *   SUPABASE_SERVICE_ROLE_KEY=... npm run import:wger
  *
  * Skrypt używa klucza service_role, bo wpisuje ćwiczenia globalne (user_id = NULL),
  * czego RLS słusznie zabrania zwykłym użytkownikom. Klucz zostaje na Twoim
- * komputerze — nie trafia do Vercela.
+ * komputerze - nie trafia do Vercela.
  */
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Prosty odczyt .env.local — bez dodatkowej zależności
+// Prosty odczyt .env.local - bez dodatkowej zależności
 function loadEnv() {
   try {
     for (const line of readFileSync(path.join(ROOT, ".env.local"), "utf8").split("\n")) {
@@ -27,7 +27,7 @@ function loadEnv() {
       if (match && !process.env[match[1]]) process.env[match[1]] = match[2].replace(/^["']|["']$/g, "");
     }
   } catch {
-    // brak pliku .env.local to nie błąd — zmienne mogą przyjść z powłoki
+    // brak pliku .env.local to nie błąd - zmienne mogą przyjść z powłoki
   }
 }
 loadEnv();
@@ -53,7 +53,7 @@ const LANG_PL = 14;
 const LANG_EN = 2;
 const LIMIT = Number(process.env.WGER_LIMIT || 900);
 
-/** Kategorie wger są po angielsku — mapujemy na nazwy używane w reszcie aplikacji. */
+/** Kategorie wger są po angielsku - mapujemy na nazwy używane w reszcie aplikacji. */
 const CATEGORY_PL = {
   Abs: "Core",
   Arms: "Ramiona",
@@ -99,7 +99,7 @@ const EQUIPMENT_PL = {
 
 const translate = (dict, value) => dict[value] ?? value;
 
-/** Zamienia HTML z wger na czysty tekst — w bazie trzymamy zwykły tekst. */
+/** Zamienia HTML z wger na czysty tekst - w bazie trzymamy zwykły tekst. */
 function stripHtml(html) {
   if (!html) return null;
   const text = html
@@ -147,13 +147,13 @@ async function fetchAll(endpoint, params = {}) {
     const json = await res.json();
     out.push(...(json.results ?? []));
     url = json.next ? new URL(json.next) : null;
-    process.stdout.write(`\r   pobrano ${out.length} pozycji z /${endpoint}…`);
+    process.stdout.write(`\r   pobrano ${out.length} pozycji z /${endpoint}...`);
   }
   process.stdout.write("\n");
   return out.slice(0, LIMIT);
 }
 
-console.log("📥 Pobieram dane z wger.de…");
+console.log("📥 Pobieram dane z wger.de...");
 
 const [exercises, images] = await Promise.all([
   fetchAll("exerciseinfo"),
@@ -215,13 +215,13 @@ for (const ex of exercises) {
 console.log(`\n🔎 Przygotowano ${rows.length} ćwiczeń (${imageByExercise.size} ze zdjęciem).`);
 
 if (DRY_RUN) {
-  console.log("\n🧪 Tryb podglądu (WGER_DRY_RUN=1) — nic nie zapisuję. Przykładowe rekordy:\n");
+  console.log("\n🧪 Tryb podglądu (WGER_DRY_RUN=1) - nic nie zapisuję. Przykładowe rekordy:\n");
   for (const row of rows.slice(0, 5)) {
     console.log(`• ${row.name}`);
     console.log(`  slug: ${row.slug}`);
     console.log(`  partia: ${row.muscle_group ?? "-"} | sprzęt: ${row.equipment.join(", ") || "-"}`);
     console.log(`  zdjęcie: ${row.image_thumb_url ? "tak" : "brak"} | licencja: ${row.license}`);
-    console.log(`  opis: ${(row.description ?? "brak").slice(0, 110).replace(/\n/g, " ")}…\n`);
+    console.log(`  opis: ${(row.description ?? "brak").slice(0, 110).replace(/\n/g, " ")}...\n`);
   }
   const withImages = rows.filter((r) => r.image_thumb_url).length;
   const withDescription = rows.filter((r) => r.description).length;
@@ -245,7 +245,7 @@ for (let i = 0; i < rows.length; i += 100) {
     process.exit(1);
   }
   inserted += batch.length;
-  process.stdout.write(`\r   zapisano ${inserted}/${rows.length}…`);
+  process.stdout.write(`\r   zapisano ${inserted}/${rows.length}...`);
 }
 
 const { count } = await supabase
@@ -254,4 +254,4 @@ const { count } = await supabase
   .is("user_id", null);
 
 console.log(`\n\n✅ Gotowe. Katalog globalny liczy teraz ${count} ćwiczeń.`);
-console.log("   Ćwiczenia z wger są oznaczone licencją i autorem — atrybucja pokazuje się w aplikacji.");
+console.log("   Ćwiczenia z wger są oznaczone licencją i autorem - atrybucja pokazuje się w aplikacji.");

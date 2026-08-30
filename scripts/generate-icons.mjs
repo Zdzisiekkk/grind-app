@@ -12,9 +12,9 @@ import { fileURLToPath } from "node:url";
 
 const OUT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "icons");
 
-const BG = [10, 12, 16, 255];        // #0a0c10 — tło zgodne z ciemnym motywem
-const FG = [242, 96, 12, 255];       // #f2600c — pomarańcz marki
-const FG_DIM = [255, 122, 51, 255];  // #ff7a33 — jaśniejszy akcent na kołnierze
+const BG = [10, 12, 16, 255];        // #0a0c10 - tło zgodne z ciemnym motywem
+const FG = [242, 96, 12, 255];       // #f2600c - pomarańcz marki
+const FG_DIM = [255, 122, 51, 255];  // #ff7a33 - jaśniejszy akcent na kołnierze
 
 /* --------------------------- Minimalny koder PNG --------------------------- */
 

@@ -3,7 +3,7 @@
  *
  * To jest część, w której pomyłka boli najbardziej: zła diagnoza to zła
  * porada wygłoszona z pełnym przekonaniem. Dlatego arytmetyka siedzi w kodzie,
- * a nie w modelu — i dlatego ma test.
+ * a nie w modelu - i dlatego ma test.
  *
  * Uruchom: npm run test:analysis
  */
@@ -13,7 +13,7 @@ import { analyseDietVsWeight, findStrengthStalls, weeklyWeightTrend }
 let fails = 0;
 const check = (label, cond, extra = "") => {
   if (!cond) fails++;
-  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
+  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " - " + extra : ""}`);
 };
 
 const day = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);

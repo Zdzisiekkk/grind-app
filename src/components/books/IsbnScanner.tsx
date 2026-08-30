@@ -11,11 +11,11 @@ import type { IsbnBook } from "@/lib/isbn";
  * Dwa sposoby czytania kodu, bo jeden nie wystarcza: przeglądarki oparte na
  * Chrome mają wbudowany BarcodeDetector (zero dodatkowych kilobajtów), a
  * Safari na iPhonie go nie ma i nigdy nie miało. Tam dociągamy dekoder
- * dynamicznym importem — dopiero w momencie otwarcia aparatu, żeby nie
+ * dynamicznym importem - dopiero w momencie otwarcia aparatu, żeby nie
  * obciążać nim całej aplikacji.
  *
  * Ręczne wpisanie numeru zostaje zawsze widoczne. Aparat potrafi nie dostać
- * zgody, nie mieć tylnego obiektywu albo trafić na wygnieciony kod — i wtedy
+ * zgody, nie mieć tylnego obiektywu albo trafić na wygnieciony kod - i wtedy
  * trzynaście cyfr z okładki jest szybsze niż walka ze sprzętem.
  */
 
@@ -76,7 +76,7 @@ export function IsbnScanner({
         if (!res.ok) {
           // Brak w bazach to nie porażka skanera: kod odczytaliśmy poprawnie,
           // tylko żadne źródło nie zna tej książki. Otwieramy formularz
-          // z zapamiętanym numerem, żeby został do wpisania sam tytuł —
+          // z zapamiętanym numerem, żeby został do wpisania sam tytuł -
           // dobijanie się do zamkniętych drzwi byłoby tu bez sensu.
           if (res.status === 404) {
             onFound({ isbn, title: "", author: null, pages: null, coverUrl: null });
@@ -106,7 +106,7 @@ export function IsbnScanner({
       });
     } catch {
       setStatus("idle");
-      setError("Brak dostępu do aparatu. Wpisz numer ISBN ręcznie — jest pod kodem kreskowym.");
+      setError("Brak dostępu do aparatu. Wpisz numer ISBN ręcznie - jest pod kodem kreskowym.");
       return;
     }
 
@@ -144,7 +144,7 @@ export function IsbnScanner({
             return;
           }
         } catch {
-          // Pojedyncza nieudana klatka nic nie znaczy — próbujemy dalej.
+          // Pojedyncza nieudana klatka nic nie znaczy - próbujemy dalej.
         }
         if (!cancelled) requestAnimationFrame(() => void tick());
       };
@@ -174,7 +174,7 @@ export function IsbnScanner({
     }
   }, [lookup]);
 
-  // Zamknięcie arkusza gasi aparat — także wtedy, gdy komponent znika nagle.
+  // Zamknięcie arkusza gasi aparat - także wtedy, gdy komponent znika nagle.
   useEffect(() => {
     if (!open) stopCamera();
     return stopCamera;
@@ -214,7 +214,7 @@ export function IsbnScanner({
                 <>
                   <Spinner />
                   <p className="text-[13px] text-muted">
-                    {status === "looking-up" ? "Szukam książki…" : "Uruchamiam aparat…"}
+                    {status === "looking-up" ? "Szukam książki..." : "Uruchamiam aparat..."}
                   </p>
                 </>
               )}
@@ -222,7 +222,7 @@ export function IsbnScanner({
           )}
 
           {status === "scanning" && (
-            /* Ramka celownika — bez niej nie wiadomo, gdzie trzymać książkę. */
+            /* Ramka celownika - bez niej nie wiadomo, gdzie trzymać książkę. */
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded-xl border-2 border-white/80"
@@ -247,7 +247,7 @@ export function IsbnScanner({
               inputMode="numeric"
               value={manual}
               onChange={(e) => setManual(e.target.value)}
-              placeholder="978…"
+              placeholder="978..."
             />
             <Button
               variant="secondary"

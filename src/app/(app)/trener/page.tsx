@@ -21,7 +21,7 @@ export default async function CoachPage() {
     await Promise.all([
     getAccess(),
     // Ile zostało z miesięcznego budżetu. Ekran musi to napisać, ZANIM ktoś
-    // napisze pytanie — odmowa po fakcie jest zwykłym marnowaniem czyjegoś czasu.
+    // napisze pytanie - odmowa po fakcie jest zwykłym marnowaniem czyjegoś czasu.
     stanBudzetu(supabase),
     supabase
       .from("coach_proposals")
@@ -30,7 +30,7 @@ export default async function CoachPage() {
       .eq("status", "pending")
       .order("created_at", { ascending: false }),
     // Rady, które już zapadły albo zostały zastąpione. Do tej pory znikały
-    // bezpowrotnie przy każdej nowej analizie (migracja 0033) — a to właśnie
+    // bezpowrotnie przy każdej nowej analizie (migracja 0033) - a to właśnie
     // one pokazują, czy trener miał rację.
     supabase
       .from("coach_proposals")

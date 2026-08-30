@@ -1,8 +1,8 @@
 /*
- * Moduł „Wygląd" — liczenie, które NIE należy do modelu.
+ * Moduł "Wygląd" - liczenie, które NIE należy do modelu.
  *
  * Konflikt retinoidu z kwasami jest regułą, a nie opinią. Model, który raz na
- * dziesięć razy o niej zapomni, jest gorszy niż kod, który nie zapomina nigdy —
+ * dziesięć razy o niej zapomni, jest gorszy niż kod, który nie zapomina nigdy -
  * pod warunkiem, że ten kod ktoś sprawdził.
  */
 import { konflikty, delty, deltaOdPoprzedniego, adherencja, zestawienia, grupaSkladnika } from "@/lib/looks";
@@ -10,7 +10,7 @@ import { konflikty, delty, deltaOdPoprzedniego, adherencja, zestawienia, grupaSk
 let ok = 0, bad = 0;
 const check = (n, c, d = "") => {
   if (c) { ok++; console.log(`  ✅ ${n}`); }
-  else { bad++; console.log(`  ❌ ${n}${d ? " — " + d : ""}`); }
+  else { bad++; console.log(`  ❌ ${n}${d ? " - " + d : ""}`); }
 };
 
 console.log("\n  Rozpoznawanie składników\n");
@@ -73,5 +73,5 @@ check("opis mówi o kierunku, nie o przyczynie", z[0]?.opis.includes("wyżej") &
 check("dwa punkty to za mało na jakikolwiek wniosek",
   zestawienia({ skany: s4.slice(0, 2), senPrzedSkanem: [300, 400], czysteDniPrzedSkanem: [], wagaPrzySkanie: [] }).length === 0);
 
-console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : " — WSZYSTKO PRZESZŁO"}\n`);
+console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : " - WSZYSTKO PRZESZŁO"}\n`);
 process.exit(bad ? 1 : 0);

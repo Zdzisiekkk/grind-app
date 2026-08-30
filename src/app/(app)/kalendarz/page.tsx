@@ -90,7 +90,7 @@ export default async function KalendarzPage({
   const daySessions = (sessions.data ?? []).filter((s) => s.date === selected);
   const dayActivities = (activities.data ?? []).filter((a) => a.date === selected);
   const dayNutrition = (nutrition.data ?? []).find((n) => n.date === selected);
-  // Nazwy kontuzji dociągamy osobno — ręcznie pisane typy nie opisują relacji,
+  // Nazwy kontuzji dociągamy osobno - ręcznie pisane typy nie opisują relacji,
   // a jedno dodatkowe zapytanie jest tańsze niż walka ze złączeniem.
   const injuryNames = new Map(
     ((await supabase.from("injuries").select("id, name").eq("user_id", user.id)).data ?? []).map(

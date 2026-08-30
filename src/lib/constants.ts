@@ -33,7 +33,7 @@ export const ACTIVITY_ICON: Record<ActivityType, string> = Object.fromEntries(
   ACTIVITY_TYPES.map((a) => [a.value, a.icon]),
 ) as Record<ActivityType, string>;
 
-/** Orientacyjne MET — do szacowania kalorii, gdy nie wpiszesz ich ręcznie. */
+/** Orientacyjne MET - do szacowania kalorii, gdy nie wpiszesz ich ręcznie. */
 export const ACTIVITY_MET: Record<ActivityType, number> = {
   running: 9.8,
   cycling: 7.5,
@@ -75,13 +75,13 @@ export const METRIC_FIELDS: Record<
   rounds: { weight: false, reps: true, time: false, distance: false, hint: "rundy" },
 };
 
-/** Kroki zmiany ciężaru — przełączalne, bo talerze bywają różne. */
+/** Kroki zmiany ciężaru - przełączalne, bo talerze bywają różne. */
 export const WEIGHT_STEPS = [0.5, 1, 1.25, 2.5, 5, 10] as const;
 export const DEFAULT_WEIGHT_STEP = 2.5;
 export const DEFAULT_REST_SECONDS = 90;
 
 /**
- * Części ciała dla kontuzji. Klucz trafia do bazy, reszta służy tylko widokom —
+ * Części ciała dla kontuzji. Klucz trafia do bazy, reszta służy tylko widokom -
  * dzięki temu zmiana etykiety nie wymaga migracji.
  */
 export const BODY_PARTS = [
@@ -130,14 +130,14 @@ export function injuryStatusTone(status: string): "success" | "accent" | "warn" 
   return "accent";
 }
 
-/** Krótki opis kontuzji do nagłówków: „Lewe kolano · Kolano". */
+/** Krótki opis kontuzji do nagłówków: "Lewe kolano · Kolano". */
 export function injurySideLabel(side: string): string | null {
   return INJURY_SIDES.find((s) => s.value === side && s.value !== "none")?.label ?? null;
 }
 
 /**
- * Skala bólu 0–10.
- * Kolory i progi pochodzą z palety statusów w lib/viz.ts — trzymamy je w jednym
+ * Skala bólu 0-10.
+ * Kolory i progi pochodzą z palety statusów w lib/viz.ts - trzymamy je w jednym
  * miejscu, żeby suwak w formularzu i wykres w postępach mówiły to samo.
  */
 export function painDescriptor(level: number): { label: string; color: string } {
@@ -147,7 +147,7 @@ export function painDescriptor(level: number): { label: string; color: string } 
 
 /* --------------------------------- Nawyki --------------------------------- */
 
-/** Ikony do wyboru przy nawyku — emoji, żeby nie ciągnąć zestawu ikon. */
+/** Ikony do wyboru przy nawyku - emoji, żeby nie ciągnąć zestawu ikon. */
 export const HABIT_ICONS = [
   "✅", "💊", "🧘", "🛌", "💧", "🥗", "🚭", "📖", "🧴", "🦷",
   "🩹", "🏃", "🧊", "☀️", "📵", "🧠", "🫁", "🧂",
@@ -210,7 +210,7 @@ export function priorityTone(priority: number): "neutral" | "warn" | "danger" {
   return "neutral";
 }
 
-/** „Zaległe", „Dziś", „Jutro", „za 3 dni" — do etykiety terminu. */
+/** "Zaległe", "Dziś", "Jutro", "za 3 dni" - do etykiety terminu. */
 export function dueLabel(due: string | null, today: string): { text: string; overdue: boolean } | null {
   if (!due) return null;
   const days = Math.round(
@@ -227,10 +227,10 @@ export function dueLabel(due: string | null, today: string): { text: string; ove
 
 /**
  * Czynniki, które mogły wpłynąć na noc. Klucze muszą się zgadzać z listą
- * w migracji 0010 (funkcja sleep_factor_keys) — baza je waliduje.
+ * w migracji 0010 (funkcja sleep_factor_keys) - baza je waliduje.
  *
- * `helps` mówi tylko, jak podpisać wniosek („alkohol zabiera Ci 14 pkt"
- * kontra „magnez dodaje 6"). O tym, czy coś naprawdę pomaga, decydują Twoje
+ * `helps` mówi tylko, jak podpisać wniosek ("alkohol zabiera Ci 14 pkt"
+ * kontra "magnez dodaje 6"). O tym, czy coś naprawdę pomaga, decydują Twoje
  * dane, a nie ta flaga.
  */
 export const SLEEP_FACTORS = [
@@ -264,6 +264,6 @@ export function sleepFactor(value: string) {
   );
 }
 
-/** Podpowiedzi pory snu przy pierwszym wpisie — typowe godziny. */
+/** Podpowiedzi pory snu przy pierwszym wpisie - typowe godziny. */
 export const BEDTIME_PRESETS = ["21:30", "22:00", "22:30", "23:00", "23:30", "00:00"] as const;
 export const WAKE_PRESETS = ["05:30", "06:00", "06:30", "07:00", "07:30", "08:00"] as const;

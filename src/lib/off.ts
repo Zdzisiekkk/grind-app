@@ -1,16 +1,16 @@
 /**
- * Open Food Facts — wyszukiwarka produktów.
+ * Open Food Facts - wyszukiwarka produktów.
  *
  * OFF wystawia dwa różne API i żadne samo nie wystarcza:
  *
- *  • search.openfoodfacts.org — szybkie (ok. 0,1 s), ale indeks trzyma tylko
+ *  • search.openfoodfacts.org - szybkie (ok. 0,1 s), ale indeks trzyma tylko
  *    kod, nazwę i wartości odżywcze. Bez marki, zdjęcia i wielkości porcji.
- *  • /cgi/search.pl — pełne dane, ale bywa skrajnie wolne (widziane 38 s przy
+ *  • /cgi/search.pl - pełne dane, ale bywa skrajnie wolne (widziane 38 s przy
  *    jednym zapytaniu) i pod obciążeniem odpowiada 503.
  *
  * Dlatego: szukamy w szybkim indeksie, a szczegóły dociągamy równolegle po
  * kodach z endpointu pojedynczego produktu. Gdyby szybkie API padło,
- * wracamy do starego. Wzbogacanie jest „best effort" — brak marki czy zdjęcia
+ * wracamy do starego. Wzbogacanie jest "best effort" - brak marki czy zdjęcia
  * nie blokuje dodania produktu do dziennika, bo kalorie i makro już mamy.
  */
 
@@ -58,7 +58,7 @@ function toNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** „250 g”, „1 portion (250 g)”, „1 opakowanie (30 g)” → { grams: 250, label: "porcja" } */
+/** "250 g", "1 portion (250 g)", "1 opakowanie (30 g)" → { grams: 250, label: "porcja" } */
 export function parseServing(raw: unknown): { grams: number | null; label: string | null } {
   if (typeof raw !== "string" || !raw.trim()) return { grams: null, label: null };
 
@@ -127,7 +127,7 @@ type OffFetchInit = { timeoutMs: number; revalidate: number };
 async function offFetch(url: string | URL, { timeoutMs, revalidate }: OffFetchInit) {
   return fetch(url, {
     headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    // Wyniki zmieniają się rzadko — cache oszczędza OFF i przyspiesza apkę.
+    // Wyniki zmieniają się rzadko - cache oszczędza OFF i przyspiesza apkę.
     next: { revalidate },
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -147,7 +147,7 @@ async function searchFast(query: string, limit: number): Promise<OffRaw[]> {
   return data.hits ?? [];
 }
 
-/** Stare API — pełne dane, ale wolne. Używane tylko, gdy szybkie zawiedzie. */
+/** Stare API - pełne dane, ale wolne. Używane tylko, gdy szybkie zawiedzie. */
 async function searchLegacy(query: string, limit: number): Promise<OffRaw[]> {
   const url = new URL(`${OFF_BASE}/cgi/search.pl`);
   url.searchParams.set("search_terms", query);
@@ -164,7 +164,7 @@ async function searchLegacy(query: string, limit: number): Promise<OffRaw[]> {
   return data.products ?? [];
 }
 
-/** Marka, zdjęcie i wielkość porcji — dociągane po kodzie, równolegle. */
+/** Marka, zdjęcie i wielkość porcji - dociągane po kodzie, równolegle. */
 async function fetchDetails(code: string): Promise<OffRaw | null> {
   try {
     const url = new URL(`${OFF_WORLD}/api/v2/product/${encodeURIComponent(code)}.json`);
@@ -182,8 +182,8 @@ export async function searchOff(query: string, limit = 20): Promise<OffProduct[]
   let hits: OffRaw[];
   try {
     hits = await searchFast(query, limit);
-    // Pusty wynik z szybkiego indeksu bywa fałszywy przy nietypowych frazach —
-    // wtedy warto spytać starego API, zanim powiemy „nic nie znaleziono".
+    // Pusty wynik z szybkiego indeksu bywa fałszywy przy nietypowych frazach -
+    // wtedy warto spytać starego API, zanim powiemy "nic nie znaleziono".
     if (hits.length === 0) hits = await searchLegacy(query, limit);
   } catch {
     hits = await searchLegacy(query, limit);
@@ -232,7 +232,7 @@ export async function searchOff(query: string, limit = 20): Promise<OffProduct[]
  * Jeden produkt po kodzie kreskowym.
  *
  * Osobno od `searchOff`, bo to zupełnie inne zapytanie: znamy dokładny numer,
- * więc nie ma czego szukać ani czego rankingować — pytamy wprost o produkt
+ * więc nie ma czego szukać ani czego rankingować - pytamy wprost o produkt
  * i albo jest, albo go nie ma.
  */
 export async function productByCode(code: string): Promise<OffProduct | null> {

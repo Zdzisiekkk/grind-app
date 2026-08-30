@@ -53,7 +53,7 @@ export default async function DietaPage({
 
   return (
     <DietScreen
-      // Klucz z datą: przełącznik dnia to „miękka” nawigacja — React zostawiłby
+      // Klucz z datą: przełącznik dnia to "miękka" nawigacja - React zostawiłby
       // ten sam komponent na miejscu, a razem z nim listę produktów zapamiętaną
       // przy pierwszym wejściu. Wtedy wczorajszy dzień rysuje się dzisiejszymi
       // posiłkami. Inny klucz = dla Reacta inny ekran, czyli świeży stan.

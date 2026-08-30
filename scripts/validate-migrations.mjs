@@ -4,7 +4,7 @@ import { pustaBaza } from './supabase-stub.mjs';
 
 const MIG = new URL('../supabase/migrations', import.meta.url).pathname;
 
-// Środowisko Supabase wspólne z testami dostępu — łącznie z rozszerzeniami.
+// Środowisko Supabase wspólne z testami dostępu - łącznie z rozszerzeniami.
 // Dwie osobne konfiguracje znaczyłyby, że walidator sprawdza inną bazę
 // niż testy, a rozjazd wyszedłby dopiero na produkcji.
 const db = await pustaBaza();
@@ -13,7 +13,7 @@ const files = readdirSync(MIG).filter(f => f.endsWith('.sql')).sort();
 let failed = false;
 for (const f of files) {
   let sql = readFileSync(path.join(MIG, f), 'utf8');
-  // pgcrypto nie jest potrzebne — gen_random_uuid() jest w rdzeniu PG13+
+  // pgcrypto nie jest potrzebne - gen_random_uuid() jest w rdzeniu PG13+
   sql = sql.replace(/^create extension[^;]*;/gim, '');
   try {
     await db.exec(sql);
@@ -23,7 +23,7 @@ for (const f of files) {
     console.log(`❌ ${f}\n   ${e.message}`);
     if (e.position) {
       const p = Number(e.position);
-      console.log('   …' + sql.slice(Math.max(0, p - 220), p + 120).replace(/\n/g, '\n   ') + '⏹');
+      console.log('   ...' + sql.slice(Math.max(0, p - 220), p + 120).replace(/\n/g, '\n   ') + '⏹');
     }
     break;
   }

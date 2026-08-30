@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ results });
   } catch (error) {
     // Zwracamy 200 z pustą listą i miękkim komunikatem: baza produktów jest
-    // dodatkiem, a nie warunkiem działania — własny produkt można dodać zawsze.
+    // dodatkiem, a nie warunkiem działania - własny produkt można dodać zawsze.
     const message =
       error instanceof Error && error.name === "TimeoutError"
         ? "baza produktów nie odpowiedziała na czas"
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
           : "nieznany błąd";
     return NextResponse.json({
       results: [],
-      error: `Wyszukiwarka produktów chwilowo nie odpowiada (${message}). Dodaj produkt ręcznie — zostanie u Ciebie na stałe.`,
+      error: `Wyszukiwarka produktów chwilowo nie odpowiada (${message}). Dodaj produkt ręcznie - zostanie u Ciebie na stałe.`,
     });
   }
 }

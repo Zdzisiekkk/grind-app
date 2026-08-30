@@ -45,7 +45,7 @@ export function TodosScreen({
     const open = inList.filter((t) => !t.done_at);
     const done = inList.filter((t) => t.done_at);
 
-    // Najpierw zaległe i pilne, potem reszta — tak, jak człowiek by je ułożył.
+    // Najpierw zaległe i pilne, potem reszta - tak, jak człowiek by je ułożył.
     open.sort((a, b) => {
       const aDue = a.due_date ?? "9999-12-31";
       const bDue = b.due_date ?? "9999-12-31";
@@ -131,7 +131,7 @@ export function TodosScreen({
   }
 
   async function removeList(list: TodoList) {
-    if (!confirm(`Usunąć listę „${list.name}"? Zadania z niej trafią do „Bez listy".`)) return;
+    if (!confirm(`Usunąć listę "${list.name}"? Zadania z niej trafią do "Bez listy".`)) return;
     const { error } = await supabase.from("todo_lists").delete().eq("id", list.id);
     if (error) setError(`Nie udało się usunąć: ${error.message}`);
     else router.refresh();
@@ -163,7 +163,7 @@ export function TodosScreen({
 
       {error && <Alert>{error}</Alert>}
 
-      {/* Filtr list — poziomy pasek, bo list bywa więcej niż mieści się w rzędzie. */}
+      {/* Filtr list - poziomy pasek, bo list bywa więcej niż mieści się w rzędzie. */}
       <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
         <ListChip
           label="Wszystkie"
@@ -194,7 +194,7 @@ export function TodosScreen({
         )}
       </div>
 
-      {/* Szybkie dodanie — jedno pole, bez wchodzenia w formularz. */}
+      {/* Szybkie dodanie - jedno pole, bez wchodzenia w formularz. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -218,7 +218,7 @@ export function TodosScreen({
           <EmptyState
             icon="🗒️"
             title="Pusto"
-            description="Dopisz coś w polu wyżej — sprzęt do kupienia, wizyta u fizjo, cokolwiek."
+            description="Dopisz coś w polu wyżej - sprzęt do kupienia, wizyta u fizjo, cokolwiek."
           />
         </Card>
       ) : (

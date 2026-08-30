@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Rozpoczęcie skanu — rezerwacja miejsca, zanim polecą zdjęcia.
+ * Rozpoczęcie skanu - rezerwacja miejsca, zanim polecą zdjęcia.
  *
  * Zdjęcia lądują w kubełku pod ścieżką `<user>/<skanId>/<ujecie>.jpg`, więc
  * identyfikator skanu musi istnieć PRZED wysyłką. Wymyślanie go po stronie
  * przeglądarki znaczyłoby, że limit skanów sprawdzamy dopiero po tym, jak
- * ktoś już zapłacił transferem za trzy zdjęcia — i po tym, jak pliki wylądowały
+ * ktoś już zapłacił transferem za trzy zdjęcia - i po tym, jak pliki wylądowały
  * w kubełku bez wiersza, który by o nich wiedział.
  *
  * Limity pilnuje baza (polityka `wyglad_skany_limit`), więc odmowa jest tutaj
@@ -50,7 +50,7 @@ export async function POST() {
         error:
           stan.powod === "limit_miesiaca"
             ? `Wykorzystałeś wszystkie ${stan.limit_miesiaca ?? 5} skany w tym miesiącu.`
-            : "Na kolejny skan jest za wcześnie — zmiany widać dopiero po tygodniu.",
+            : "Na kolejny skan jest za wcześnie - zmiany widać dopiero po tygodniu.",
         code: stan.powod === "limit_miesiaca" ? "limit_miesiaca" : "za_wczesnie",
         nastepny_od: stan.nastepny_od,
       },

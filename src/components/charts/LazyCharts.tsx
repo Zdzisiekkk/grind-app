@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui";
  * Wykresy wczytywane dopiero wtedy, gdy są potrzebne.
  *
  * Recharts waży w paczce produkcyjnej ok. 380 kB i siedział w bundlu pięciu
- * tras — także tych, gdzie wykres jest jednym z wielu elementów i często
+ * tras - także tych, gdzie wykres jest jednym z wielu elementów i często
  * w ogóle nie trafia na ekran (np. /profil). Biblioteka i tak musiała się
  * pobrać i wykonać, zanim strona stała się klikalna.
  *
@@ -70,5 +70,5 @@ export const LooksChart = dynamic(
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
 
-// Typy nie mają wagi w przeglądarce — idą wprost ze źródła.
+// Typy nie mają wagi w przeglądarce - idą wprost ze źródła.
 export type { StrengthPoint, SleepPoint, VicePoint, LooksPoint } from "@/components/charts/Charts";

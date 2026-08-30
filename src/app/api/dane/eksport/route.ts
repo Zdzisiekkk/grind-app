@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Kopia wszystkich swoich danych — jeden plik JSON.
+ * Kopia wszystkich swoich danych - jeden plik JSON.
  *
  * RODO daje do tego prawo (art. 20), ale to nie jedyny powód: bez eksportu
  * człowiek jest zakładnikiem aplikacji. Jeśli jutro zamknę serwer, jego dwa
  * lata treningów mają wyjść razem z nim.
  *
  * Czytamy zwykłym klientem użytkownika, więc RLS sam pilnuje, żeby do pliku
- * trafiło dokładnie to, co jego — nie trzeba tego sprawdzać drugi raz.
+ * trafiło dokładnie to, co jego - nie trzeba tego sprawdzać drugi raz.
  */
 export const maxDuration = 60;
 
@@ -54,7 +54,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Nie zalogowano." }, { status: 401 });
 
   // Wszystkie tabele naraz, nie jedna po drugiej. Przy 29 zapytaniach po kolei
-  // czas eksportu to suma opóźnień sieci; równolegle to najwolniejsze z nich —
+  // czas eksportu to suma opóźnień sieci; równolegle to najwolniejsze z nich -
   // a funkcja ma na wszystko 60 sekund.
   //
   // Plany i ich części nie mają user_id na każdym poziomie, więc pytamy bez

@@ -5,8 +5,8 @@ import Stripe from "stripe";
  * Klient Stripe'a po stronie serwera.
  *
  * Cała integracja jest napisana tak, żeby BRAK kluczy nie psuł aplikacji.
- * Klucze dojdą później, a do tego czasu ekran subskrypcji ma mówić „płatności
- * jeszcze nie są włączone" zamiast wywalać się błędem 500 — inaczej nie dałoby
+ * Klucze dojdą później, a do tego czasu ekran subskrypcji ma mówić "płatności
+ * jeszcze nie są włączone" zamiast wywalać się błędem 500 - inaczej nie dałoby
  * się skończyć i sprawdzić reszty.
  */
 
@@ -18,7 +18,7 @@ export function isStripeConfigured(): boolean {
 
 export function stripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("Brak STRIPE_SECRET_KEY — płatności nie są skonfigurowane.");
+  if (!key) throw new Error("Brak STRIPE_SECRET_KEY - płatności nie są skonfigurowane.");
   if (!cached) cached = new Stripe(key);
   return cached;
 }

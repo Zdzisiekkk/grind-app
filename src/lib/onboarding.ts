@@ -2,7 +2,7 @@
  * Dobieranie planu do odpowiedzi z kreatora.
  *
  * Zasada jest jedna: sprzęt to warunek twardy, reszta to preferencja.
- * Podanie komuś bez siłowni planu ze sztangą nie jest „prawie trafione" —
+ * Podanie komuś bez siłowni planu ze sztangą nie jest "prawie trafione" -
  * jest bezużyteczne. Liczba dni i poziom mogą się nie zgadzać idealnie,
  * bo plan da się przerobić po skopiowaniu.
  */
@@ -43,7 +43,7 @@ export type Match = { plan: TemplatePlan; score: number; why: string };
 
 /**
  * Plany posortowane od najlepiej pasującego. Pierwszy jest propozycją,
- * reszta zostaje widoczna — nikt nie lubi, gdy aplikacja decyduje za niego
+ * reszta zostaje widoczna - nikt nie lubi, gdy aplikacja decyduje za niego
  * bez pokazania alternatyw.
  */
 export function matchPlans(plans: TemplatePlan[], answers: Answers): Match[] {
@@ -61,13 +61,13 @@ export function matchPlans(plans: TemplatePlan[], answers: Answers): Match[] {
       // niż plan odrobinę za łatwy albo za trudny.
       let score = 100 - dayGap * 20 - levelGap * 12;
 
-      // Cel podbija tylko delikatnie — sam plan treningowy rzadko decyduje
+      // Cel podbija tylko delikatnie - sam plan treningowy rzadko decyduje
       // o tym, czy chudniesz. Robi to dieta.
       if (answers.goal === "cut" && plan.tags.includes("fatloss")) score += 8;
       if (answers.goal === "bulk" && plan.tags.includes("muscle")) score += 8;
 
       // Plan rehabilitacyjny nie może wyskoczyć jako domyślny komuś, kto nic
-      // nie mówił o kontuzji — trafia tam tylko świadomie, z listy.
+      // nie mówił o kontuzji - trafia tam tylko świadomie, z listy.
       if (plan.tags.includes("rehab")) score -= 40;
 
       const why =
@@ -83,7 +83,7 @@ export function matchPlans(plans: TemplatePlan[], answers: Answers): Match[] {
 /**
  * Poziom aktywności podpowiadany z liczby treningów.
  *
- * To tylko wartość startowa — w kroku o sobie można ją zmienić, bo praca
+ * To tylko wartość startowa - w kroku o sobie można ją zmienić, bo praca
  * fizyczna potrafi znaczyć więcej niż cztery wejścia na siłownię.
  */
 export function suggestActivity(daysPerWeek: number): ActivityLevel {

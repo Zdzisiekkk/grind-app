@@ -22,9 +22,9 @@ import type { Food, RecipeItem, RecipeTotals } from "@/lib/database.types";
 /**
  * Zarządzanie własnymi daniami.
  *
- * Większość przepisów powstaje w dzienniku („zapisz jako danie"), bo tam
+ * Większość przepisów powstaje w dzienniku ("zapisz jako danie"), bo tam
  * składniki są już zważone. Ten ekran jest do poprawek i do ułożenia czegoś
- * od zera — dlatego wygląda jak lista do edycji, a nie jak kreator.
+ * od zera - dlatego wygląda jak lista do edycji, a nie jak kreator.
  */
 export function RecipesScreen({
   userId,
@@ -74,7 +74,7 @@ export function RecipesScreen({
         <div>
           <h1 className="text-2xl font-bold leading-tight">Moje dania</h1>
           <p className="text-[13px] text-muted">
-            Rzeczy, które gotujesz regularnie — dodawane jednym tapnięciem.
+            Rzeczy, które gotujesz regularnie - dodawane jednym tapnięciem.
           </p>
         </div>
         <Button variant="primary" onClick={() => setCreating(true)}>
@@ -89,7 +89,7 @@ export function RecipesScreen({
           <EmptyState
             icon="🍲"
             title="Nie masz jeszcze własnych dań"
-            description="Najprościej: wpisz posiłek w dzienniku, a potem kliknij przy nim „Zapisz jako danie”. Składniki są już wtedy zważone."
+            description="Najprościej: wpisz posiłek w dzienniku, a potem kliknij przy nim Zapisz jako danie. Składniki są już wtedy zważone."
             action={
               <Button variant="primary" onClick={() => setCreating(true)}>
                 Ułóż od zera
@@ -252,7 +252,7 @@ function RecipeSheet({
 
   async function removeRecipe() {
     if (!recipe) return;
-    if (!confirm(`Usunąć danie „${recipe.name}"? Wpisy w dzienniku zostaną.`)) return;
+    if (!confirm(`Usunąć danie "${recipe.name}"? Wpisy w dzienniku zostaną.`)) return;
     await supabase.from("recipes").delete().eq("id", recipe.recipe_id);
     onClose();
     onChanged();
@@ -268,7 +268,7 @@ function RecipeSheet({
             <Stat label="Całość" value={`${num(recipe.total_g, 0)} g`} sub={`${num(recipe.kcal, 0)} kcal`} />
             <Stat
               label="Jedna porcja"
-              value={portion ? `${portion} g` : "–"}
+              value={portion ? `${portion} g` : "-"}
               sub={
                 portion
                   ? `${num((Number(recipe.kcal) / Number(recipe.servings)) || 0, 0)} kcal`
@@ -351,7 +351,7 @@ function RecipeSheet({
                   <Input
                     value={query}
                     onChange={(e) => search(e.target.value)}
-                    placeholder="Szukaj produktu…"
+                    placeholder="Szukaj produktu..."
                     aria-label="Szukaj produktu do dania"
                   />
                   {found.length > 0 && (

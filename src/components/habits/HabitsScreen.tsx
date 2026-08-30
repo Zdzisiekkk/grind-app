@@ -17,7 +17,7 @@ export type HabitWithToday = Habit & {
   todayCount: number;
   /** Ostatnie 7 dni, od najstarszego: ile razy odhaczone. */
   week: DayMark[];
-  /** Ostatnie 28 dni — siatka 4 tygodni pod nazwą nawyku. */
+  /** Ostatnie 28 dni - siatka 4 tygodni pod nazwą nawyku. */
   history: DayMark[];
   streak: number;
   bestStreak: number;
@@ -47,9 +47,9 @@ export function HabitsScreen({
   today: string;
   /** Ile dni z rzędu domknięte zostało wszystko, co było na liście. */
   perfectStreak: number;
-  /** Książka w trakcie — skrót do podstrony z czytaniem. */
+  /** Książka w trakcie - skrót do podstrony z czytaniem. */
   reading: { id: string; title: string; current_page: number; pages: number | null } | null;
-  /** Ile nałogów i najdłuższa trwająca passa — skrót do podstrony z nałogami. */
+  /** Ile nałogów i najdłuższa trwająca passa - skrót do podstrony z nałogami. */
   vices: { count: number; bestDays: number };
 }) {
   const router = useRouter();
@@ -62,7 +62,7 @@ export function HabitsScreen({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  // Domyślnie zwinięte, ale wybór zostaje zapamiętany — kto raz rozwinie,
+  // Domyślnie zwinięte, ale wybór zostaje zapamiętany - kto raz rozwinie,
   // nie musi tego robić codziennie przed odhaczeniem.
   const [listOpen, setListOpen] = useLocalBoolean("grind:habits-open", false);
 
@@ -143,7 +143,7 @@ export function HabitsScreen({
   }
 
   async function remove(habit: HabitWithToday) {
-    if (!confirm(`Usunąć nawyk „${habit.name}" razem z historią odhaczeń?`)) return;
+    if (!confirm(`Usunąć nawyk "${habit.name}" razem z historią odhaczeń?`)) return;
     const { error } = await supabase.from("habits").delete().eq("id", habit.id);
     if (error) setError(`Nie udało się usunąć: ${error.message}`);
     else router.refresh();
@@ -167,7 +167,7 @@ export function HabitsScreen({
         </Button>
       </header>
 
-      {/* Pasek postępu dnia — jedna liczba, po którą sięga się najczęściej. */}
+      {/* Pasek postępu dnia - jedna liczba, po którą sięga się najczęściej. */}
       {dueToday.length > 0 && (
         <Card className={clsx(allDone && "border-success/50")}>
           <div className="flex items-center gap-4">
@@ -197,7 +197,7 @@ export function HabitsScreen({
         </Card>
       )}
 
-      {/* Czytanie mieszka tu, ale ma własny ekran — nie da się go odhaczyć
+      {/* Czytanie mieszka tu, ale ma własny ekran - nie da się go odhaczyć
           ptaszkiem, bo ma tytuł, strony i notatki. */}
       <Link href="/nawyki/ksiazki" className="block">
         <Card className="transition-colors active:bg-surface-2">
@@ -220,7 +220,7 @@ export function HabitsScreen({
         </Card>
       </Link>
 
-      {/* Nałóg to odwrócony nawyk — sukcesem jest dzień, w którym nic nie
+      {/* Nałóg to odwrócony nawyk - sukcesem jest dzień, w którym nic nie
           zrobiłeś. Osobny ekran, bo passa liczy się tam w drugą stronę. */}
       <Link href="/nawyki/nalogi" className="block">
         <Card className="transition-colors active:bg-surface-2">
@@ -232,7 +232,7 @@ export function HabitsScreen({
               <p className="text-[15px] font-semibold leading-tight">Nałogi</p>
               <p className="truncate text-[13px] text-muted">
                 {vices.count === 0
-                  ? "Walka ze złymi nawykami — licznik czystych dni"
+                  ? "Walka ze złymi nawykami - licznik czystych dni"
                   : `${vices.bestDays} ${dayWord(vices.bestDays)} czysto · ${viceWord(vices.count)}`}
               </p>
             </div>
@@ -250,7 +250,7 @@ export function HabitsScreen({
           <EmptyState
             icon="🔁"
             title="Brak nawyków"
-            description="Suplementy, rozciąganie, sen o stałej porze, unikanie telefonu przed snem — cokolwiek chcesz robić regularnie."
+            description="Suplementy, rozciąganie, sen o stałej porze, unikanie telefonu przed snem - cokolwiek chcesz robić regularnie."
             action={
               <Button variant="primary" onClick={openNew}>
                 Dodaj pierwszy
@@ -259,7 +259,7 @@ export function HabitsScreen({
           />
         </Card>
       ) : (
-        /* Wszystkie własne nawyki pod jednym nagłówkiem — po rozwinięciu
+        /* Wszystkie własne nawyki pod jednym nagłówkiem - po rozwinięciu
            wyglądają dokładnie tak, jak wcześniej. */
         <Card padded={false} className="overflow-hidden">
           <button
@@ -312,7 +312,7 @@ export function HabitsScreen({
               {restToday.length > 0 && (
                 <>
                   <p className="mt-1 px-1 text-[12px] font-medium uppercase tracking-wide text-faint">
-                    Nie na dziś — wróci w swoim dniu tygodnia
+                    Nie na dziś - wróci w swoim dniu tygodnia
                   </p>
                   {restToday.map((habit) => (
                     <HabitCard
@@ -499,7 +499,7 @@ function HabitCard({
             {habit.bestStreak > habit.streak && ` · rekord ${habit.bestStreak}`}
           </p>
 
-          {/* Ostatnie 4 tygodnie — kwadracik na dzień, wypełniony gdy cel osiągnięty. */}
+          {/* Ostatnie 4 tygodnie - kwadracik na dzień, wypełniony gdy cel osiągnięty. */}
           <div
             className="mt-1.5 flex gap-[3px]"
             role="img"
@@ -549,14 +549,14 @@ function HabitCard({
   );
 }
 
-/** „1 dzień", „2 dni", „5 dni" — polska odmiana bez biblioteki. */
+/** "1 dzień", "2 dni", "5 dni" - polska odmiana bez biblioteki. */
 function dayWord(n: number): string {
   return n === 1 ? "dzień" : "dni";
 }
 
 /**
- * Polska odmiana po liczbie: 1 nawyk, 2-4 nawyki, 5+ nawyków — z wyjątkiem
- * nastek (12 nawyków, nie „12 nawyki").
+ * Polska odmiana po liczbie: 1 nawyk, 2-4 nawyki, 5+ nawyków - z wyjątkiem
+ * nastek (12 nawyków, nie "12 nawyki").
  */
 function viceOrHabitWord(n: number): string {
   const last = n % 10;

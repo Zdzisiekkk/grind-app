@@ -1,5 +1,5 @@
 /**
- * Czyste decyzje o żądaniach PostgREST — bez IndexedDB, bez fetcha, bez Reacta.
+ * Czyste decyzje o żądaniach PostgREST - bez IndexedDB, bez fetcha, bez Reacta.
  *
  * Wydzielone, żeby dało się to sprawdzić testem w Node, a nie dopiero w piwnicy
  * z wyłączonym LTE.
@@ -9,7 +9,7 @@ const REST = "/rest/v1/";
 const AUTH = "/auth/v1/";
 const WRITE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
-/** Nazwa tabeli z adresu — służy tylko do pokazania, co czeka w kolejce. */
+/** Nazwa tabeli z adresu - służy tylko do pokazania, co czeka w kolejce. */
 export function tableFromUrl(url: string): string {
   const path = url.split(REST)[1] ?? "";
   return path.split("?")[0].replace(/^\/+/, "") || "dane";
@@ -18,7 +18,7 @@ export function tableFromUrl(url: string): string {
 /**
  * Czy to zapis, który wolno odłożyć na później.
  *
- * Odczytów nie kolejkujemy — nie da się wymyślić danych, których się nie ma.
+ * Odczytów nie kolejkujemy - nie da się wymyślić danych, których się nie ma.
  * Logowania też nie: sfałszowana sesja byłaby gorsza niż uczciwy komunikat.
  * Wywołania funkcji (rpc) zmieniają stan i zwracają wynik naraz, więc nie
  * umiemy udawać ich odpowiedzi.
@@ -33,12 +33,12 @@ export function isQueueableWrite(url: string, method: string): boolean {
  * Wstawienie dostaje identyfikator nadany tutaj, w przeglądarce.
  *
  * Bez tego ekran treningu trzymałby w pamięci wiersz z wymyślonym id, a serwer
- * przy wysyłce nadałby własne — i usunięcie tej serii trafiałoby w próżnię.
+ * przy wysyłce nadałby własne - i usunięcie tej serii trafiałoby w próżnię.
  * Wszystkie te tabele mają `id uuid default gen_random_uuid()`, więc podanie
  * własnego jest legalne, a przy powtórce wysyłki daje darmową ochronę przed
  * dubletem: baza odbije je błędem 409.
  *
- * Wyjątkiem jest upsert — PostgREST wpisuje wtedy do `do update set` wszystkie
+ * Wyjątkiem jest upsert - PostgREST wpisuje wtedy do `do update set` wszystkie
  * podane kolumny, więc dorzucone `id` nadpisałoby klucz istniejącego wiersza.
  */
 export function withLocalIds(
@@ -63,7 +63,7 @@ export function withLocalIds(
       rows: stamped,
     };
   } catch {
-    // Nie każde ciało jest JSON-em. Kolejkujemy je bez zmian — lepiej wysłać
+    // Nie każde ciało jest JSON-em. Kolejkujemy je bez zmian - lepiej wysłać
     // dokładnie to, co przyszło, niż zgadywać.
     return { body, rows: [] };
   }

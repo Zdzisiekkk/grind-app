@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Zatwierdzenie propozycji.
  *
- * Zmiana dzieje się TUTAJ, po stronie serwera, a nie w trasie API trenera —
+ * Zmiana dzieje się TUTAJ, po stronie serwera, a nie w trasie API trenera -
  * dzięki temu model nigdy nie ma drogi do zapisania czegokolwiek w profilu.
  * Może wyłącznie zaproponować liczbę, którą człowiek musi kliknąć.
  */
@@ -27,7 +27,7 @@ export async function acceptProposal(id: string): Promise<void> {
   if (!proposal || proposal.status !== "pending") return;
 
   const kcal = (proposal.action as { daily_kcal?: number })?.daily_kcal;
-  // Zakres jak w kreatorze — nawet zatwierdzona propozycja nie może ustawić
+  // Zakres jak w kreatorze - nawet zatwierdzona propozycja nie może ustawić
   // celu, który byłby niebezpieczny.
   if (proposal.kind === "diet_kcal" && typeof kcal === "number" && kcal >= 1200 && kcal <= 6000) {
     await supabase.from("profiles").update({ daily_kcal: kcal }).eq("id", user.id);

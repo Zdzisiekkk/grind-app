@@ -3,13 +3,13 @@ import { z } from "zod";
 /**
  * Kształt odpowiedzi na opis posiłku.
  *
- * Model dostaje zdanie („dwa jajka sadzone i kromka razowego"), a oddaje
+ * Model dostaje zdanie ("dwa jajka sadzone i kromka razowego"), a oddaje
  * listę składników. Ten sam schemat wymusza format odpowiedzi i waliduje ją
- * przed pokazaniem — modelowi nie wierzymy na słowo.
+ * przed pokazaniem - modelowi nie wierzymy na słowo.
  *
- * Wartości są NA 100 G, a gramatura osobno — mimo że model mógłby od razu
+ * Wartości są NA 100 G, a gramatura osobno - mimo że model mógłby od razu
  * podać sumy. Powód jest praktyczny: `meal_entries` trzyma dokładnie taką
- * parę i sam wylicza sumy, a człowiek, który poprawi „dwa jajka" na trzy,
+ * parę i sam wylicza sumy, a człowiek, który poprawi "dwa jajka" na trzy,
  * dostaje przeliczone kalorie bez kolejnego pytania do modelu. Suma zamiast
  * gęstości znaczyłaby, że każda poprawka kosztuje pieniądze.
  */
@@ -18,12 +18,12 @@ import { z } from "zod";
 const NA_100G = z.number().min(0).max(900);
 
 export const SkladnikSchema = z.object({
-  nazwa: z.string().describe("Nazwa składnika po polsku, np. „jajko sadzone”."),
+  nazwa: z.string().describe("Nazwa składnika po polsku, np. \"jajko sadzone\"."),
   gramatura: z
     .number()
     .min(1)
     .max(5000)
-    .describe("Waga tego składnika w gramach, po przygotowaniu — tyle, ile realnie zjedzono."),
+    .describe("Waga tego składnika w gramach, po przygotowaniu - tyle, ile realnie zjedzono."),
   kcal_100g: NA_100G.describe("Kalorie na 100 g."),
   bialko_100g: NA_100G.describe("Białko w gramach na 100 g."),
   wegle_100g: NA_100G.describe("Węglowodany w gramach na 100 g."),
@@ -31,8 +31,8 @@ export const SkladnikSchema = z.object({
   pewnosc: z
     .enum(["wysoka", "srednia", "niska"])
     .describe(
-      "wysoka — produkt jednoznaczny i zważony; srednia — typowa porcja bez wagi; " +
-        "niska — potrawa złożona albo opis nieprecyzyjny.",
+      "wysoka - produkt jednoznaczny i zważony; srednia - typowa porcja bez wagi; " +
+        "niska - potrawa złożona albo opis nieprecyzyjny.",
     ),
 });
 
@@ -43,8 +43,8 @@ export const OpisPosilkuSchema = z.object({
   uwaga: z
     .string()
     .describe(
-      "Jedno krótkie zdanie po polsku o przyjętych założeniach, np. „Liczyłem średnie jajko 55 g”. " +
-        "Przy rozpoznane=false — dlaczego się nie da.",
+      "Jedno krótkie zdanie po polsku o przyjętych założeniach, np. \"Liczyłem średnie jajko 55 g\". " +
+        "Przy rozpoznane=false - dlaczego się nie da.",
     ),
   skladniki: z.array(SkladnikSchema).max(15),
 });
@@ -61,13 +61,13 @@ export function kcalSkladnika(s: Pick<Skladnik, "kcal_100g" | "gramatura">): num
  * Siatka bezpieczeństwa na wartości, które nie trzymają się fizyki.
  *
  * To NIE jest audyt żywieniowy, tylko wyłapanie grubych pomyłek, zanim wejdą
- * do bilansu dnia i cicho go przekłamią. Prosta reguła „białko i węglowodany
+ * do bilansu dnia i cicho go przekłamią. Prosta reguła "białko i węglowodany
  * po 4 kcal/g, tłuszcz 9" nie nadaje się na jeden próg, bo rozjeżdża się
- * w OBIE strony przy zwyczajnym jedzeniu — sprawdziłem na tablicach:
+ * w OBIE strony przy zwyczajnym jedzeniu - sprawdziłem na tablicach:
  *
  *   - błonnik liczy się do węglowodanów, ale daje około 2 kcal/g zamiast 4,
  *     więc otręby wychodzą z sumy na dwa razy więcej, niż mają naprawdę.
- *     Ostry próg wycinałby produkty pełnoziarniste — czyli akurat te, które
+ *     Ostry próg wycinałby produkty pełnoziarniste - czyli akurat te, które
  *     ludzie jedzą świadomie;
  *   - alkohol daje 7 kcal/g i nie ma go wśród makroskładników, więc piwo
  *     ma więcej kalorii, niż wynika z jego makr.
@@ -75,10 +75,10 @@ export function kcalSkladnika(s: Pick<Skladnik, "kcal_100g" | "gramatura">): num
  * Stąd trzy reguły zamiast jednej. Każda pilnuje czegoś, co nie ma legalnego
  * wyjątku, a wspólnie zostawiają szeroki środek na prawdziwe jedzenie.
  *
- * ZNANE OGRANICZENIE: czysty alkohol (wódka — 231 kcal przy zerowych makrach)
+ * ZNANE OGRANICZENIE: czysty alkohol (wódka - 231 kcal przy zerowych makrach)
  * zostanie odrzucony, bo bez pola na alkohol nie ma czym tych kalorii
  * wytłumaczyć. Wolę odrzucić wpis niewerfikowalny, niż wpuścić do dziennika
- * zdrowia kalorie, których nie da się sprawdzić — od alkoholu jest w aplikacji
+ * zdrowia kalorie, których nie da się sprawdzić - od alkoholu jest w aplikacji
  * osobny moduł nałogów.
  */
 export function makraSieZgadzaja(s: Skladnik): boolean {
@@ -90,7 +90,7 @@ export function makraSieZgadzaja(s: Skladnik): boolean {
   if (bialko + wegle + tluszcz > 105) return false;
 
   // 2. Dolna granica od białka i tłuszczu. Te dwa nie mają odpowiednika
-  //    błonnika — nie istnieje białko dające mniej niż 4 kcal/g. „81 g
+  //    błonnika - nie istnieje białko dające mniej niż 4 kcal/g. "81 g
   //    tłuszczu i 100 kcal" to pomyłka, nie produkt.
   if (bialko * 4 + tluszcz * 9 > kcal * 1.3 + 40) return false;
 

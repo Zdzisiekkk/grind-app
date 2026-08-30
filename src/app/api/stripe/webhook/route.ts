@@ -6,14 +6,14 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/env";
 import type { Database } from "@/lib/database.types";
 
 /**
- * Webhook Stripe'a — jedyne miejsce, które zmienia stan subskrypcji.
+ * Webhook Stripe'a - jedyne miejsce, które zmienia stan subskrypcji.
  *
  * Nie ufamy tu niczemu, co przychodzi z przeglądarki: powrót z płatności na
  * /subskrypcja?platnosc=ok NIE nadaje dostępu. Dostęp nadaje wyłącznie
  * podpisane zdarzenie od Stripe'a, sprawdzone kluczem podpisu.
  *
  * Do zapisu używamy wąskiej funkcji apply_subscription chronionej osobnym
- * sekretem, a nie klucza serwisowego Supabase — ten omija całe RLS i nie ma
+ * sekretem, a nie klucza serwisowego Supabase - ten omija całe RLS i nie ma
  * powodu, żeby leżał na serwerze aplikacji. Szczegóły w migracji 0015.
  */
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
   const gatewaySecret = process.env.SUPABASE_WEBHOOK_SECRET;
   if (!gatewaySecret) {
-    console.error("Brak SUPABASE_WEBHOOK_SECRET — nie mam czym zapisać subskrypcji.");
+    console.error("Brak SUPABASE_WEBHOOK_SECRET - nie mam czym zapisać subskrypcji.");
     return NextResponse.json({ error: "Serwer nieskonfigurowany." }, { status: 500 });
   }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Usunięcie subskrypcji przychodzi ze statusem 'canceled', ale bywa też
-    // zdarzeniem bez pełnego obiektu — wtedy zapisujemy sam fakt anulowania.
+    // zdarzeniem bez pełnego obiektu - wtedy zapisujemy sam fakt anulowania.
     const status = subscription?.status ?? "canceled";
     const item = subscription?.items?.data?.[0];
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       // Stripe NIE gwarantuje kolejności doręczeń i ponawia nieudane. Bez tych
       // dwóch pól starsze zdarzenie potrafiło nadpisać nowszy stan: ktoś
       // anuluje subskrypcję i od razu wykupuje ponownie, a jeśli anulowanie
-      // dotrze drugie — traci dostęp mimo opłaty. Baza mija teraz zdarzenia
+      // dotrze drugie - traci dostęp mimo opłaty. Baza mija teraz zdarzenia
       // powtórzone i spóźnione (migracja 0031).
       p_event_id: event.id,
       p_event_at: new Date(event.created * 1000).toISOString(),
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     if (error || applied === false) {
       console.error("apply_subscription odrzucone:", error?.message ?? "zły sekret");
-      // 500, żeby Stripe ponowił — inaczej opłacona subskrypcja zostałaby
+      // 500, żeby Stripe ponowił - inaczej opłacona subskrypcja zostałaby
       // po naszej stronie niezapisana i człowiek zapłaciłby za nic.
       return NextResponse.json({ error: "Nie udało się zapisać." }, { status: 500 });
     }

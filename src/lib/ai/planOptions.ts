@@ -1,11 +1,11 @@
 /**
- * Opcje formularza planu — świadomie BEZ zoda.
+ * Opcje formularza planu - świadomie BEZ zoda.
  *
- * Arkusz „Ułóż plan" jest komponentem klienckim i potrzebuje z tego pliku
+ * Arkusz "Ułóż plan" jest komponentem klienckim i potrzebuje z tego pliku
  * dwóch drobiazgów: listy sprzętu i etykiet stażu. Gdy leżały obok schematów
  * zod, do telefonu jechała cała biblioteka walidacji (≈290 kB) tylko po to,
  * żeby narysować dziesięć checkboksów. Schematy zostają na serwerze,
- * w planSchema.ts, i biorą wartości stąd — więc nie ma dwóch źródeł prawdy.
+ * w planSchema.ts, i biorą wartości stąd - więc nie ma dwóch źródeł prawdy.
  */
 
 export const EQUIPMENT_OPTIONS = [
@@ -21,7 +21,7 @@ export const EQUIPMENT_OPTIONS = [
   "tylko masa ciała",
 ] as const;
 
-/** Wartości stażu — tej samej listy używa schemat po stronie serwera. */
+/** Wartości stażu - tej samej listy używa schemat po stronie serwera. */
 export const EXPERIENCE_VALUES = ["beginner", "intermediate", "advanced"] as const;
 
 export type Experience = (typeof EXPERIENCE_VALUES)[number];

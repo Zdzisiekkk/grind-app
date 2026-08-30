@@ -7,7 +7,7 @@ import { Alert } from "@/components/ui";
  *
  * Ostrzeżenie na górze jest tam celowo i ma tam zostać do czasu, aż ktoś
  * z uprawnieniami przejrzy treść. Dokument, który wygląda na gotowy, a nie
- * został sprawdzony, jest gorszy niż jego brak — bo nikt do niego nie wróci.
+ * został sprawdzony, jest gorszy niż jego brak - bo nikt do niego nie wróci.
  */
 export function LegalPage({
   title,
@@ -52,7 +52,7 @@ export function Section({ title, children }: { title: string; children: ReactNod
   );
 }
 
-/** Miejsce do uzupełnienia przez właściciela — celowo rzuca się w oczy. */
+/** Miejsce do uzupełnienia przez właściciela - celowo rzuca się w oczy. */
 export function ToFill({ children }: { children: ReactNode }) {
   return (
     <mark className="rounded bg-[var(--warn-soft)] px-1 font-semibold text-warn">

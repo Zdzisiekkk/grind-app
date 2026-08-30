@@ -1,5 +1,5 @@
 /**
- * Zmienne środowiskowe — czytelny błąd zamiast zagadkowego crashu,
+ * Zmienne środowiskowe - czytelny błąd zamiast zagadkowego crashu,
  * gdy ktoś odpali projekt bez skonfigurowanego Supabase.
  */
 function required(name: string, value: string | undefined): string {

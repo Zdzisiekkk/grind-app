@@ -43,24 +43,24 @@ export type Profile = {
   sex: "m" | "f" | "other" | null;
   /** Cel nawodnienia na dobę w mililitrach. */
   daily_water_ml: number | null;
-  /** Ile mililitrów dodaje jedno tapnięcie „+". */
+  /** Ile mililitrów dodaje jedno tapnięcie "+". */
   water_portion_ml: number;
   water_reminder_from: string | null;
   water_reminder_to: string | null;
   water_reminder_every_min: number | null;
   /** Cel snu na dobę w minutach. */
   sleep_goal_min: number;
-  /** Godzina, o której chcesz gasić światło — punkt odniesienia regularności. */
+  /** Godzina, o której chcesz gasić światło - punkt odniesienia regularności. */
   sleep_target_bedtime: string | null;
   sleep_reminder_at: string | null;
-  /** Strefa czasowa urządzenia — bez niej push o 22:00 przyszedłby o północy. */
+  /** Strefa czasowa urządzenia - bez niej push o 22:00 przyszedłby o północy. */
   timezone: string;
   /* --- Wypełnia kreator startowy (/start) --- */
   goal: "cut" | "maintain" | "bulk" | null;
   activity_level: "sedentary" | "light" | "moderate" | "high" | "athlete" | null;
   experience: "beginner" | "intermediate" | "advanced" | null;
   equipment: "gym" | "minimal" | "home" | null;
-  /** Ile treningów tygodniowo to komplet — mianownik filaru treningowego. */
+  /** Ile treningów tygodniowo to komplet - mianownik filaru treningowego. */
   weekly_workouts: number | null;
   /** Puste = kreator jeszcze nie przeszedł. */
   onboarded_at: string | null;
@@ -68,7 +68,7 @@ export type Profile = {
   /** Wersja regulaminu, na którą wyrażono zgodę. */
   terms_version: number | null;
   terms_accepted_at: string | null;
-  /** Osobna zgoda na dane o zdrowiu — art. 9 RODO wymaga odrębnej. */
+  /** Osobna zgoda na dane o zdrowiu - art. 9 RODO wymaga odrębnej. */
   health_consent_at: string | null;
   created_at: string;
   updated_at: string;
@@ -116,7 +116,7 @@ export type Plan = {
   /* --- Opis szablonu: po tym kreator dobiera plan --- */
   days_per_week: number | null;
   level: "beginner" | "intermediate" | "advanced" | null;
-  /** 'gym' — siłownia, 'minimal' — hantle i drążek, 'home' — nic. */
+  /** 'gym' - siłownia, 'minimal' - hantle i drążek, 'home' - nic. */
   equipment: "gym" | "minimal" | "home" | null;
   tags: string[];
   created_at: string;
@@ -200,7 +200,7 @@ export type Habit = {
   note: string | null;
   target_per_day: number;
   unit: string | null;
-  /** ISO: 1 = poniedziałek … 7 = niedziela. Pusta tablica = codziennie. */
+  /** ISO: 1 = poniedziałek ... 7 = niedziela. Pusta tablica = codziennie. */
   days_of_week: number[];
   reminder_at: string | null;
   is_archived: boolean;
@@ -263,16 +263,16 @@ export type SleepFactor =
 export type SleepLog = {
   id: string;
   user_id: string;
-  /** Data PORANKA, którego się obudziłeś — noc z 3 na 4 maja to 4 maja. */
+  /** Data PORANKA, którego się obudziłeś - noc z 3 na 4 maja to 4 maja. */
   date: string;
   bedtime: string;
   wake_time: string;
   fell_asleep_min: number;
   awakenings: number;
   awake_min: number;
-  /** Jak Ci się spało, 1–5. */
+  /** Jak Ci się spało, 1-5. */
   quality: number;
-  /** Jak się obudziłeś, 1–5. Osobno, bo to nie to samo co jakość snu. */
+  /** Jak się obudziłeś, 1-5. Osobno, bo to nie to samo co jakość snu. */
   morning_energy: number | null;
   factors: string[];
   note: string | null;
@@ -282,7 +282,7 @@ export type SleepLog = {
   updated_at: string;
 };
 
-/** Widok v_sleep — to samo plus realny sen po odjęciu zasypiania i pobudek. */
+/** Widok v_sleep - to samo plus realny sen po odjęciu zasypiania i pobudek. */
 export type SleepView = {
   user_id: string;
   date: string;
@@ -295,7 +295,7 @@ export type SleepView = {
   awake_min: number;
   quality: number;
   morning_energy: number | null;
-  /** Suma minut drzemek z tego dnia — liczona w widoku z tabeli sleep_naps. */
+  /** Suma minut drzemek z tego dnia - liczona w widoku z tabeli sleep_naps. */
   nap_min: number;
   /** Ile drzemek. Trzy po 20 minut to nie to samo co jedna godzinna. */
   nap_count: number;
@@ -305,7 +305,7 @@ export type SleepView = {
   note: string | null;
 };
 
-/** Propozycja trenera — czeka na tapnięcie, nic nie zmienia sama z siebie. */
+/** Propozycja trenera - czeka na tapnięcie, nic nie zmienia sama z siebie. */
 export type CoachProposal = {
   id: string;
   user_id: string;
@@ -345,7 +345,7 @@ export type PushSubscription = {
 };
 
 /**
- * Własne danie ze składników. Szablon posiłku to ten sam byt — powstały
+ * Własne danie ze składników. Szablon posiłku to ten sam byt - powstały
  * z zapisania posiłku, a nie z ręcznego układania składników.
  */
 export type Recipe = {
@@ -367,7 +367,7 @@ export type RecipeItem = {
   food_id: string | null;
   name: string;
   grams: number;
-  /** Kopiowane w chwili dodania — poprawka produktu nie zmienia historii. */
+  /** Kopiowane w chwili dodania - poprawka produktu nie zmienia historii. */
   kcal_100g: number;
   protein_100g: number;
   carbs_100g: number;
@@ -376,7 +376,7 @@ export type RecipeItem = {
   created_at: string;
 };
 
-/** Przepis policzony jako produkt — te same pola, co zwykłe jedzenie. */
+/** Przepis policzony jako produkt - te same pola, co zwykłe jedzenie. */
 export type RecipeTotals = {
   recipe_id: string;
   user_id: string;
@@ -402,7 +402,7 @@ export type Vice = {
   user_id: string;
   name: string;
   icon: string;
-  /** Moment rzucenia — punkt zero licznika, dopóki nie ma wpadki. */
+  /** Moment rzucenia - punkt zero licznika, dopóki nie ma wpadki. */
   started_at: string;
   daily_cost: number | null;
   daily_minutes: number | null;
@@ -413,7 +413,7 @@ export type Vice = {
   updated_at: string;
 };
 
-/** 'lapse' — wpadka (zeruje licznik), 'urge' — chęć, która minęła. */
+/** 'lapse' - wpadka (zeruje licznik), 'urge' - chęć, która minęła. */
 export type ViceEventKind = "lapse" | "urge";
 
 export type ViceEvent = {
@@ -439,7 +439,7 @@ export type Book = {
   summary: string | null;
   started_at: string | null;
   finished_at: string | null;
-  /** ISBN-13 — tylko dla książek dodanych skanem. */
+  /** ISBN-13 - tylko dla książek dodanych skanem. */
   isbn: string | null;
   /** Adres okładki u Open Library; sam obrazek zostaje u nich. */
   cover_url: string | null;
@@ -452,7 +452,7 @@ export type BookNote = {
   user_id: string;
   book_id: string;
   page: number | null;
-  /** Cytat z książki — trzymany oddzielnie od własnego komentarza. */
+  /** Cytat z książki - trzymany oddzielnie od własnego komentarza. */
   quote: string | null;
   note: string | null;
   created_at: string;
@@ -472,7 +472,7 @@ export type SubscriptionStatus =
   | "none" | "trialing" | "active" | "past_due" | "canceled" | "incomplete";
 
 /**
- * Lokalna kopia stanu ze Stripe'a — źródłem prawdy jest Stripe, a ten wiersz
+ * Lokalna kopia stanu ze Stripe'a - źródłem prawdy jest Stripe, a ten wiersz
  * wypełnia wyłącznie webhook kluczem serwisowym. Użytkownik ma tu tylko odczyt.
  */
 export type Subscription = {
@@ -578,7 +578,7 @@ export type MealEntry = {
   carbs_100g: number;
   fat_100g: number;
   created_at: string;
-  /** kolumny wyliczane w bazie — tylko do odczytu */
+  /** kolumny wyliczane w bazie - tylko do odczytu */
   kcal: number;
   protein: number;
   carbs: number;
@@ -670,7 +670,7 @@ export type PeriodSummary = {
   days_water_logged: number;
   avg_protein_g: number | null;
   habit_days_done: number;
-  /** Ile odhaczeń w ogóle wypadało w okresie — mianownik filaru nawyków. */
+  /** Ile odhaczeń w ogóle wypadało w okresie - mianownik filaru nawyków. */
   habit_days_due: number;
   nights_logged: number;
   avg_sleep_min: number | null;
@@ -777,7 +777,7 @@ export type WygladProdukt = {
   created_at: string;
 };
 
-/** Stan limitów skanowania — zwracany przez `wyglad_limit()`. */
+/** Stan limitów skanowania - zwracany przez `wyglad_limit()`. */
 export type WygladLimit = {
   odstep_dni: number;
   limit_miesiaca: number;
@@ -785,13 +785,13 @@ export type WygladLimit = {
   ostatni_skan: string | null;
   nastepny_od: string;
   mozna: boolean;
-  /** Administrator nie podlega limitom — liczniki nadal są prawdziwe. */
+  /** Administrator nie podlega limitom - liczniki nadal są prawdziwe. */
   bez_limitu?: boolean;
   powod: "limit_miesiaca" | "odstep" | null;
 };
 
 /**
- * Stan miesięcznego budżetu na AI — zwracany przez `ai_budzet_stan()`.
+ * Stan miesięcznego budżetu na AI - zwracany przez `ai_budzet_stan()`.
  *
  * Rejestr kosztów (`ai_wydatki`) świadomie NIE ma tu odpowiednika: tabela nie
  * daje użytkownikowi żadnych uprawnień, więc typ opisujący zapytanie o nią
@@ -806,7 +806,7 @@ export type AiBudzetStan = {
   zostalo_pln: number;
   /** Ile wywołań weszło do puli w tym miesiącu. */
   wywolan: number;
-  /** Konto administratora — próg nie obowiązuje, liczniki nadal prawdziwe. */
+  /** Konto administratora - próg nie obowiązuje, liczniki nadal prawdziwe. */
   bez_limitu: boolean;
   /** Kiedy budżet się odnowi (początek następnego miesiąca, czas polski). */
   odnowa: string;
@@ -821,7 +821,7 @@ export type SleepNap = {
   id: string;
   user_id: string;
   date: string;
-  /** Godzina rozpoczęcia, „HH:MM:SS". Null, gdy nieznana. */
+  /** Godzina rozpoczęcia, "HH:MM:SS". Null, gdy nieznana. */
   start_time: string | null;
   minutes: number;
   created_at: string;
@@ -914,7 +914,7 @@ export type Database = {
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
       wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
       /**
-       * Produkty pasujące do frazy — po słowach, bez ogonków, także po marce.
+       * Produkty pasujące do frazy - po słowach, bez ogonków, także po marce.
        * SECURITY INVOKER, więc RLS nadal zasłania cudze produkty własne.
        */
       szukaj_produktow: {
@@ -925,18 +925,18 @@ export type Database = {
       ai_budzet_stan: { Args: Record<string, never>; Returns: AiBudzetStan };
       /**
        * Zużycie jednego wywołania w kategorii; false = dzienny limit wyczerpany.
-       * Osobny od `consume_ai_call`, bo tamten ma JEDEN licznik na konto —
+       * Osobny od `consume_ai_call`, bo tamten ma JEDEN licznik na konto -
        * opisy posiłków zjadałyby wtedy pytania do trenera (migracja 0046).
        */
       ai_licznik_zuzyj: { Args: { p_kategoria: string; p_limit: number }; Returns: boolean };
-      /** Ile z dziennej puli kategorii zostało — dla ekranu, przed kliknięciem. */
+      /** Ile z dziennej puli kategorii zostało - dla ekranu, przed kliknięciem. */
       ai_licznik_stan: {
         Args: { p_kategoria: string; p_limit: number };
         Returns: { limit: number; wywolan: number; bez_limitu: boolean };
       };
       /**
        * Funkcje wywoływalne bez logowania, poza sześcioma serwisowymi.
-       * Ma zwracać pustą tablicę — patrz migracje 0045 i 0046.
+       * Ma zwracać pustą tablicę - patrz migracje 0045 i 0046.
        */
       funkcje_dla_anona: { Args: Record<string, never>; Returns: string[] };
       /** Rezerwacja przed wywołaniem modelu. Odmowa nic nie zapisuje. */
@@ -956,14 +956,14 @@ export type Database = {
       tables_without_rls: { Args: Record<string, never>; Returns: string[] };
       /** Trwałe usunięcie własnego konta. Działa tylko na koncie wywołującego. */
       delete_my_account: { Args: Record<string, never>; Returns: undefined };
-      /* Wysyłka powiadomień — chronione sekretem, wołane tylko przez cron. */
+      /* Wysyłka powiadomień - chronione sekretem, wołane tylko przez cron. */
       push_due: { Args: { p_secret: string }; Returns: unknown };
       push_ok: { Args: { p_secret: string; p_endpoint: string }; Returns: undefined };
       push_failed: {
         Args: { p_secret: string; p_endpoint: string; p_gone: boolean };
         Returns: undefined;
       };
-      /** Wersje mnogie — cała paczka jednym zapytaniem zamiast jednego na sztukę. */
+      /** Wersje mnogie - cała paczka jednym zapytaniem zamiast jednego na sztukę. */
       push_ok_many: { Args: { p_secret: string; p_endpoints: string[] }; Returns: number };
       push_failed_many: {
         Args: { p_secret: string; p_endpoints: string[]; p_gone: boolean };
@@ -994,7 +994,7 @@ export type Database = {
       supersede_coach_proposals: { Args: Record<string, never>; Returns: number };
       /** Polityki, które nadal przeliczają auth.uid() dla każdego wiersza. */
       policies_rechecking_uid: { Args: Record<string, never>; Returns: string[] };
-      /** Wąska furtka dla webhooka Stripe'a — chroniona osobnym sekretem. */
+      /** Wąska furtka dla webhooka Stripe'a - chroniona osobnym sekretem. */
       apply_subscription: {
         Args: {
           p_secret: string;

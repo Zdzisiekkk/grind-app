@@ -11,8 +11,8 @@ import type { PoraDnia, WygladProdukt, WygladProtokol, WygladRutyna } from "@/li
  * Rutyny, produkty i protokoły do samodzielnej edycji.
  *
  * Ostrzeżenia o konfliktach składników liczy `konflikty()` w kodzie, nie model.
- * „Retinoid i kwasy tego samego wieczoru" to reguła, którą albo się zna, albo
- * nie — a model, który raz na dziesięć razy o niej zapomni, jest gorszy niż
+ * "Retinoid i kwasy tego samego wieczoru" to reguła, którą albo się zna, albo
+ * nie - a model, który raz na dziesięć razy o niej zapomni, jest gorszy niż
  * dziesięć linijek, które nie zapominają nigdy.
  */
 
@@ -164,7 +164,7 @@ export function RoutineEditor({
 
       <Card
         title="Produkty"
-        subtitle="Wpisz składniki aktywne — sprawdzimy, czy się nie gryzą"
+        subtitle="Wpisz składniki aktywne - sprawdzimy, czy się nie gryzą"
         action={
           <Button variant="ghost" onClick={() => setArkusz("produkt")}>
             Dodaj
@@ -225,7 +225,7 @@ export function RoutineEditor({
                   {p.kroki.map((k, i) => (
                     <li key={i}>
                       <span className="font-medium">{k.nazwa}</span>
-                      {k.ile && <span className="text-faint"> — {k.ile}</span>}
+                      {k.ile && <span className="text-faint"> - {k.ile}</span>}
                       <span className="block text-muted">{k.opis}</span>
                     </li>
                   ))}

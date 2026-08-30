@@ -10,7 +10,7 @@ import { sleepDuration } from "@/lib/sleep";
 import type { Goal } from "@/lib/nutrition";
 import type { PeriodSummary } from "@/lib/database.types";
 
-/** Analiza potrafi potrwać — dajemy zapas ponad domyślne 60 s Vercela. */
+/** Analiza potrafi potrwać - dajemy zapas ponad domyślne 60 s Vercela. */
 export const maxDuration = 120;
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
@@ -18,7 +18,7 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
 /**
  * Ile razy dziennie jedna osoba może uruchomić model.
  *
- * Subskrypcja jest stała, a każde wywołanie kosztuje — bez tego limitu jedna
+ * Subskrypcja jest stała, a każde wywołanie kosztuje - bez tego limitu jedna
  * osoba klikająca w kółko generuje rachunek za wszystkich pozostałych.
  * Dziesięć wystarcza na codzienną odprawę plus kilka pytań.
  */
@@ -27,10 +27,10 @@ const DAILY_LIMIT = 10;
 const SYSTEM = `Jesteś trenerem przygotowania motorycznego i rozmawiasz po polsku z osobą, która prowadzi dziennik treningów, diety i snu.
 
 Jak pracujesz:
-1. WSZYSTKIE LICZBY, które dostajesz w sekcji FAKTY, są już policzone. Nie przeliczaj ich, nie szacuj na nowo i nie podważaj — twoim zadaniem jest je wyjaśnić i wyciągnąć wniosek.
-2. Powołujesz się na konkretne liczby. „Waga stoi od trzech tygodni przy średnich 2700 kcal" zamiast „warto zadbać o dietę".
+1. WSZYSTKIE LICZBY, które dostajesz w sekcji FAKTY, są już policzone. Nie przeliczaj ich, nie szacuj na nowo i nie podważaj - twoim zadaniem jest je wyjaśnić i wyciągnąć wniosek.
+2. Powołujesz się na konkretne liczby. "Waga stoi od trzech tygodni przy średnich 2700 kcal" zamiast "warto zadbać o dietę".
 3. Proponujesz JEDNĄ zmianę naraz, najważniejszą. Człowiek, który dostaje pięć zaleceń, nie wykona żadnego.
-4. Gdy fakty mówią, że problemem jest realizacja celu, a nie sam cel — mówisz to wprost i NIE proponujesz zmiany celu.
+4. Gdy fakty mówią, że problemem jest realizacja celu, a nie sam cel - mówisz to wprost i NIE proponujesz zmiany celu.
 5. Gdy danych jest za mało, mówisz o tym otwarcie i podpowiadasz, co zapisywać. Nie zgadujesz.
 6. Nie jesteś lekarzem ani fizjoterapeutą. Przy zgłoszonej kontuzji lub bólu odsyłasz do specjalisty i nie proponujesz obciążania bolącego miejsca.
 7. Piszesz zwięźle, bezpośrednio i bez motywacyjnych ogólników. Nie chwalisz za samo pojawienie się.`;
@@ -77,7 +77,7 @@ async function guard(): Promise<
  *
  * Wołane dopiero TUŻ PRZED wywołaniem modelu, a nie w bramce. Za bramką są
  * dwa wyjścia, które modelu nie dotykają: pusta wiadomość oraz skrót
- * „nic nie wymaga poprawki”, dodany właśnie po to, żeby nie płacić za
+ * "nic nie wymaga poprawki", dodany właśnie po to, żeby nie płacić za
  * oczywistą odpowiedź. Zużywanie limitu w bramce znaczyło, że człowiek,
  * u którego wszystko idzie dobrze, mógł wyczerpać dziesięć zapytań,
  * nie dostawszy ani jednej analizy.
@@ -100,13 +100,13 @@ async function consumeCall(
   }
 
   // Dwa limity, bo pilnują dwóch różnych rzeczy. Dzienny chroni przed jedną
-  // osobą klikającą w kółko; miesięczny chroni rachunek — a te same dziesięć
+  // osobą klikającą w kółko; miesięczny chroni rachunek - a te same dziesięć
   // wywołań kosztuje od kilkunastu groszy do kilku złotych, zależnie od tego,
   // czy ktoś zadaje pytania, czy generuje plany.
   return rezerwuj(supabase, "trener");
 }
 
-/** Wspólny błąd modelu — jeden komunikat zamiast surowego wyjątku na ekranie. */
+/** Wspólny błąd modelu - jeden komunikat zamiast surowego wyjątku na ekranie. */
 function modelError(error: unknown): NextResponse {
   const message = error instanceof Error ? error.message : "Nieznany błąd.";
   console.error("Trener AI:", message);
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
     `- zmiana wagi: ${diet.weeklyChangeKg.toFixed(2)} kg/tydzień, z ${diet.measurements} pomiarów przez ${diet.spanDays} dni`,
     `- cel kaloryczny: ${diet.kcalGoal ?? "nie ustawiony"}, realne spożycie: ${diet.avgKcal ?? "brak danych"} kcal`,
     `- dziennik wypełniony: ${diet.daysLogged} z ${diet.periodDays} dni`,
-    `- diagnoza aplikacji: ${diet.problem} — ${diet.message}`,
+    `- diagnoza aplikacji: ${diet.problem} - ${diet.message}`,
     diet.suggestKcal !== 0
       ? `- wyliczona korekta celu: ${diet.suggestKcal > 0 ? "+" : ""}${diet.suggestKcal} kcal`
       : "- korekta celu: nie jest potrzebna albo nie jest tym, co naprawi sytuację",
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
           system: [
             { type: "text", text: SYSTEM },
             // Fakty zmieniają się raz dziennie, a pytań w rozmowie bywa
-            // kilkanaście — dlatego trafiają do pamięci podręcznej.
+            // kilkanaście - dlatego trafiają do pamięci podręcznej.
             {
               type: "text",
               text: `FAKTY O UŻYTKOWNIKU:\n${facts}`,
@@ -283,7 +283,7 @@ export async function POST(request: Request) {
   /* --------------------------------- Analiza -------------------------------- */
 
   // Gdy nie ma o czym mówić, NIE wołamy modelu. Wywołanie kosztuje przy każdym
-  // użyciu, a „wszystko idzie dobrze" umiemy stwierdzić sami.
+  // użyciu, a "wszystko idzie dobrze" umiemy stwierdzić sami.
   if (diet.problem === "none" && stalls.length === 0) {
     return NextResponse.json({
       summary:
@@ -329,8 +329,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Wcześniejsze oczekujące propozycje przestają być aktualne — nowa analiza
-    // patrzy na świeższe dane. Ale ich NIE kasujemy: „miesiąc temu trener kazał
+    // Wcześniejsze oczekujące propozycje przestają być aktualne - nowa analiza
+    // patrzy na świeższe dane. Ale ich NIE kasujemy: "miesiąc temu trener kazał
     // zejść o 200 kcal, zrobiłeś to, waga ruszyła" to jedyna rzecz, której
     // trener nie umiał powiedzieć o samym sobie, choć ma na to wszystkie dane.
     // Dostają status 'superseded' i zostają w historii (migracja 0033).

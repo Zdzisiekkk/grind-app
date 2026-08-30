@@ -1,7 +1,7 @@
 /*
  * Sprawdza arytmetykę nałogów.
  *
- * Licznik „czystych dni" to jedyna liczba, po którą się tam wchodzi — i taka,
+ * Licznik "czystych dni" to jedyna liczba, po którą się tam wchodzi - i taka,
  * na której pomyłka kosztuje najwięcej: pokazany o jeden dzień za mało zabiera
  * passę, której nikt nie zerwał.
  *
@@ -14,7 +14,7 @@ import { BREATH_CYCLE, bestStreak, breathPhase, cleanBand, crisisStepAt, dayCell
 let fails = 0;
 const check = (label, cond, extra = "") => {
   if (!cond) fails++;
-  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
+  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " - " + extra : ""}`);
 };
 
 const ago = (days) => new Date(Date.now() - days * 864e5).toISOString();
@@ -31,7 +31,7 @@ check("bez wpadek liczy od rzucenia", daysClean(vice(10), []) === 10);
 check("świeżo rzucony nałóg to zero dni, nie jeden",
   daysClean(vice(0), []) === 0);
 
-// Wpadka wpisana dziś, ale zdarzona trzy dni temu — licznik idzie od zdarzenia.
+// Wpadka wpisana dziś, ale zdarzona trzy dni temu - licznik idzie od zdarzenia.
 const zWpadka = [
   { kind: "lapse", occurred_at: ago(3), trigger: "stres" },
   { kind: "urge", occurred_at: ago(1), trigger: null },

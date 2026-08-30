@@ -2,11 +2,11 @@
  * Kolejka zapisów na czas braku zasięgu.
  *
  * Siłownia bywa w piwnicy. Zapisana seria nie może zniknąć tylko dlatego, że
- * telefon akurat nie miał zasięgu — więc żądanie, które nie doleciało, ląduje
+ * telefon akurat nie miał zasięgu - więc żądanie, które nie doleciało, ląduje
  * w IndexedDB i wysyła się samo, gdy sieć wróci.
  *
  * IndexedDB, a nie localStorage, bo zapis musi przetrwać zamknięcie karty
- * i zabicie aplikacji przez system — a localStorage jest synchroniczny i
+ * i zabicie aplikacji przez system - a localStorage jest synchroniczny i
  * potrafi się urwać w połowie przy wygaszaniu ekranu.
  */
 
@@ -15,13 +15,13 @@ const DB_VERSION = 1;
 const STORE = "mutations";
 
 export type QueuedMutation = {
-  /** Nadawane przez IndexedDB, rosnące — dzięki temu kolejność jest zachowana. */
+  /** Nadawane przez IndexedDB, rosnące - dzięki temu kolejność jest zachowana. */
   id?: number;
   url: string;
   method: string;
   headers: Record<string, string>;
   body: string | null;
-  /** Nazwa tabeli — tylko do pokazania człowiekowi, co czeka. */
+  /** Nazwa tabeli - tylko do pokazania człowiekowi, co czeka. */
   table: string;
   createdAt: number;
   /** Ile razy próba wysyłki się nie udała z winy sieci. */
@@ -83,7 +83,7 @@ export async function queueLength(): Promise<number> {
   try {
     return await tx<number>("readonly", (store) => store.count());
   } catch {
-    // Prywatne okno albo zablokowane dane witryny — apka ma działać dalej,
+    // Prywatne okno albo zablokowane dane witryny - apka ma działać dalej,
     // tylko bez kolejki. Lepsze niż biały ekran.
     return 0;
   }

@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
-/** Komunikaty Supabase są po angielsku — tłumaczymy te, które user faktycznie zobaczy. */
+/** Komunikaty Supabase są po angielsku - tłumaczymy te, które user faktycznie zobaczy. */
 function translateError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login credentials")) return "Nieprawidłowy e-mail lub hasło.";
-  if (m.includes("email not confirmed")) return "Potwierdź adres e-mail — link jest w skrzynce.";
+  if (m.includes("email not confirmed")) return "Potwierdź adres e-mail - link jest w skrzynce.";
   if (m.includes("user already registered")) return "Konto z tym adresem już istnieje. Zaloguj się.";
   if (m.includes("password should be at least")) return "Hasło musi mieć co najmniej 6 znaków.";
   if (m.includes("unable to validate email")) return "To nie wygląda na poprawny adres e-mail.";
@@ -20,14 +20,14 @@ function translateError(message: string): string {
 
 /**
  * Ekran logowania jest jedynym miejscem, do którego trafia się po wylogowaniu
- * i po wygaśnięciu sesji — więc to tutaj czyścimy zapamiętane strony.
+ * i po wygaśnięciu sesji - więc to tutaj czyścimy zapamiętane strony.
  * Zostawały tam pulpity i dzienniki konkretnej osoby, a na telefon zagląda
  * czasem ktoś jeszcze.
  */
 function useClearedOfflineCache() {
   useEffect(() => {
     // Przez `ready`, a nie przez `controller`. Ten drugi bywa null przez chwilę
-    // po twardym odświeżeniu i zaraz po aktualizacji workera — a wtedy
+    // po twardym odświeżeniu i zaraz po aktualizacji workera - a wtedy
     // wiadomość przepadała bez śladu i zapamiętane strony poprzedniej osoby
     // zostawały na telefonie. Cichy brak, dokładnie w momencie, w którym
     // czyszczenie jest potrzebne.
@@ -42,7 +42,7 @@ function useClearedOfflineCache() {
 /**
  * Wersja regulaminu, na którą zgadza się nowe konto.
  *
- * Numer, a nie samo „tak": przy zmianie dokumentów trzeba wiedzieć, kto widział
+ * Numer, a nie samo "tak": przy zmianie dokumentów trzeba wiedzieć, kto widział
  * którą wersję i kogo zapytać ponownie.
  */
 const TERMS_VERSION = 1;
@@ -76,7 +76,7 @@ export function LoginForm() {
         if (error) throw error;
 
         // Na rejestrację istniejącego adresu Supabase odpowiada udawanym sukcesem
-        // (żeby nie dało się sprawdzać, kto ma konto) — poznajemy to po pustej
+        // (żeby nie dało się sprawdzać, kto ma konto) - poznajemy to po pustej
         // liście tożsamości. Bez tego kazalibyśmy czekać na maila, którego nikt
         // nie wysłał.
         if (data.user && data.user.identities?.length === 0) {
@@ -158,7 +158,7 @@ export function LoginForm() {
 
           {/*
             Osobna zgoda, bo sen, ból, kontuzje i waga to dane szczególnej
-            kategorii (art. 9 RODO) — nie wolno ich schować w akceptacji
+            kategorii (art. 9 RODO) - nie wolno ich schować w akceptacji
             regulaminu. Bez niej apka działa dalej, tylko bez tych dzienników.
           */}
           <Consent checked={acceptedHealth} onChange={setAcceptedHealth}>
@@ -200,7 +200,7 @@ export function LoginForm() {
 /**
  * Pojedyncza zgoda.
  *
- * Cały wiersz jest klikalny, a pole ma 20 px — zgoda musi być łatwa do
+ * Cały wiersz jest klikalny, a pole ma 20 px - zgoda musi być łatwa do
  * zaznaczenia świadomie i trudna do zaznaczenia przypadkiem, dlatego nic tu
  * nie jest domyślnie włączone.
  */

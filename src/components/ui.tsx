@@ -356,7 +356,7 @@ export function Alert({
  *
  * Naiwne `onChange={e => set(Number(e.target.value) || 60)}` wygląda niewinnie,
  * a uniemożliwia wpisanie czegokolwiek: skasowanie treści daje pusty string,
- * Number("") to 0, a 0 jest fałszywe — więc w polu natychmiast ląduje z
+ * Number("") to 0, a 0 jest fałszywe - więc w polu natychmiast ląduje z
  * powrotem 60. Człowiek widzi wartość, której nie potrafi usunąć.
  *
  * Dlatego w trakcie pisania trzymamy dokładnie to, co zostało wpisane (draft),
@@ -430,10 +430,10 @@ export function NumberField({
 /* ---------------------------------- Toast --------------------------------- */
 
 /**
- * Potwierdzenie „zapisano", które samo znika.
+ * Potwierdzenie "zapisano", które samo znika.
  *
  * Zapis, po którym nic się nie rusza, wygląda dokładnie tak samo jak zapis,
- * który się nie udał — więc człowiek klika drugi raz albo wychodzi z ekranu
+ * który się nie udał - więc człowiek klika drugi raz albo wychodzi z ekranu
  * niepewny, czy jego cele zostały zapamiętane. Ten pasek jest jedyną różnicą
  * między tymi dwoma stanami.
  *
@@ -491,7 +491,7 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={clsx("animate-pulse rounded-lg bg-surface-2", className)} />;
 }
 
-/** Zastępnik całego ekranu — nagłówek i kilka kart. */
+/** Zastępnik całego ekranu - nagłówek i kilka kart. */
 export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
   return (
     <div className="flex flex-col gap-4" role="status" aria-label="Wczytywanie">
@@ -508,7 +508,7 @@ export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
           <Skeleton className="mt-3 h-20 w-full" />
         </div>
       ))}
-      <span className="sr-only">Wczytywanie…</span>
+      <span className="sr-only">Wczytywanie...</span>
     </div>
   );
 }
@@ -516,8 +516,8 @@ export function ScreenSkeleton({ cards = 3 }: { cards?: number }) {
 /* ----------------------------- Pierścień postępu --------------------------- */
 
 /**
- * Kołowy wskaźnik „ile z ilu”. Liczba w środku jest nośnikiem informacji,
- * pierścień tylko ją wzmacnia — dzięki temu działa też przy daltonizmie
+ * Kołowy wskaźnik "ile z ilu". Liczba w środku jest nośnikiem informacji,
+ * pierścień tylko ją wzmacnia - dzięki temu działa też przy daltonizmie
  * i w trybie wysokiego kontrastu.
  */
 export function ProgressRing({
@@ -578,9 +578,9 @@ export function ProgressRing({
 /* ------------------------------ Pierścień oceny ---------------------------- */
 
 /**
- * Wynik 0–100 w pierścieniu. W odróżnieniu od ProgressRing kolor przychodzi
- * z zewnątrz — sen i Health Score używają palety statusów, więc kolor niesie
- * stan („słaba noc"), a nie wielkość. Liczba w środku i podpis pod nią są
+ * Wynik 0-100 w pierścieniu. W odróżnieniu od ProgressRing kolor przychodzi
+ * z zewnątrz - sen i Health Score używają palety statusów, więc kolor niesie
+ * stan ("słaba noc"), a nie wielkość. Liczba w środku i podpis pod nią są
  * właściwym nośnikiem informacji; kolor tylko je wzmacnia.
  */
 export function ScoreRing({

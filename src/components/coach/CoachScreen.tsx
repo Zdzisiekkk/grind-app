@@ -9,7 +9,7 @@ import { humanDate } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
 import type { AiBudzetStan, CoachMessage, CoachProposal } from "@/lib/database.types";
 
-/** Co się z radą stało. „Nieaktualna" znaczy: przyszła nowsza analiza. */
+/** Co się z radą stało. "Nieaktualna" znaczy: przyszła nowsza analiza. */
 const PAST_LABEL: Record<CoachProposal["status"], string> = {
   pending: "czeka",
   accepted: "zastosowana",
@@ -84,7 +84,7 @@ export function CoachScreen({
           <EmptyState
             icon="✨"
             title="To jest część wersji płatnej"
-            description="Trener patrzy na Twoje treningi, dietę, sen i kontuzje naraz, mówi, co konkretnie stoi w miejscu, i proponuje jedną zmianę. Wykrywanie problemów działa na Twoich liczbach — dostęp dotyczy wyjaśnień i propozycji."
+            description="Trener patrzy na Twoje treningi, dietę, sen i kontuzje naraz, mówi, co konkretnie stoi w miejscu, i proponuje jedną zmianę. Wykrywanie problemów działa na Twoich liczbach - dostęp dotyczy wyjaśnień i propozycji."
             action={
               <Link href="/subskrypcja">
                 <Button variant="primary" size="lg">
@@ -103,7 +103,7 @@ export function CoachScreen({
   /*
    * Dwa limity naraz i oba mogą zamknąć trenera, ale mówią o czym innym.
    * Dzienny odnawia się jutro, miesięczny dopiero pierwszego. Wspólny komunikat
-   * „limit wyczerpany" kazałby zgadywać, na kiedy właściwie wracać.
+   * "limit wyczerpany" kazałby zgadywać, na kiedy właściwie wracać.
    */
   const bezBudzetu = budzet ? !budzet.bez_limitu && Number(budzet.zostalo_pln) <= 0 : false;
   const zablokowany = left === 0 || bezBudzetu;
@@ -115,7 +115,7 @@ export function CoachScreen({
         <div>
           <h1 className="text-2xl font-bold leading-tight">Trener AI</h1>
           <p className="text-[13px] text-muted">
-            Proponuje. Decydujesz Ty — nic nie zmienia się samo.
+            Proponuje. Decydujesz Ty - nic nie zmienia się samo.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -141,7 +141,7 @@ export function CoachScreen({
       )}
       {bezBudzetu && (
         <Alert tone="warn">
-          Miesięczny limit {zl(budzet!.limit_pln)} na AI jest wyczerpany — w tym miesiącu poszło{" "}
+          Miesięczny limit {zl(budzet!.limit_pln)} na AI jest wyczerpany - w tym miesiącu poszło{" "}
           {zl(budzet!.wydano_pln)} przez {budzet!.wywolan} wywołań. Budżet odnowi się pierwszego
           dnia przyszłego miesiąca. Reszta aplikacji działa normalnie: wykrywanie stagnacji,
           liczenie diety i statystyki liczą się u Ciebie, bez modelu.
@@ -247,7 +247,7 @@ export function CoachScreen({
             ))}
           </ul>
           <p className="border-t border-border px-4 py-3 text-[12px] text-faint">
-            Rada, która przestała być aktualna, nie znika — dopiero zestawienie jej z tym, co
+            Rada, która przestała być aktualna, nie znika - dopiero zestawienie jej z tym, co
             potem zrobiła waga i objętość, mówi, czy trener miał rację.
           </p>
         </details>

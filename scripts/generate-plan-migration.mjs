@@ -3,9 +3,9 @@
  *
  *   node scripts/generate-plan-migration.mjs <plik.json> <plik-wyjsciowy.sql>
  *
- * Treść planu przepisujemy dosłownie — nazwy, kolejność, serie, powtórzenia i
+ * Treść planu przepisujemy dosłownie - nazwy, kolejność, serie, powtórzenia i
  * opisy techniki trafiają do bazy bez zmian. Tożsamością ćwiczenia jest
- * `icon_key`; warianty tej samej pozycji (np. „(z impetem)") wskazują na tę samą
+ * `icon_key`; warianty tej samej pozycji (np. "(z impetem)") wskazują na tę samą
  * pozycję katalogu, a różnica w nazwie ląduje w `name_override` slotu planu.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -19,7 +19,7 @@ if (!inputPath || !outputPath) {
 const plan = JSON.parse(readFileSync(inputPath, "utf8"));
 
 /* ------------------------------------------------------------------ */
-/* Metryka logowania — decyduje, jakie pola pokazuje formularz serii.   */
+/* Metryka logowania - decyduje, jakie pola pokazuje formularz serii.   */
 /* ------------------------------------------------------------------ */
 const TIME = new Set([
   "plank", "side_plank", "dead_hang", "deep_squat_hold", "shadowbox", "jump_rope",
@@ -35,7 +35,7 @@ const REPS = new Set([
 const DISTANCE = new Set(["farmers_walk"]);
 
 /**
- * Wyjątki po nazwie — w źródłowym pliku jeden icon_key bywa przypisany do
+ * Wyjątki po nazwie - w źródłowym pliku jeden icon_key bywa przypisany do
  * dwóch różnych ćwiczeń, więc sama ikona nie wystarcza do wyboru metryki.
  */
 const METRIC_BY_NAME = {
@@ -50,7 +50,7 @@ function metricFor(iconKey, name) {
   return "weight_reps";
 }
 
-/** Jak dobrze nazwa pasuje do klucza ikony — rozstrzyga, kto dostaje bazowy slug. */
+/** Jak dobrze nazwa pasuje do klucza ikony - rozstrzyga, kto dostaje bazowy slug. */
 function iconAffinity(iconKey, name) {
   const words = new Set(
     name
@@ -68,10 +68,10 @@ function iconAffinity(iconKey, name) {
 const q = (v) =>
   v === null || v === undefined || v === "" ? "null" : `'${String(v).replace(/'/g, "''")}'`;
 
-/** „Dzień B (opcjonalnie)" → „Dzień B” — do rozpoznania wariantów tej samej pozycji. */
+/** "Dzień B (opcjonalnie)" → "Dzień B" - do rozpoznania wariantów tej samej pozycji. */
 const baseName = (name) => name.replace(/\s*\([^)]*\)\s*$/, "").trim();
 
-/** „4x6-8" → { sets: 4, reps: „6-8" }; „2 rundy/nogę" → { sets: null, note }. */
+/** "4x6-8" → { sets: 4, reps: "6-8" }; "2 rundy/nogę" → { sets: null, note }. */
 function parseSetsReps(raw) {
   if (!raw) return { sets: null, reps: null, note: null };
   const m = /^(\d+)\s*[xX×]\s*(.+)$/.exec(raw.trim());
@@ -86,7 +86,7 @@ const DAY_TYPE = {
   mma_specific: "mma",
 };
 
-/** Dni obciążające nogi — po nich apka pyta o ból kontuzji. */
+/** Dni obciążające nogi - po nich apka pyta o ból kontuzji. */
 const TRACKS_PAIN = new Set(["faza1_dzien_a", "faza1_dzien_b", "faza2_dol"]);
 
 /* ------------------------------------------------------------------ */
@@ -111,7 +111,7 @@ for (const phase of plan.phases) {
   }
 }
 
-// Rozciąganie od fizjoterapeuty — osobny dzień, na czas, bez ciężaru.
+// Rozciąganie od fizjoterapeuty - osobny dzień, na czas, bez ciężaru.
 const rehabGroups = [
   ["czworogłowy", "czworogłowy uda"],
   ["dwugłowy", "dwugłowy uda"],
@@ -163,7 +163,7 @@ for (const day of days) {
   }
 }
 
-// Slug: icon_key, a przy kolizji dwóch różnych ćwiczeń — z przyrostkiem.
+// Slug: icon_key, a przy kolizji dwóch różnych ćwiczeń - z przyrostkiem.
 const byIcon = new Map();
 for (const item of catalog.values()) {
   const list = byIcon.get(item.iconKey) ?? [];
@@ -206,10 +206,10 @@ const out = [];
 const w = (line = "") => out.push(line);
 
 w("-- ============================================================");
-w("-- Grind — Migracja 0007: plan treningowy właściciela aplikacji");
+w("-- Grind - Migracja 0007: plan treningowy właściciela aplikacji");
 w("--");
 w("-- Wygenerowane z plan_treningowy.json przez");
-w("-- scripts/generate-plan-migration.mjs — nie edytuj ręcznie,");
+w("-- scripts/generate-plan-migration.mjs - nie edytuj ręcznie,");
 w("-- popraw źródłowy JSON i wygeneruj ponownie.");
 w("--");
 w(`-- Zawartość: ${days.length} dni, ${days.reduce((s, d) => s + d.exercises.length, 0)} pozycji,`);
@@ -238,13 +238,13 @@ w("-- Istniejące pozycje dostają icon_key, ale nie nadpisujemy ich opisów.");
 w("-- ---------------------------------------------------------------");
 
 for (const item of catalog.values()) {
-  // Szukamy po każdej nazwie użytej w planie ORAZ po nazwie bazowej — katalog
-  // trzyma „Martwy ciąg sztangą", a plan pisze „Martwy ciąg sztangą (opcjonalnie)".
+  // Szukamy po każdej nazwie użytej w planie ORAZ po nazwie bazowej - katalog
+  // trzyma "Martwy ciąg sztangą", a plan pisze "Martwy ciąg sztangą (opcjonalnie)".
   const names = [...new Set([item.name, ...item.allNames])];
   w();
   w(`  -- ${item.name}`);
-  // Szukamy po nazwie, a gdy to nie trafia — po slugu. Katalog bywa opisany
-  // szerzej niż plan („Plank (deska)" kontra „Plank"), więc sama nazwa nie wystarcza.
+  // Szukamy po nazwie, a gdy to nie trafia - po slugu. Katalog bywa opisany
+  // szerzej niż plan ("Plank (deska)" kontra "Plank"), więc sama nazwa nie wystarcza.
   w("  select id into v_cat from public.exercise_catalog");
   w(`   where user_id is null and (name in (${names.map(q).join(", ")}) or slug = ${q(item.slug)})`);
   w(`   order by (name in (${names.map(q).join(", ")})) desc limit 1;`);
@@ -269,7 +269,7 @@ for (const item of catalog.values()) {
 
 w();
 w("-- ---------------------------------------------------------------");
-w("-- Plan jako publiczny szablon — kopiowalny przez każdego.");
+w("-- Plan jako publiczny szablon - kopiowalny przez każdego.");
 w("-- ---------------------------------------------------------------");
 w(`  select id into v_plan from public.plans`);
 w(`   where user_id is null and is_template and name = ${q(meta.title)} limit 1;`);
@@ -319,7 +319,7 @@ phases.forEach((phase, phaseIndex) => {
       const item = catalog.get(`${e.icon_key}::${base}`);
       const { sets, reps, note } = parseSetsReps(e.target_sets_reps);
       // Nazwę z planu zapisujemy zawsze, nie tylko przy wariantach. Pozycja
-      // katalogu może nazywać się inaczej („Plank (deska)" kontra „Plank"),
+      // katalogu może nazywać się inaczej ("Plank (deska)" kontra "Plank"),
       // a w planie ma być dokładnie to, co napisał autor.
       const override = e.name;
 
@@ -345,7 +345,7 @@ phases.forEach((phase, phaseIndex) => {
 
 w();
 w("-- ---------------------------------------------------------------");
-w("-- Szablon odtworzony wcześniej ze specyfikacji przestaje być publiczny —");
+w("-- Szablon odtworzony wcześniej ze specyfikacji przestaje być publiczny -");
 w("-- zastępuje go plan z tego pliku. Nie kasujemy go, żeby nie zabrać planu");
 w("-- nikomu, kto zdążył go skopiować.");
 w("-- ---------------------------------------------------------------");
@@ -422,7 +422,7 @@ console.log(`  pozycji:  ${days.reduce((s, d) => s + d.exercises.length, 0)}`);
 console.log(`  katalog:  ${catalog.size} ćwiczeń`);
 for (const [icon, list] of byIcon) {
   if (list.length > 1) {
-    console.log(`  uwaga: icon_key "${icon}" wskazuje na ${list.length} różne ćwiczenia — rozdzielone:`);
+    console.log(`  uwaga: icon_key "${icon}" wskazuje na ${list.length} różne ćwiczenia - rozdzielone:`);
     list.forEach((i) => console.log(`         ${i.slug} → ${i.name}`));
   }
 }

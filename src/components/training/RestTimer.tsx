@@ -7,7 +7,7 @@ import { clsx } from "@/lib/clsx";
 /**
  * Odliczanie przerwy między seriami.
  * Startuje samo po zapisaniu serii; pływa nad dolną nawigacją.
- * Liczy od znacznika czasu, a nie przez zliczanie tyknięć — dzięki temu
+ * Liczy od znacznika czasu, a nie przez zliczanie tyknięć - dzięki temu
  * nie gubi sekund, gdy telefon uśpi kartę w tle.
  */
 export function RestTimer({

@@ -24,7 +24,7 @@ export type OnboardingInput = {
  * Zamknięcie kreatora: profil, cele, pierwszy pomiar wagi i kopia planu.
  *
  * Wszystko jednym strzałem po stronie serwera, bo to moment, w którym
- * człowiek jest najbardziej niecierpliwy — cztery osobne zapytania z
+ * człowiek jest najbardziej niecierpliwy - cztery osobne zapytania z
  * przeglądarki dawałyby cztery okazje do zawiśnięcia w połowie.
  */
 export async function finishOnboarding(input: OnboardingInput): Promise<void> {
@@ -80,8 +80,8 @@ export async function finishOnboarding(input: OnboardingInput): Promise<void> {
       p_new_name: null,
       p_activate: true,
     });
-    // Brak planu nie może zablokować wejścia do aplikacji — resztę już mamy
-    // zapisaną, a plan da się wybrać później z zakładki „Plany".
+    // Brak planu nie może zablokować wejścia do aplikacji - resztę już mamy
+    // zapisaną, a plan da się wybrać później z zakładki "Plany".
     if (planError) console.error("clone_plan przy kreatorze:", planError.message);
   }
 
@@ -89,7 +89,7 @@ export async function finishOnboarding(input: OnboardingInput): Promise<void> {
   redirect("/");
 }
 
-/** „Pomiń" — zapisujemy tylko fakt przejścia, żeby kreator nie wracał. */
+/** "Pomiń" - zapisujemy tylko fakt przejścia, żeby kreator nie wracał. */
 export async function skipOnboarding(): Promise<void> {
   const supabase = await createClient();
   const {

@@ -5,7 +5,7 @@ import { z } from "zod";
  *
  * Limity długości i liczby elementów są tu twarde, bo to jedyne miejsce, które
  * powstrzymuje model przed napisaniem eseju. Ekran ma zmieścić się na telefonie
- * i dać się przeczytać w minutę — plan z dwunastoma zaleceniami nie zostanie
+ * i dać się przeczytać w minutę - plan z dwunastoma zaleceniami nie zostanie
  * wykonany ani razu, więc jest wart mniej niż plan z trzema.
  */
 
@@ -23,7 +23,7 @@ export const PODOCENA_KLUCZE = [
 
 export type PodocenaKlucz = (typeof PODOCENA_KLUCZE)[number];
 
-/** Etykiety po polsku — trzymane osobno, żeby ekran nie mapował kluczy ręcznie. */
+/** Etykiety po polsku - trzymane osobno, żeby ekran nie mapował kluczy ręcznie. */
 export const PODOCENA_ETYKIETA: Record<PodocenaKlucz, string> = {
   skora: "Skóra",
   symetria: "Symetria",
@@ -89,7 +89,7 @@ const ZalecenieSchema = z.object({
   /*
    * Klucz rutyny albo protokołu, pod którym zalecenie ląduje w codziennej
    * liście. Bez niego każdy skan dokładałby nową rutynę prawie taką samą jak
-   * poprzednia — po pół roku wieczór miałby dwadzieścia pozycji.
+   * poprzednia - po pół roku wieczór miałby dwadzieścia pozycji.
    */
   klucz: z
     .string()
@@ -103,7 +103,7 @@ export const WygladAnalysisSchema = z.object({
   podsumowanie: z
     .string()
     .max(500)
-    .describe("3–4 zdania. Rzeczowo, bez komplementów i bez straszenia."),
+    .describe("3-4 zdania. Rzeczowo, bez komplementów i bez straszenia."),
   podoceny: z.array(PodocenaSchema).min(3).max(9),
   mocne_strony: z.array(z.string().max(120)).max(3),
   plan: z.array(ZalecenieSchema).min(3).max(6).describe("Uszeregowane po priorytecie."),

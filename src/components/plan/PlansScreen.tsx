@@ -117,7 +117,7 @@ export function PlansScreen({
                   <Button
                     variant="ghost"
                     onClick={() => {
-                      if (confirm(`Usunąć plan „${plan.name}”? Zapisane treningi zostaną nietknięte.`))
+                      if (confirm(`Usunąć plan "${plan.name}"? Zapisane treningi zostaną nietknięte.`))
                         remove(plan.id);
                     }}
                     aria-label="Usuń plan"
@@ -213,7 +213,7 @@ function NewPlanSheet({
     <Sheet open={open} onClose={onClose} title="Nowy plan">
       <form onSubmit={create} className="flex flex-col gap-3">
         <Field label="Nazwa planu">
-          <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Siła i MMA — jesień" />
+          <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Siła i MMA - jesień" />
         </Field>
         <Field label="Cel (opcjonalnie)">
           <Textarea value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="Co chcesz osiągnąć?" />

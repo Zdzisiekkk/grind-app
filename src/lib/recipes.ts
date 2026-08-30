@@ -4,9 +4,9 @@ import type { MealEntry, RecipeItem, RecipeTotals } from "@/lib/database.types";
  * Przepis zachowuje się jak zwykły produkt.
  *
  * Dzięki temu dodanie własnego dania do posiłku idzie DOKŁADNIE tą samą drogą
- * co dodanie czegokolwiek innego — bez osobnej ścieżki zapisu, osobnych błędów
+ * co dodanie czegokolwiek innego - bez osobnej ścieżki zapisu, osobnych błędów
  * i osobnego kodu do utrzymania. W dzienniku pojawia się jedna pozycja
- * („Owsianka moja 350 g"), a nie cztery linijki składników.
+ * ("Owsianka moja 350 g"), a nie cztery linijki składników.
  */
 export function recipeAsFood(totals: RecipeTotals) {
   return {

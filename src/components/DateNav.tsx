@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { addDaysISO, humanDate, longDate, todayISO } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
 
-/** Przełącznik dnia: ‹ wczoraj — dzisiaj — jutro › plus skok do dowolnej daty. */
+/** Przełącznik dnia: ‹ wczoraj - dzisiaj - jutro › plus skok do dowolnej daty. */
 export function DateNav({ date, basePath }: { date: string; basePath: string }) {
   const router = useRouter();
   const isToday = date === todayISO();

@@ -17,7 +17,7 @@ function streakOf(habit: Habit, counts: Map<string, number>, today: string): num
     if (!habitDueOn(habit.days_of_week, date)) continue;
     const done = (counts.get(date) ?? 0) >= habit.target_per_day;
     if (!done) {
-      // Dzisiejszy brak jeszcze nie zrywa serii — dzień się nie skończył.
+      // Dzisiejszy brak jeszcze nie zrywa serii - dzień się nie skończył.
       if (i === 0) continue;
       break;
     }
@@ -26,7 +26,7 @@ function streakOf(habit: Habit, counts: Map<string, number>, today: string): num
   return streak;
 }
 
-/** Najdłuższa passa w całej historii — rekord do pobicia. */
+/** Najdłuższa passa w całej historii - rekord do pobicia. */
 function bestStreakOf(habit: Habit, counts: Map<string, number>, today: string): number {
   let best = 0;
   let run = 0;
@@ -45,7 +45,7 @@ function bestStreakOf(habit: Habit, counts: Map<string, number>, today: string):
 
 /**
  * Passa całego dnia: ile dni z rzędu domknąłeś wszystko, co było na liście.
- * To jest liczba, którą widać na górze ekranu — nagradza konsekwencję
+ * To jest liczba, którą widać na górze ekranu - nagradza konsekwencję
  * w całości, a nie w pojedynczym nawyku.
  */
 function perfectDayStreak(
@@ -141,7 +141,7 @@ export default async function HabitsPage() {
     .order("updated_at", { ascending: false })
     .limit(1);
 
-  // Nałogi mają własny ekran — tutaj potrzebny jest tylko skrót: ile ich jest
+  // Nałogi mają własny ekran - tutaj potrzebny jest tylko skrót: ile ich jest
   // i najdłuższa trwająca passa, żeby kafelek mówił coś konkretnego.
   const [{ data: vices }, { data: viceEvents }] = await Promise.all([
     supabase.from("vices").select("*").eq("user_id", user.id).eq("is_archived", false),

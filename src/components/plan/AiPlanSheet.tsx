@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Chip, Field, NumberField, SegmentedControl, Select, Sheet, Spinner, Textarea } from "@/components/ui";
 import { EQUIPMENT_OPTIONS } from "@/lib/ai/planOptions";
-// Same typy — `import type` znika przy kompilacji, więc zod nie jedzie do przeglądarki.
+// Same typy - `import type` znika przy kompilacji, więc zod nie jedzie do przeglądarki.
 import type { AiPlan, PlanRequest } from "@/lib/ai/planSchema";
 import { DAY_TYPE_LABEL } from "@/lib/constants";
 import { clsx } from "@/lib/clsx";
@@ -47,15 +47,15 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
         // Bez tego wygasła sesja kończy się przekierowaniem na stronę
-        // logowania, a jej HTML wywala JSON.parse — i awaria uwierzytelnienia
+        // logowania, a jej HTML wywala JSON.parse - i awaria uwierzytelnienia
         // udaje brak internetu.
         redirect: "manual",
       });
 
       // Odpowiedź nie zawsze jest JSON-em: przerwane wdrożenie albo limit
       // czasu funkcji oddają stronę błędu Vercela. Wcześniej każdy taki
-      // przypadek pokazywał „brak połączenia", co kierowało szukanie w złą
-      // stronę — teraz mówimy, co się naprawdę stało.
+      // przypadek pokazywał "brak połączenia", co kierowało szukanie w złą
+      // stronę - teraz mówimy, co się naprawdę stało.
       const json = await res.json().catch(() => null);
 
       if (!res.ok || !json) {
@@ -118,9 +118,9 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
       {stage === "loading" && (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <Spinner className="size-7" />
-          <p className="font-semibold">Układam plan…</p>
+          <p className="font-semibold">Układam plan...</p>
           <p className="max-w-xs text-[13px] text-muted">
-            To potrafi zająć nawet minutę — model przegląda cały katalog ćwiczeń i dopasowuje
+            To potrafi zająć nawet minutę - model przegląda cały katalog ćwiczeń i dopasowuje
             objętość do Twoich ograniczeń.
           </p>
         </div>
@@ -195,7 +195,7 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
 
           <Field
             label="Kontuzje i ograniczenia"
-            hint="AI nie zastąpi fizjoterapeuty — plan przy kontuzji skonsultuj ze specjalistą."
+            hint="AI nie zastąpi fizjoterapeuty - plan przy kontuzji skonsultuj ze specjalistą."
           >
             <Textarea
               value={form.limitations}
@@ -272,7 +272,7 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
 /**
  * Komunikat dla odpowiedzi, która nie była JSON-em.
  *
- * Status mówi więcej niż „coś poszło nie tak": inaczej reaguje się na wygasłą
+ * Status mówi więcej niż "coś poszło nie tak": inaczej reaguje się na wygasłą
  * sesję, inaczej na trwające wdrożenie, a inaczej na plan, który liczył się
  * zbyt długo.
  */
@@ -281,7 +281,7 @@ function serverProblem(status: number): string {
     return "Twoja sesja wygasła. Odśwież stronę i zaloguj się ponownie.";
   }
   if (status === 504 || status === 408) {
-    return "Układanie planu trwało zbyt długo. Spróbuj ponownie — zwykle udaje się za drugim razem.";
+    return "Układanie planu trwało zbyt długo. Spróbuj ponownie - zwykle udaje się za drugim razem.";
   }
   if (status >= 500) {
     return "Serwer chwilowo nie odpowiada. Jeśli trwa wdrożenie nowej wersji, poczekaj minutę.";

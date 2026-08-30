@@ -104,7 +104,7 @@ export function StrengthChart({
   mode,
 }: {
   data: StrengthPoint[];
-  /** „weight” = najcięższa seria dnia, „e1rm” = szacowany rekord na 1 powtórzenie */
+  /** "weight" = najcięższa seria dnia, "e1rm" = szacowany rekord na 1 powtórzenie */
   mode: "weight" | "e1rm";
 }) {
   const c = useVizColors();
@@ -166,7 +166,7 @@ export function BodyWeightChart({ data }: { data: { date: string; weight: number
     <ChartFrame
       isEmpty={data.length < 1}
       emptyTitle="Brak pomiarów wagi"
-      emptyDescription="Dodaj wagę w profilu — wystarczy raz na kilka dni, żeby zobaczyć trend."
+      emptyDescription="Dodaj wagę w profilu - wystarczy raz na kilka dni, żeby zobaczyć trend."
     >
       <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
         <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
@@ -205,7 +205,7 @@ export function BodyWeightChart({ data }: { data: { date: string; weight: number
 
 /**
  * Ból to stan (dobrze → krytycznie), nie zwykła wielkość, więc słupki noszą
- * kolory palety statusów — zawsze z legendą opisową obok, nigdy sam kolor.
+ * kolory palety statusów - zawsze z legendą opisową obok, nigdy sam kolor.
  */
 export function PainChart({ data }: { data: { date: string; level: number }[] }) {
   const c = useVizColors();
@@ -222,7 +222,7 @@ export function PainChart({ data }: { data: { date: string; level: number }[] })
       <ChartFrame
         isEmpty={data.length < 1}
         emptyTitle="Brak ocen bólu"
-        emptyDescription="Po treningu apka poprosi Cię o ocenę w skali 0–10."
+        emptyDescription="Po treningu apka poprosi Cię o ocenę w skali 0-10."
       >
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -28 }} barCategoryGap="20%">
           <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
@@ -333,7 +333,7 @@ export type SleepPoint = { date: string; minutes: number; score: number };
 
 /**
  * Długość snu. Słupek to wielkość (ile godzin), ale jego kolor to stan
- * (ocena całej nocy) — dlatego bierze go z palety statusów, a nie z serii,
+ * (ocena całej nocy) - dlatego bierze go z palety statusów, a nie z serii,
  * i zawsze idzie w parze z legendą opisową pod wykresem.
  */
 export function SleepChart({ data, goalMin }: { data: SleepPoint[]; goalMin: number }) {
@@ -349,7 +349,7 @@ export function SleepChart({ data, goalMin }: { data: SleepPoint[]; goalMin: num
       <ChartFrame
         isEmpty={data.length < 1}
         emptyTitle="Brak zapisanych nocy"
-        emptyDescription="Wystarczy godzina położenia się i pobudki — resztę pól możesz pominąć."
+        emptyDescription="Wystarczy godzina położenia się i pobudki - resztę pól możesz pominąć."
       >
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -20 }} barCategoryGap="20%">
           <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
@@ -400,7 +400,7 @@ export function SleepChart({ data, goalMin }: { data: SleepPoint[]; goalMin: num
   );
 }
 
-/** Sam wynik w czasie — jedna seria, więc bez legendy: tytuł karty ją nazywa. */
+/** Sam wynik w czasie - jedna seria, więc bez legendy: tytuł karty ją nazywa. */
 export function SleepScoreChart({ data }: { data: SleepPoint[] }) {
   const c = useVizColors();
   const tipRows: TooltipRows = (p) => [
@@ -457,7 +457,7 @@ export function SleepScoreChart({ data }: { data: SleepPoint[] }) {
 /* --------------------------------- Nałogi --------------------------------- */
 
 export type VicePoint = {
-  /** Etykieta tygodnia, np. „12–18 sie". */
+  /** Etykieta tygodnia, np. "12-18 sie". */
   label: string;
   /** Ile dni w tym tygodniu było czystych. */
   clean: number;
@@ -471,7 +471,7 @@ export type VicePoint = {
  * Czyste dni tydzień po tygodniu.
  *
  * Słupek mówi, ile dni się utrzymało; kolor mówi, czy w tym tygodniu była
- * wpadka — dwie różne informacje, dwa różne kanały, więc nie trzeba czytać
+ * wpadka - dwie różne informacje, dwa różne kanały, więc nie trzeba czytać
  * liczb, żeby zobaczyć, gdzie coś się posypało. Pokonane chęci są w podpowiedzi,
  * bo to jedyna liczba w tej zakładce, która rośnie od porażek: żeby ją
  * powiększyć, trzeba było najpierw poczuć, że się chce.
@@ -493,7 +493,7 @@ export function ViceChart({ data }: { data: VicePoint[] }) {
       <ChartFrame
         isEmpty={data.length === 0}
         emptyTitle="Brak nałogów do pokazania"
-        emptyDescription="Dodaj nałóg w zakładce „Nawyki i nałogi”, a tutaj zobaczysz, jak wyglądały kolejne tygodnie."
+        emptyDescription="Dodaj nałóg w zakładce Nawyki i nałogi, a tutaj zobaczysz, jak wyglądały kolejne tygodnie."
       >
         <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -28 }} barCategoryGap="20%">
           <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />
@@ -549,7 +549,7 @@ export type LooksPoint = {
   date: string;
   ogolna: number | null;
   podocena: number | null;
-  /** Skan z kiepskiego zdjęcia — rysowany pustym punktem, żeby nie mylił. */
+  /** Skan z kiepskiego zdjęcia - rysowany pustym punktem, żeby nie mylił. */
   pewny: boolean;
 };
 
@@ -557,7 +557,7 @@ export type LooksPoint = {
  * Ocena wyglądu w czasie.
  *
  * Dwie serie: ogólna i jedna wybrana podocena. Skany, przy których model sam
- * powiedział, że zdjęcie było za słabe, dostają pusty środek punktu — inaczej
+ * powiedział, że zdjęcie było za słabe, dostają pusty środek punktu - inaczej
  * spadek spowodowany przepaloną klatką wyglądałby na pogorszenie skóry.
  */
 export function LooksChart({
@@ -569,9 +569,9 @@ export function LooksChart({
 }) {
   const c = useVizColors();
   const tipRows: TooltipRows = (p) => [
-    { label: "Ocena ogólna", value: p.ogolna == null ? "—" : `${p.ogolna} / 100` },
+    { label: "Ocena ogólna", value: p.ogolna == null ? "-" : `${p.ogolna} / 100` },
     ...(podocenaLabel
-      ? [{ label: podocenaLabel, value: p.podocena == null ? "—" : `${p.podocena} / 100` }]
+      ? [{ label: podocenaLabel, value: p.podocena == null ? "-" : `${p.podocena} / 100` }]
       : []),
     ...(p.pewny ? [] : [{ label: "Uwaga", value: "słabe zdjęcie" }]),
   ];
@@ -580,7 +580,7 @@ export function LooksChart({
     <ChartFrame
       isEmpty={data.length < 2}
       emptyTitle="Za mało skanów"
-      emptyDescription="Wykres pojawi się po drugim skanie — jeden punkt nie pokazuje żadnej zmiany."
+      emptyDescription="Wykres pojawi się po drugim skanie - jeden punkt nie pokazuje żadnej zmiany."
     >
       <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -20 }}>
         <CartesianGrid stroke={c.grid} strokeDasharray="3 3" vertical={false} />

@@ -10,7 +10,7 @@ import { clsx } from "@/lib/clsx";
  * Rejestruje service workera, pilnuje kolejki zapisów i mówi człowiekowi,
  * na czym stoi.
  *
- * Pasek siedzi nad dolną nawigacją, a nie u góry — na iPhonie górna krawędź
+ * Pasek siedzi nad dolną nawigacją, a nie u góry - na iPhonie górna krawędź
  * to notch i pole minowe, a tutaj jest zawsze widoczny i niczego nie zasłania.
  */
 export function OfflineGate() {
@@ -24,7 +24,7 @@ export function OfflineGate() {
   //
   // W trybie deweloperskim workera NIE MA i mieć nie może. Trzyma on pliki
   // z `/_next/static/` na zawsze, bo w gotowej aplikacji nazwa takiego pliku
-  // zawiera skrót jego treści — inna treść to inna nazwa. Turbopack podczas
+  // zawiera skrót jego treści - inna treść to inna nazwa. Turbopack podczas
   // pracy nazywa je inaczej: ta sama nazwa, co chwilę nowa zawartość. Worker
   // podawał wtedy wczorajszy kawałek kodu do dzisiejszej strony i przeglądarka
   // wywalała się na module, którego już nie ma. Zainstalowanego wcześniej
@@ -47,7 +47,7 @@ export function OfflineGate() {
     }
 
     navigator.serviceWorker.register("/sw.js").catch(() => {
-      /* prywatne okno albo zablokowane — apka działa dalej, tylko online */
+      /* prywatne okno albo zablokowane - apka działa dalej, tylko online */
     });
   }, []);
 
@@ -114,7 +114,7 @@ export function OfflineGate() {
           ⏳
         </span>
         <span className="flex-1">
-          Wysyłam {pending} {plural(pending, "zapis", "zapisy", "zapisów")} zrobione bez zasięgu…
+          Wysyłam {pending} {plural(pending, "zapis", "zapisy", "zapisów")} zrobione bez zasięgu...
         </span>
       </Bar>
     );

@@ -7,7 +7,7 @@ import type { Database } from "@/lib/database.types";
 /**
  * Wysyłka powiadomień w tle.
  *
- * Budzi to pg_cron w Supabase co 15 minut — nie cron Vercela, bo darmowy plan
+ * Budzi to pg_cron w Supabase co 15 minut - nie cron Vercela, bo darmowy plan
  * daje tam JEDNO uruchomienie dziennie, co przy przypomnieniach o wodzie jest
  * bezużyteczne.
  *
@@ -40,7 +40,7 @@ function configured(): boolean {
 
 export async function POST(request: NextRequest) {
   const secret = process.env.PUSH_CRON_SECRET;
-  // Porównanie o stałym czasie nie ma tu sensu — sekret ma 32 losowe bajty,
+  // Porównanie o stałym czasie nie ma tu sensu - sekret ma 32 losowe bajty,
   // a zgadywanie po czasie odpowiedzi przez sieć jest nierealne.
   if (!secret || request.headers.get("x-grind-cron") !== secret) {
     return NextResponse.json({ error: "Nie tędy." }, { status: 401 });
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   //
   // Przy garstce ludzi jedno wielkie Promise.all nie robi różnicy. Przy tysiącu
   // subskrypcji o pełnej godzinie to tysiąc równoczesnych połączeń w funkcji
-  // z limitem 60 sekund — i wtedy nie dochodzi ŻADNE powiadomienie, a nie tylko
+  // z limitem 60 sekund - i wtedy nie dochodzi ŻADNE powiadomienie, a nie tylko
   // te nadmiarowe. Pięćdziesiąt naraz wysyca łącze i zostawia zapas czasu.
   for (let i = 0; i < due.length; i += BATCH) {
     await Promise.all(
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           sent++;
           ok.push(item.endpoint);
         } catch (e) {
-          // 404 i 410 znaczą, że subskrypcja już nie istnieje — najczęściej ktoś
+          // 404 i 410 znaczą, że subskrypcja już nie istnieje - najczęściej ktoś
           // odinstalował aplikację. Trzymanie takiego wpisu to wysyłanie w próżnię.
           const status = (e as { statusCode?: number }).statusCode;
           if (status === 404 || status === 410) {

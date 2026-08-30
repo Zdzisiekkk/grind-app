@@ -18,7 +18,7 @@ export async function createClient() {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Server Component nie może zapisywać ciasteczek — odświeżeniem sesji
+          // Server Component nie może zapisywać ciasteczek - odświeżeniem sesji
           // zajmuje się proxy (src/proxy.ts), więc można to bezpiecznie zignorować.
         }
       },

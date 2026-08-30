@@ -12,7 +12,7 @@ import type { MealEntry } from "@/lib/database.types";
 const ICONS = ["🍲", "🥣", "🍛", "🥗", "🍝", "🥪", "🍳", "🥤", "🍰", "🥩"] as const;
 
 /**
- * „Zapisz jako moje danie" — zamienia to, co masz już wpisane, w przepis.
+ * "Zapisz jako moje danie" - zamienia to, co masz już wpisane, w przepis.
  *
  * To jest tańsza droga do własnego dania niż układanie go od zera: i tak
  * właśnie zważyłeś składniki, więc szkoda tej pracy. Ułożenie przepisu

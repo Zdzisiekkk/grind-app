@@ -107,10 +107,10 @@ export default async function DashboardPage() {
       .order("due_date")
       .limit(5),
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -6), p_to: today }),
-    // Poprzedni taki sam tydzień — tylko po to, żeby przy wyniku dało się
+    // Poprzedni taki sam tydzień - tylko po to, żeby przy wyniku dało się
     // pokazać kierunek zmiany. Bez tego liczba nic nie mówi.
     supabase.rpc("period_summary", { p_from: addDaysISO(today, -13), p_to: addDaysISO(today, -7) }),
-    // 21 dni: 7 wchodzi do wyniku, reszta wyznacza „Twoją zwykłą porę snu”.
+    // 21 dni: 7 wchodzi do wyniku, reszta wyznacza "Twoją zwykłą porę snu".
     supabase
       .from("v_sleep")
       .select("*")
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(3),
     supabase.from("plans").select("name").eq("user_id", user.id).eq("is_active", true).maybeSingle(),
-    // Wygląd: sam wynik i data. Kafelek ma powiedzieć „kiedy ostatnio" —
+    // Wygląd: sam wynik i data. Kafelek ma powiedzieć "kiedy ostatnio" -
     // reszta raportu i tak nie zmieści się na pulpicie.
     supabase
       .from("wyglad_skany")
@@ -195,8 +195,8 @@ export default async function DashboardPage() {
 
   const health = summary ? healthScore({ summary, sleepScores: weekNightScores, goals }) : null;
 
-  // Ten sam rachunek dla poprzedniego tygodnia — sam wynik bez kierunku
-  // niewiele mówi, a „+6 pkt" już tak.
+  // Ten sam rachunek dla poprzedniego tygodnia - sam wynik bez kierunku
+  // niewiele mówi, a "+6 pkt" już tak.
   const prevHealth = prevSummary
     ? healthScore({
         summary: prevSummary as PeriodSummary,
@@ -263,7 +263,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-[14px] text-muted">
-              Skan twarzy pokazuje, co da się poprawić pielęgnacją, postawą i snem — i co z tego
+              Skan twarzy pokazuje, co da się poprawić pielęgnacją, postawą i snem - i co z tego
               faktycznie się zmienia.
             </p>
             <Link href="/wyglad">
@@ -382,7 +382,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <p className="text-[13px] text-muted">
-            Zapisz, o której się położyłeś i o której wstałeś — to dwa tapnięcia,
+            Zapisz, o której się położyłeś i o której wstałeś - to dwa tapnięcia,
             a daje najcięższy filar Health Score.
           </p>
         )}
@@ -573,7 +573,7 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-2 gap-2">
             <Stat label="Treningi" value={summary.workouts} sub={`${summary.sets} serii`} />
             <Stat label="Objętość" value={fmtVolume(summary.volume_kg)} tone="accent" />
-            <Stat label="Średnio kcal" value={summary.avg_kcal || "–"} />
+            <Stat label="Średnio kcal" value={summary.avg_kcal || "-"} />
             <Stat
               label="Aktywności"
               value={summary.activities}

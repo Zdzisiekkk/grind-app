@@ -1,12 +1,12 @@
 /**
  * ISBN: sprawdzanie, normalizacja i czytanie odpowiedzi Open Library.
  *
- * Moduł jest czysty — żadnego fetcha, żadnego Reacta. Kod kreskowy z okładki
+ * Moduł jest czysty - żadnego fetcha, żadnego Reacta. Kod kreskowy z okładki
  * bywa odczytany z jedną cyfrą przekłamaną, a suma kontrolna ISBN jest
  * dokładnie po to, żeby to złapać, zanim pójdzie zapytanie o cudzą książkę.
  */
 
-/** Zostawia tylko cyfry i końcowe X — myślniki i spacje bywają w druku różnie. */
+/** Zostawia tylko cyfry i końcowe X - myślniki i spacje bywają w druku różnie. */
 export function cleanIsbn(raw: string): string {
   return raw.replace(/[\s-]/g, "").toUpperCase();
 }
@@ -35,10 +35,10 @@ function isbn13Valid(isbn: string): boolean {
 
 /**
  * Sprowadza wszystko do ISBN-13, bo tego formatu używa kod kreskowy EAN-13
- * na okładce — i tylko w nim Open Library trzyma jeden spójny klucz.
+ * na okładce - i tylko w nim Open Library trzyma jeden spójny klucz.
  *
  * Zwraca null, gdy suma kontrolna się nie zgadza. Cicha akceptacja błędnego
- * numeru kończy się „nie znaleziono książki" zamiast „przeskanuj jeszcze raz".
+ * numeru kończy się "nie znaleziono książki" zamiast "przeskanuj jeszcze raz".
  */
 export function normalizeIsbn(raw: string): string | null {
   const isbn = cleanIsbn(raw);
@@ -80,7 +80,7 @@ const str = (v: unknown): string | null =>
 /**
  * Wyciąga to, co wypełnia formularz.
  *
- * Open Library bywa niekompletne i niespójne — brak autora albo stron jest
+ * Open Library bywa niekompletne i niespójne - brak autora albo stron jest
  * normą, nie awarią. Dlatego każde pole może wrócić puste, a brakiem zajmuje
  * się formularz, w którym i tak da się dopisać resztę ręcznie.
  */
@@ -115,7 +115,7 @@ export function bookFromOpenLibrary(isbn: string, payload: unknown): IsbnBook | 
   return {
     isbn,
     title,
-    // Kilku autorów łączymy przecinkiem — pole w bazie jest jedno i tak
+    // Kilku autorów łączymy przecinkiem - pole w bazie jest jedno i tak
     // wygląda to na okładce.
     author: authors.length ? authors.join(", ") : null,
     pages,
@@ -126,9 +126,9 @@ export function bookFromOpenLibrary(isbn: string, payload: unknown): IsbnBook | 
 /**
  * Rekord wydania z /isbn/{isbn}.json.
  *
- * Open Library ma dwa źródła o różnym pokryciu: „jscmd=data" bywa puste tam,
+ * Open Library ma dwa źródła o różnym pokryciu: "jscmd=data" bywa puste tam,
  * gdzie surowy rekord wydania istnieje. Nazwiska autorów są tu tylko kluczami,
- * więc dostajemy je osobno — kto je pobiera, decyduje trasa.
+ * więc dostajemy je osobno - kto je pobiera, decyduje trasa.
  */
 export function bookFromOpenLibraryEdition(
   isbn: string,
@@ -164,7 +164,7 @@ export function bookFromOpenLibraryEdition(
  * Odpowiedź Google Books.
  *
  * Sięgamy tu po polskie wydania, których Open Library po prostu nie ma.
- * Adresy okładek przychodzą czasem po http — podmieniamy na https, bo strona
+ * Adresy okładek przychodzą czasem po http - podmieniamy na https, bo strona
  * chodzi po https i przeglądarka zablokowałaby taki obrazek.
  */
 export function bookFromGoogleBooks(isbn: string, payload: unknown): IsbnBook | null {

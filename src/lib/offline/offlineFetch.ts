@@ -3,7 +3,7 @@
  *
  * Siedzi na najniższym poziomie, przez co WSZYSTKIE ekrany zapisują offline
  * bez jednej linijki zmian u siebie. Decyzje o tym, co wolno odłożyć i jak
- * ostemplować wiersz, mieszkają w rest.ts — tam da się je przetestować.
+ * ostemplować wiersz, mieszkają w rest.ts - tam da się je przetestować.
  */
 
 import { enqueue, type QueuedMutation } from "@/lib/offline/queue";
@@ -21,7 +21,7 @@ function acceptedResponse(rows: unknown[], wantsBody: boolean): Response {
     status: wantsBody ? 201 : 204,
     headers: {
       "Content-Type": "application/json",
-      // Własny nagłówek — po nim poznajemy w testach i w konsoli, że to my.
+      // Własny nagłówek - po nim poznajemy w testach i w konsoli, że to my.
       "X-Grind-Queued": "1",
     },
   });
@@ -75,7 +75,7 @@ export function createOfflineFetch(): typeof fetch {
       return await fetch(input as RequestInfo, init);
     } catch {
       // Fetch rzuca wyjątek tylko wtedy, gdy żądanie NIE dotarło. Odpowiedzi
-      // 4xx i 5xx przechodzą normalnie i mają trafić do obsługi błędów ekranu —
+      // 4xx i 5xx przechodzą normalnie i mają trafić do obsługi błędów ekranu -
       // kolejkowanie ich powtarzałoby w kółko zapis, który baza odrzuciła.
       return queueIt();
     }

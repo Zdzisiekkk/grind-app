@@ -15,15 +15,15 @@ import type {
 
 export const metadata = { title: "Wygląd" };
 
-/** Podpisany adres ważny godzinę — tyle, ile trwa oglądanie własnego progresu. */
+/** Podpisany adres ważny godzinę - tyle, ile trwa oglądanie własnego progresu. */
 const WAZNOSC_LINKU = 3600;
 
 /**
- * Zbieranie danych do zakładki „Wygląd".
+ * Zbieranie danych do zakładki "Wygląd".
  *
  * Zdjęcia mają adresy podpisywane tutaj, na serwerze. Przeglądarka nigdy nie
- * dostaje ścieżki w kubełku, tylko gotowy link z terminem ważności — dzięki
- * temu nie ma czego skopiować i wysłać dalej „na stałe".
+ * dostaje ścieżki w kubełku, tylko gotowy link z terminem ważności - dzięki
+ * temu nie ma czego skopiować i wysłać dalej "na stałe".
  */
 export default async function WygladPage() {
   const supabase = await createClient();
@@ -81,7 +81,7 @@ export default async function WygladPage() {
     if (data?.signedUrl) duchy[ujecie] = data.signedUrl;
   }
 
-  /* Suwak przed/po — zawsze to samo ujęcie, inaczej porównanie nic nie znaczy. */
+  /* Suwak przed/po - zawsze to samo ujęcie, inaczej porównanie nic nie znaczy. */
   const frontowe = wszystkieZdjecia.filter((z) => z.ujecie === "front");
   const podpisz = async (z?: WygladZdjecie): Promise<ZdjecieDoPorownania | null> => {
     if (!z) return null;
@@ -127,7 +127,7 @@ export default async function WygladPage() {
     return 7 - zWpadka.size;
   });
 
-  /** Waga najbliższa dacie skanu — pomiar bywa co kilka dni, nie codziennie. */
+  /** Waga najbliższa dacie skanu - pomiar bywa co kilka dni, nie codziennie. */
   const wagaPrzySkanie = chronologicznie.map((s) => {
     const dzien = s.utworzono.slice(0, 10);
     const wczesniejsze = (wagi ?? []).filter((w) => w.date <= dzien);

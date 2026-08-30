@@ -7,10 +7,10 @@ import { Alert, Button, Card, Chip } from "@/components/ui";
  * Zgoda na powiadomienia i subskrypcja push.
  *
  * Rozróżniamy dwie rzeczy, które ludzie mylą:
- *  – POWIADOMIENIA W APLIKACJI działają, gdy jest otwarta. Nic nie wymagają.
- *  – POWIADOMIENIA W TLE (push) docierają przy zamkniętej apce, ale wymagają
+ *  - POWIADOMIENIA W APLIKACJI działają, gdy jest otwarta. Nic nie wymagają.
+ *  - POWIADOMIENIA W TLE (push) docierają przy zamkniętej apce, ale wymagają
  *    zapisania subskrypcji na serwerze. Na iPhonie działają WYŁĄCZNIE po
- *    dodaniu apki do ekranu głównego — to ograniczenie Apple, nie nasze.
+ *    dodaniu apki do ekranu głównego - to ograniczenie Apple, nie nasze.
  */
 function subscribeToFocus(onChange: () => void) {
   window.addEventListener("focus", onChange);
@@ -21,7 +21,7 @@ function subscribeToFocus(onChange: () => void) {
  * Czy przeglądarka ma zapisaną subskrypcję push.
  *
  * Pytanie o to jest asynchroniczne, a useSyncExternalStore potrzebuje
- * odpowiedzi natychmiast — dlatego ostatni odczyt trzymamy w module i
+ * odpowiedzi natychmiast - dlatego ostatni odczyt trzymamy w module i
  * odświeżamy go po każdej zmianie. Ten sam wzorzec co przy liczniku kolejki
  * offline; efekt ustawiający stan łamałby reguły Reacta.
  */
@@ -195,14 +195,14 @@ export function NotificationSettings({ vapidKey }: { vapidKey: string | null }) 
 
         {permission === "denied" && (
           <Alert>
-            Powiadomienia są zablokowane w ustawieniach przeglądarki. Odblokuj je tam — stąd
+            Powiadomienia są zablokowane w ustawieniach przeglądarki. Odblokuj je tam - stąd
             nie da się tego cofnąć.
           </Alert>
         )}
 
         {permission === "unsupported" && (
           <Alert tone="warn">
-            Ta przeglądarka nie obsługuje powiadomień. Zaległe rzeczy widać na ekranie „Dziś”.
+            Ta przeglądarka nie obsługuje powiadomień. Zaległe rzeczy widać na ekranie Dziś.
           </Alert>
         )}
 
@@ -218,7 +218,7 @@ export function NotificationSettings({ vapidKey }: { vapidKey: string | null }) 
             {iosNeedsInstall ? (
               <Alert tone="warn">
                 Na iPhonie powiadomienia w tle działają dopiero po dodaniu Grinda do ekranu
-                głównego: przycisk „Udostępnij” → „Do ekranu początkowego”. To ograniczenie
+                głównego: przycisk Udostępnij → Do ekranu początkowego. To ograniczenie
                 Apple, nie nasze.
               </Alert>
             ) : !vapidKey ? (
@@ -250,8 +250,8 @@ export function NotificationSettings({ vapidKey }: { vapidKey: string | null }) 
         )}
 
         <p className="text-[12px] leading-relaxed text-faint">
-          Godziny ustawiasz przy każdym nawyku, a dla wody i snu — wyżej w tym profilu.
-          Zaległe rzeczy zawsze widać też na ekranie „Dziś”.
+          Godziny ustawiasz przy każdym nawyku, a dla wody i snu - wyżej w tym profilu.
+          Zaległe rzeczy zawsze widać też na ekranie Dziś.
         </p>
       </div>
     </Card>

@@ -3,7 +3,7 @@
  *
  * Kolejność ma znaczenie: seria numer 2 nie może dolecieć przed numerem 1,
  * a usunięcie nie może wyprzedzić wstawienia. Dlatego wysyłamy jeden po
- * drugim i przy pierwszym błędzie sieci przerywamy — reszta poczeka.
+ * drugim i przy pierwszym błędzie sieci przerywamy - reszta poczeka.
  */
 
 import { allQueued, bumpAttempts, dropQueued, notify, type QueuedMutation } from "@/lib/offline/queue";
@@ -17,7 +17,7 @@ export type FlushResult = { sent: number; rejected: number; pending: number };
 
 let running = false;
 
-/** Zapisy, których baza nie przyjęła — pokazujemy je człowiekowi, nie chowamy. */
+/** Zapisy, których baza nie przyjęła - pokazujemy je człowiekowi, nie chowamy. */
 export type Rejection = { table: string; status: number; message: string; at: number };
 
 export function readRejections(): Rejection[] {
@@ -32,7 +32,7 @@ export function clearRejections(): void {
   try {
     window.localStorage.removeItem(REJECTED_KEY);
   } catch {
-    /* prywatne okno — trudno */
+    /* prywatne okno - trudno */
   }
   notify();
 }
@@ -42,7 +42,7 @@ function rememberRejection(item: QueuedMutation, status: number, message: string
     const list = [...readRejections(), { table: item.table, status, message, at: Date.now() }];
     window.localStorage.setItem(REJECTED_KEY, JSON.stringify(list.slice(-20)));
   } catch {
-    /* prywatne okno — trudno */
+    /* prywatne okno - trudno */
   }
 }
 
@@ -59,7 +59,7 @@ export async function flushQueue(): Promise<FlushResult> {
     const items = await allQueued();
     if (items.length === 0) return idle;
 
-    // Token z kolejki jest nieświeży — bierzemy aktualny, inaczej wszystko
+    // Token z kolejki jest nieświeży - bierzemy aktualny, inaczej wszystko
     // odbiłoby się od RLS z błędem 401.
     const {
       data: { session },
@@ -85,7 +85,7 @@ export async function flushQueue(): Promise<FlushResult> {
       }
 
       // 409 przy wstawieniu z własnym identyfikatorem znaczy, że wiersz już
-      // tam jest — pierwsze podejście doleciało, zgubiła się tylko odpowiedź.
+      // tam jest - pierwsze podejście doleciało, zgubiła się tylko odpowiedź.
       // To jest sukces, nie błąd.
       if (response.status === 409) {
         await dropQueued(item.id as number);
@@ -94,7 +94,7 @@ export async function flushQueue(): Promise<FlushResult> {
       }
 
       if (response.status >= 500 && item.attempts < MAX_ATTEMPTS) {
-        // Problem po stronie serwera — spróbujemy jeszcze raz później.
+        // Problem po stronie serwera - spróbujemy jeszcze raz później.
         await bumpAttempts(item);
         break;
       }

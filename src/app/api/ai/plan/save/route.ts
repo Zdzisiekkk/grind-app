@@ -4,12 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Zapisuje wcześniej wygenerowany plan do bazy.
  *
- * Treść bierzemy z ai_plan_requests, a nie z ciała żądania — dzięki temu klient
+ * Treść bierzemy z ai_plan_requests, a nie z ciała żądania - dzięki temu klient
  * nie może podmienić planu na coś, czego model nie zwrócił.
  *
  * Cały zapis robi jedna funkcja w bazie (migracja 0032). Wcześniej była tu
  * pętla: osobne zapytanie na plan, na każdą fazę, na każdy dzień i na
- * ćwiczenia — ponad trzydzieści obiegów bez transakcji, z błędami mijanymi
+ * ćwiczenia - ponad trzydzieści obiegów bez transakcji, z błędami mijanymi
  * przez `continue`. Plan z brakującymi dniami potrafił zostać planem aktywnym
  * i nic o tym nie mówiło. Teraz Postgres daje transakcję: albo wszystko,
  * albo nic.

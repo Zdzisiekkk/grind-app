@@ -23,7 +23,7 @@ export default function PrivacyPage() {
             spożyte posiłki, treningi i aktywności,
           </li>
           <li>
-            <strong>zdjęcia twarzy i sylwetki</strong>, jeżeli korzystasz z modułu „Wygląd” —
+            <strong>zdjęcia twarzy i sylwetki</strong>, jeżeli korzystasz z modułu Wygląd -
             razem z ocenami i opisami, które model z nich wygenerował,
           </li>
           <li>ustawienia aplikacji: cele, przypomnienia, strefa czasowa,</li>
@@ -43,14 +43,14 @@ export default function PrivacyPage() {
           Sen, ból, kontuzje i waga to dane szczególnej kategorii w rozumieniu art. 9 RODO.
           Przetwarzamy je wyłącznie na podstawie Twojej wyraźnej i odrębnej zgody, wyrażonej
           przy zakładaniu konta. Zgodę możesz wycofać w każdej chwili w ustawieniach profilu
-          — wtedy usuwamy te dane, a reszta aplikacji działa dalej.
+          - wtedy usuwamy te dane, a reszta aplikacji działa dalej.
         </p>
       </Section>
 
-      <Section title="Zdjęcia w module „Wygląd”">
+      <Section title="Zdjęcia w module Wygląd">
         <p>
-          Moduł „Wygląd” jest dobrowolny i włącza się osobną zgodą, przy której potwierdzasz,
-          że masz ukończone 16 lat. Bez niej nie da się zapisać żadnego zdjęcia — pilnuje tego
+          Moduł Wygląd jest dobrowolny i włącza się osobną zgodą, przy której potwierdzasz,
+          że masz ukończone 16 lat. Bez niej nie da się zapisać żadnego zdjęcia - pilnuje tego
           sama baza danych, nie tylko ekran.
         </p>
         <ul className="list-disc pl-5">
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
             je opisał. Wysyłamy je wyłącznie w momencie, w którym sam uruchomisz skan.
           </li>
           <li>
-            Zdjęcia zostają <strong>bezterminowo</strong> — po to, żeby dało się porównać
+            Zdjęcia zostają <strong>bezterminowo</strong> - po to, żeby dało się porównać
             wygląd sprzed miesięcy. Możesz je usunąć pojedynczo w każdej chwili, a wszystkie
             znikają razem z kontem.
           </li>
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-5">
           <li>żeby pokazywać Ci Twoje własne dane i liczyć z nich wykresy oraz Health Score,</li>
           <li>
-            żeby wysyłać przypomnienia, o które poprosiłeś (nawyki, woda, pora snu) — nigdy
+            żeby wysyłać przypomnienia, o które poprosiłeś (nawyki, woda, pora snu) - nigdy
             innych,
           </li>
           <li>
@@ -95,17 +95,17 @@ export default function PrivacyPage() {
         <p>Podmiotom, bez których aplikacja nie mogłaby działać:</p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>Supabase</strong> — baza danych i logowanie. Serwery w Unii Europejskiej
+            <strong>Supabase</strong> - baza danych i logowanie. Serwery w Unii Europejskiej
             (Frankfurt).
           </li>
           <li>
-            <strong>Vercel</strong> — hosting aplikacji.
+            <strong>Vercel</strong> - hosting aplikacji.
           </li>
           <li>
-            <strong>Stripe</strong> — obsługa płatności; tylko dane rozliczeniowe.
+            <strong>Stripe</strong> - obsługa płatności; tylko dane rozliczeniowe.
           </li>
           <li>
-            <strong>Anthropic</strong> — model językowy trenera AI oraz oceny wyglądu. Dane
+            <strong>Anthropic</strong> - model językowy trenera AI oraz oceny wyglądu. Dane
             trafiają tam wyłącznie wtedy, gdy sam uruchomisz analizę, napiszesz do trenera albo
             zrobisz skan, i tylko w wersji płatnej. W przypadku skanu jest to również zdjęcie.
           </li>
@@ -114,9 +114,9 @@ export default function PrivacyPage() {
 
       <Section title="Jak długo je trzymamy">
         <p>
-          Do czasu usunięcia konta — dotyczy to także zdjęć z modułu „Wygląd”. Usunięcie jest
+          Do czasu usunięcia konta - dotyczy to także zdjęć z modułu Wygląd. Usunięcie jest
           natychmiastowe i nieodwracalne: kasujemy wszystko, co do Ciebie należy, razem
-          z plikami w magazynie, bez kopii „na wszelki wypadek”.
+          z plikami w magazynie, bez żadnych kopii zapasowych.
         </p>
       </Section>
 
@@ -128,11 +128,11 @@ export default function PrivacyPage() {
         </p>
         <ul className="list-disc pl-5">
           <li>
-            <strong>Pobranie kopii</strong> — Profil → „Pobierz swoje dane”. Dostajesz plik
+            <strong>Pobranie kopii</strong> - Profil → Pobierz swoje dane. Dostajesz plik
             JSON ze wszystkim.
           </li>
           <li>
-            <strong>Usunięcie konta</strong> — Profil → „Usuń konto”. Działa od razu.
+            <strong>Usunięcie konta</strong> - Profil → Usuń konto. Działa od razu.
           </li>
         </ul>
         <p>

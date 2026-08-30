@@ -89,7 +89,7 @@ export default async function ProgresPage() {
       .maybeSingle(),
     // Nałogi trafiają na ten ekran, bo to jedyne miejsce, gdzie widać rzeczy
     // OBOK siebie. Zestawienie tygodni bez wpadki z objętością treningową
-    // i snem to wykres, którego nikt inny nie zrobi — nikt inny nie ma
+    // i snem to wykres, którego nikt inny nie zrobi - nikt inny nie ma
     // obu tych dzienników naraz.
     supabase.from("vices").select("*").eq("user_id", user.id).eq("is_archived", false),
     supabase
@@ -99,7 +99,7 @@ export default async function ProgresPage() {
       .gte("occurred_at", addDaysISO(today, -90)),
   ]);
 
-  // Dzienna objętość → tygodnie (poniedziałek–niedziela)
+  // Dzienna objętość → tygodnie (poniedziałek-niedziela)
   const weeks = new Map<string, { volume: number; sets: number; workouts: number }>();
   for (let i = 11; i >= 0; i--) {
     weeks.set(weekStart(addDaysISO(today, -i * 7)), { volume: 0, sets: 0, workouts: 0 });
@@ -118,7 +118,7 @@ export default async function ProgresPage() {
     ...v,
   }));
 
-  // Każda kontuzja dostaje własny wykres — ból to stan, a stany różnych kontuzji
+  // Każda kontuzja dostaje własny wykres - ból to stan, a stany różnych kontuzji
   // nie sumują się w jedną serię.
   const pointsByInjury = new Map<string, { date: string; level: number }[]>();
   for (const log of painRes.data ?? []) {

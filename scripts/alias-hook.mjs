@@ -1,8 +1,8 @@
 /*
- * Rozwiązywanie ścieżek „@/…” w Node.
+ * Rozwiązywanie ścieżek "@/..." w Node.
  *
  * Testy uruchamiane bez bundlera (test:analysis) importują pliki źródłowe
- * wprost, a te używają aliasu „@/” z tsconfig i — jak każdy TypeScript —
+ * wprost, a te używają aliasu "@/" z tsconfig i - jak każdy TypeScript -
  * pomijają rozszerzenie. Ten hak robi jedno i drugie, dzięki czemu nie trzeba
  * psuć importów w kodzie aplikacji tylko po to, żeby dało się go przetestować.
  *
@@ -14,11 +14,11 @@ import { fileURLToPath } from "node:url";
 const SRC = new URL("../src/", import.meta.url);
 
 /**
- * TypeScript pisze „./format", na dysku leży „format.ts".
+ * TypeScript pisze "./format", na dysku leży "format.ts".
  *
- * Kolejność ma znaczenie: „looks.ts" wygrywa z katalogiem „looks/". Tak samo
+ * Kolejność ma znaczenie: "looks.ts" wygrywa z katalogiem "looks/". Tak samo
  * rozstrzygają to TypeScript i bundlery, a Node sam z siebie wybrałby katalog
- * i wywalił się na ERR_UNSUPPORTED_DIR_IMPORT — czyli test nie działałby
+ * i wywalił się na ERR_UNSUPPORTED_DIR_IMPORT - czyli test nie działałby
  * dokładnie tam, gdzie moduł ma i plik, i folder o tej samej nazwie.
  */
 function withExtension(url) {

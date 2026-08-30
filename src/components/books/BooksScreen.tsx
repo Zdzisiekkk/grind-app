@@ -109,7 +109,7 @@ export function BooksScreen({
       author: draft.author.trim() || null,
       status: draft.status,
       pages: draft.pages,
-      // Baza pilnuje, żeby postęp nie przekroczył liczby stron — obcinamy tu,
+      // Baza pilnuje, żeby postęp nie przekroczył liczby stron - obcinamy tu,
       // żeby zamiast błędu z bazy pokazać rozsądną wartość.
       current_page: draft.pages ? Math.min(draft.current_page, draft.pages) : draft.current_page,
       rating: draft.status === "read" ? draft.rating : null,
@@ -126,7 +126,7 @@ export function BooksScreen({
 
     setSaving(false);
     if (error) {
-      // Indeks częściowy na (user_id, isbn) — ta sama książka nie wjeżdża
+      // Indeks częściowy na (user_id, isbn) - ta sama książka nie wjeżdża
       // na półkę dwa razy. Komunikat z bazy nic by tu nie powiedział.
       setError(
         error.code === "23505"
@@ -142,8 +142,8 @@ export function BooksScreen({
   /**
    * Dopisanie stron przeczytanych dzisiaj.
    *
-   * Aktualizuje książkę i osobno zapisuje sesję — dzięki temu passa liczy się
-   * z faktu „czytałem dziś", a nie z tego, czy ktoś pamiętał zmienić numer strony.
+   * Aktualizuje książkę i osobno zapisuje sesję - dzięki temu passa liczy się
+   * z faktu "czytałem dziś", a nie z tego, czy ktoś pamiętał zmienić numer strony.
    */
   async function addPages(book: Book, pages: number) {
     const today = todayISO();
@@ -194,7 +194,7 @@ export function BooksScreen({
    * Skan wypełnia formularz, a nie zapisuje książkę od razu.
    *
    * Open Library bywa niekompletne, a półka i liczba stron to i tak decyzja
-   * człowieka — więc kończymy tam, gdzie kończy się „+ Książka", tylko
+   * człowieka - więc kończymy tam, gdzie kończy się "+ Książka", tylko
    * z wpisanym tytułem, autorem i okładką.
    */
   function fillFromScan(found: IsbnBook) {
@@ -209,18 +209,18 @@ export function BooksScreen({
       cover_url: found.coverUrl,
     });
     setScanning(false);
-    // Bez tytułu znaczy „zeskanowane, ale nieznane" — mówimy o tym wprost,
+    // Bez tytułu znaczy "zeskanowane, ale nieznane" - mówimy o tym wprost,
     // zamiast zostawiać pusty formularz bez wyjaśnienia.
     setError(
       found.title
         ? null
-        : "Nie znaleźliśmy tej książki w bazach — wpisz tytuł, numer ISBN już zapamiętaliśmy.",
+        : "Nie znaleźliśmy tej książki w bazach - wpisz tytuł, numer ISBN już zapamiętaliśmy.",
     );
     setFormOpen(true);
   }
 
   async function remove(book: Book) {
-    if (!confirm(`Usunąć „${book.title}" razem z notatkami?`)) return;
+    if (!confirm(`Usunąć "${book.title}" razem z notatkami?`)) return;
     const { error } = await supabase.from("books").delete().eq("id", book.id);
     if (error) setError(`Nie udało się usunąć: ${error.message}`);
     else {
@@ -338,7 +338,7 @@ export function BooksScreen({
           <EmptyState
             icon={bookStatus(filter).icon}
             title={`Pusto: ${bookStatus(filter).label.toLowerCase()}`}
-            description="Dodaj tytuł, a resztę — strony, notatki, ocenę — uzupełnisz po drodze."
+            description="Dodaj tytuł, a resztę (strony, notatki, ocenę) uzupełnisz po drodze."
             action={
               <Button variant="primary" onClick={openNew}>
                 Dodaj książkę
@@ -684,7 +684,7 @@ function BookDetail({
 /**
  * Miniatura okładki.
  *
- * Obrazek stoi u Open Library — nie kopiujemy cudzych skanów na swój serwer.
+ * Obrazek stoi u Open Library - nie kopiujemy cudzych skanów na swój serwer.
  * Kiedy adres nie działa (a to się zdarza: rekordy bywają puste), pole po
  * prostu znika, zamiast zostawiać połamaną ikonkę obok tytułu.
  */

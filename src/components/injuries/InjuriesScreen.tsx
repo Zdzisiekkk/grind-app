@@ -109,8 +109,8 @@ export function InjuriesScreen({
 
   async function remove(injury: InjuryWithPain) {
     const msg = injury.entries
-      ? `Usunąć „${injury.name}" razem z ${injury.entries} ocenami bólu? Tego nie da się cofnąć.`
-      : `Usunąć „${injury.name}"?`;
+      ? `Usunąć "${injury.name}" razem z ${injury.entries} ocenami bólu? Tego nie da się cofnąć.`
+      : `Usunąć "${injury.name}"?`;
     if (!confirm(msg)) return;
 
     const { error } = await supabase.from("injuries").delete().eq("id", injury.id);
@@ -139,7 +139,7 @@ export function InjuriesScreen({
           <EmptyState
             icon="🩹"
             title="Brak kontuzji na liście"
-            description="Dodaj każdą, którą chcesz mieć na oku — kolano, bark, plecy, cokolwiek. Po treningu apka sama zapyta o ból."
+            description="Dodaj każdą, którą chcesz mieć na oku - kolano, bark, plecy, cokolwiek. Po treningu apka sama zapyta o ból."
             action={
               <Button variant="primary" onClick={openNew}>
                 Dodaj pierwszą
@@ -267,7 +267,7 @@ export function InjuriesScreen({
             <span className="text-[13px]">
               <span className="font-medium">Pytaj o ból po treningu</span>
               <span className="block text-muted">
-                Po dniach oznaczonych w planie apka poprosi o ocenę w skali 0–10.
+                Po dniach oznaczonych w planie apka poprosi o ocenę w skali 0-10.
               </span>
             </span>
           </label>
@@ -288,7 +288,7 @@ export function InjuriesScreen({
       <Sheet
         open={rating !== null}
         onClose={() => setRating(null)}
-        title={rating ? `Ocena bólu — ${rating.name}` : ""}
+        title={rating ? `Ocena bólu - ${rating.name}` : ""}
       >
         {rating && (
           <PainPicker
@@ -349,7 +349,7 @@ function InjuryCard({
                 {injury.lastDate && <> · {shortDate(injury.lastDate)}</>}
               </>
             ) : (
-              "Brak ocen — dodaj pierwszą po treningu."
+              "Brak ocen - dodaj pierwszą po treningu."
             )}
           </p>
 

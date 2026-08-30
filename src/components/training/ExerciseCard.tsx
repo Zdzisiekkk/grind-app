@@ -19,7 +19,7 @@ export type NewSet = {
   rpe: number | null;
 };
 
-/** „6-8” → 6, „10/stronę” → 10, „40s” → null (to metryka czasowa) */
+/** "6-8" → 6, "10/stronę" → 10, "40s" → null (to metryka czasowa) */
 function targetRepsNumber(target: string | null): number | null {
   if (!target) return null;
   const m = target.match(/\d+/);
@@ -81,7 +81,7 @@ export function ExerciseCard({
   const [showStepPicker, setShowStepPicker] = useState(false);
 
   // Po zapisaniu serii formularz podnosi się do nowego punktu odniesienia.
-  // Korekta stanu w trakcie renderu — bez efektu i bez zbędnego przemalowania.
+  // Korekta stanu w trakcie renderu - bez efektu i bez zbędnego przemalowania.
   if (seed !== defaults) {
     setSeed(defaults);
     setDraft(defaults);
@@ -114,7 +114,7 @@ export function ExerciseCard({
             complete ? "bg-[var(--success-soft)] text-success" : "bg-surface-2 text-muted",
           )}
         >
-          {complete ? "✓" : `${done}/${target || "–"}`}
+          {complete ? "✓" : `${done}/${target || "-"}`}
         </span>
 
         <span className="min-w-0 flex-1">
@@ -135,7 +135,7 @@ export function ExerciseCard({
         </span>
       </button>
 
-      {/* Historia z poprzedniego treningu — widoczna także po zwinięciu karty */}
+      {/* Historia z poprzedniego treningu - widoczna także po zwinięciu karty */}
       {exercise.lastTime && (
         <div className="border-t border-border/60 bg-surface-2/50 px-3 py-2 text-[12px]">
           <span className="text-faint">Ostatnio ({humanDate(exercise.lastTime.date)}): </span>
@@ -280,7 +280,7 @@ export function ExerciseCard({
             {showRpe ? (
               <div>
                 <span className="mb-1.5 block text-[12px] font-medium text-muted">
-                  RPE — jak ciężko było (1–10)
+                  RPE - jak ciężko było (1-10)
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {[6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((r) => (

@@ -3,7 +3,7 @@
  *
  * Ten plik istnieje z powodu jednego błędu: `todayISO()` pytał o dzisiaj
  * URZĄDZENIE. Na telefonie urządzeniem jest telefon, ale przy renderowaniu na
- * serwerze urządzeniem jest maszyna we Frankfurcie, która chodzi na UTC —
+ * serwerze urządzeniem jest maszyna we Frankfurcie, która chodzi na UTC -
  * latem dwie godziny za Polską. Wszystko zapisane między północą a drugą
  * w nocy lądowało na wczoraj, a serwer i przeglądarka dawały różne odpowiedzi
  * na to samo pytanie.
@@ -17,7 +17,7 @@ import { addDaysISO, dateInAppZone, humanDate, todayISO } from "../src/lib/forma
 let fails = 0;
 const check = (label, cond, extra = "") => {
   if (!cond) fails++;
-  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
+  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " - " + extra : ""}`);
 };
 
 console.log("\n  Strefa czasowa (proces działa w TZ=" + (process.env.TZ ?? "systemowej") + ")\n");
@@ -31,7 +31,7 @@ check(
   dateInAppZone(nocLatem),
 );
 
-// Zimą Polska jest UTC+1 — ta sama pułapka, godzinę węziej.
+// Zimą Polska jest UTC+1 - ta sama pułapka, godzinę węziej.
 const nocZima = new Date("2026-01-14T23:30:00Z");
 check(
   "zimą też, choć przesunięcie jest inne",
@@ -39,7 +39,7 @@ check(
   dateInAppZone(nocZima),
 );
 
-// Południe UTC to zawsze ten sam dzień w obu strefach — kontrola, że nie
+// Południe UTC to zawsze ten sam dzień w obu strefach - kontrola, że nie
 // przesuwamy dat, które przesunięcia nie potrzebują.
 const poludnie = new Date("2026-05-20T12:00:00Z");
 check("w środku dnia nic się nie przesuwa", dateInAppZone(poludnie) === "2026-05-20");

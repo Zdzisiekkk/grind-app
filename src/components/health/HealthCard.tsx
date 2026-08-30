@@ -6,7 +6,7 @@ import { STATUS } from "@/lib/viz";
 
 /**
  * Health Score na pulpicie: jedna liczba, pasmo słowne i podpowiedź, co
- * podnieść najpierw. Pełne rozbicie na filary jest w Postępach — tutaj
+ * podnieść najpierw. Pełne rozbicie na filary jest w Postępach - tutaj
  * wystarczy kierunek, żeby karta nie zjadła całego ekranu.
  */
 export function HealthCard({
@@ -14,14 +14,14 @@ export function HealthCard({
   previous,
 }: {
   result: HealthResult;
-  /** Wynik z poprzedniego takiego samego okna — do strzałki trendu. */
+  /** Wynik z poprzedniego takiego samego okna - do strzałki trendu. */
   previous?: number | null;
 }) {
   if (result.total == null) {
     return (
       <Card title="Health Score" subtitle="Twoja forma z ostatnich 7 dni">
         <p className="text-[13px] text-muted">
-          Wynik pojawi się, gdy pojawią się pierwsze dane — wystarczy jedna noc,
+          Wynik pojawi się, gdy pojawią się pierwsze dane - wystarczy jedna noc,
           jeden trening albo jeden dzień dziennika.
         </p>
       </Card>
@@ -65,7 +65,7 @@ export function HealthCard({
           )}
 
           <p className="mt-1 text-[11px] text-faint">
-            Liczony z {result.covered} z {result.possible} filarów — puste nie obniżają wyniku.
+            Liczony z {result.covered} z {result.possible} filarów - puste nie obniżają wyniku.
           </p>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function HealthBreakdown({ result, days }: { result: HealthResult; days: 
                   p.score == null && "text-faint",
                 )}
               >
-                {p.score ?? "–"}
+                {p.score ?? "-"}
               </span>
             </div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">

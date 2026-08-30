@@ -12,7 +12,7 @@ function subscribeToTheme(onChange: () => void) {
 }
 
 /**
- * Motyw systemowy czytamy przez useSyncExternalStore — matchMedia to zewnętrzne
+ * Motyw systemowy czytamy przez useSyncExternalStore - matchMedia to zewnętrzne
  * źródło prawdy, więc nie synchronizujemy go efektem i stanem.
  * Na serwerze zakładamy jasny motyw (taki sam jak pierwszy render w przeglądarce).
  */

@@ -50,7 +50,7 @@ export function ActivitiesScreen({
           <EmptyState
             icon="🏃"
             title="Brak aktywności"
-            description="Bieganie, rower, pływanie, sparingi — wszystko, co robisz poza siłownią."
+            description="Bieganie, rower, pływanie, sparingi - wszystko, co robisz poza siłownią."
           />
         </Card>
       ) : (

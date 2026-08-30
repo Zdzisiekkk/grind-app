@@ -11,7 +11,7 @@ export type PainDraft = { level: number | null; note: string };
 
 /**
  * Ocena bólu dla jednej lub wielu kontuzji naraz. Po treningu nóg nie ma sensu
- * pytać osobno o każdą — pokazujemy wszystkie śledzone i zapisujemy te ocenione.
+ * pytać osobno o każdą - pokazujemy wszystkie śledzone i zapisujemy te ocenione.
  * Powtórna ocena tego samego dnia nadpisuje poprzednią (upsert po dacie).
  */
 export function PainPicker({
@@ -111,7 +111,7 @@ export function PainPicker({
               <Textarea
                 value={draft.note}
                 onChange={(e) => patch(injury.id, { note: e.target.value })}
-                placeholder="Notatka — np. bolało przy prostowniku powyżej 30 kg"
+                placeholder="Notatka - np. bolało przy prostowniku powyżej 30 kg"
                 rows={2}
               />
             )}

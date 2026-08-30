@@ -202,7 +202,7 @@ export function PlanEditor({
         {plan.goal && <p className="text-[13px] text-muted">{plan.goal}</p>}
         {!canEdit && (
           <Alert tone="info">
-            To publiczny szablon — tylko do podglądu. Skopiuj go do siebie, żeby edytować.
+            To publiczny szablon - tylko do podglądu. Skopiuj go do siebie, żeby edytować.
           </Alert>
         )}
       </header>
@@ -444,7 +444,7 @@ function DayForm({ day, onSave }: { day: EditorDay | null; onSave: (v: DayFormVa
       className="flex flex-col gap-3"
     >
       <Field label="Nazwa dnia">
-        <Input required value={values.name} onChange={(e) => upd({ name: e.target.value })} placeholder="Dzień A — góra ciała" />
+        <Input required value={values.name} onChange={(e) => upd({ name: e.target.value })} placeholder="Dzień A - góra ciała" />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Skrót" hint="max 4 znaki">

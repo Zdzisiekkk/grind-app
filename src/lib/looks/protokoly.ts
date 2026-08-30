@@ -1,5 +1,5 @@
 /**
- * Biblioteka protokołów — treść stała, bez modelu.
+ * Biblioteka protokołów - treść stała, bez modelu.
  *
  * Mewing i ćwiczenia twarzy to obszar, w którym w internecie obiecuje się
  * przebudowę czaszki u dorosłego. Dlatego opisy są tutaj, w kodzie, a nie
@@ -44,19 +44,19 @@ export const PROTOKOLY: Protokol[] = [
     obietnica:
       "Praca nad pozycją języka, oddychaniem nosem i ustawieniem żuchwy. Przy niskim poziomie tkanki tłuszczowej daje umiarkowaną poprawę napięcia i linii żuchwy.",
     czego_nie_daje:
-      "U dorosłego NIE przebudowuje kości twarzy. Zdjęcia „przed i po” krążące w sieci to zwykle zmiana wagi, oświetlenia i kąta aparatu. Kto obiecuje inaczej, sprzedaje kurs.",
-    horyzont: "12–24 tygodnie, i to głównie jako nawyk, nie efekt wizualny",
+      "U dorosłego NIE przebudowuje kości twarzy. Zdjęcia \"przed i po\" krążące w sieci to zwykle zmiana wagi, oświetlenia i kąta aparatu. Kto obiecuje inaczej, sprzedaje kurs.",
+    horyzont: "12-24 tygodnie, i to głównie jako nawyk, nie efekt wizualny",
     kroki: [
       {
         nazwa: "Pozycja języka",
         opis:
-          "Cały język przylega do podniebienia — nie tylko czubek. Czubek tuż za zębami, nie na nich.",
+          "Cały język przylega do podniebienia - nie tylko czubek. Czubek tuż za zębami, nie na nich.",
         ile: "docelowo cały dzień, w tle",
       },
       {
         nazwa: "Oddychanie nosem",
         opis:
-          "Usta zamknięte, oddech przez nos. To jest ta część, która faktycznie ma znaczenie — dla snu, suchości jamy ustnej i próchnicy.",
+          "Usta zamknięte, oddech przez nos. To jest ta część, która faktycznie ma znaczenie - dla snu, suchości jamy ustnej i próchnicy.",
         ile: "cały dzień, także w nocy",
       },
       {
@@ -77,9 +77,9 @@ export const PROTOKOLY: Protokol[] = [
     nazwa: "Ćwiczenia mięśni twarzy",
     ikona: "😬",
     obietnica:
-      "Mięśnie twarzy reagują na pracę jak każde inne — rośnie ich napięcie spoczynkowe.",
+      "Mięśnie twarzy reagują na pracę jak każde inne - rośnie ich napięcie spoczynkowe.",
     czego_nie_daje: "Nie usuwają tkanki tłuszczowej z twarzy. Miejscowego spalania nie ma.",
-    horyzont: "8–16 tygodni",
+    horyzont: "8-16 tygodni",
     kroki: [
       { nazwa: "Wysuwanie żuchwy", opis: "Żuchwa do przodu, wytrzymaj, wróć powoli.", ile: "3 × 10" },
       {
@@ -107,11 +107,11 @@ export const PROTOKOLY: Protokol[] = [
   },
   {
     klucz: "postawa",
-    nazwa: "Postawa — 5 minut",
+    nazwa: "Postawa - 5 minut",
     ikona: "🧍",
     obietnica:
       "Wysunięta do przodu głowa i zaokrąglone barki zmieniają linię szczęki i szyi na każdym zdjęciu. To najszybszy widoczny efekt z całej listy.",
-    horyzont: "2–6 tygodni",
+    horyzont: "2-6 tygodni",
     kroki: [
       { nazwa: "Otwarcie klatki w drzwiach", opis: "Przedramiona na framudze, krok do przodu.", ile: "2 × 30 s" },
       { nazwa: "Cofanie głowy", opis: "Chin tuck, plecami do ściany.", ile: "10 powtórzeń" },
@@ -127,7 +127,7 @@ export const PROTOKOLY: Protokol[] = [
     ikona: "🧴",
     obietnica:
       "Największa pojedyncza rzecz, jaką da się zrobić dla wyglądu skóry w perspektywie lat. Nie zmienia nic w tym tygodniu i wszystko w ciągu dekady.",
-    horyzont: "efekt jest zapobiegawczy — nie zobaczysz go, tylko nie zobaczysz jego braku",
+    horyzont: "efekt jest zapobiegawczy - nie zobaczysz go, tylko nie zobaczysz jego braku",
     kroki: [
       { nazwa: "Rano, po nawilżeniu", opis: "SPF 30+ na twarz, szyję i uszy.", ile: "codziennie" },
       { nazwa: "Także zimą i w chmury", opis: "UVA przechodzi przez chmury i szyby." },
@@ -141,11 +141,11 @@ export const PROTOKOLY: Protokol[] = [
     klucz: "nic_dentystyczna",
     nazwa: "Nić dentystyczna",
     ikona: "🦷",
-    obietnica: "Czyści to, czego szczoteczka nie dosięga — czyli miejsca, gdzie zaczyna się próchnica.",
-    horyzont: "dziąsła przestają krwawić po 1–2 tygodniach",
+    obietnica: "Czyści to, czego szczoteczka nie dosięga - czyli miejsca, gdzie zaczyna się próchnica.",
+    horyzont: "dziąsła przestają krwawić po 1-2 tygodniach",
     kroki: [
       { nazwa: "Wieczorem, przed szczotkowaniem", opis: "Każda przerwa, łuk wokół zęba.", ile: "codziennie" },
-      { nazwa: "Krwawienie na starcie jest normalne", opis: "Znika po kilkunastu dniach. Jeśli nie znika — dentysta." },
+      { nazwa: "Krwawienie na starcie jest normalne", opis: "Znika po kilkunastu dniach. Jeśli nie znika - dentysta." },
     ],
   },
   {

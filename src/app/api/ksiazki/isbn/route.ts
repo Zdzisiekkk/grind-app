@@ -15,7 +15,7 @@ import type { IsbnBook } from "@/lib/isbn";
  * z przeglądarki: dzięki temu odpowiedź da się zbuforować dla wszystkich,
  * a przeglądarka nie walczy z CORS-em.
  *
- * Trasa wymaga zalogowania — inaczej byłaby otwartym pośrednikiem do cudzego
+ * Trasa wymaga zalogowania - inaczej byłaby otwartym pośrednikiem do cudzego
  * API, wystawionym pod naszą domeną i naszym limitem zapytań.
  */
 
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   }
 
   // Bez limitu czasu jedno zawieszone zapytanie trzymałoby otwarty arkusz
-  // „Nowa książka" tak długo, aż człowiek zamknie apkę.
+  // "Nowa książka" tak długo, aż człowiek zamknie apkę.
   const signal = AbortSignal.timeout(TIMEOUT_MS);
   const get = async (url: string): Promise<unknown> => {
     const res = await fetch(url, { signal, headers: { "User-Agent": UA } });
@@ -50,8 +50,8 @@ export async function GET(request: Request) {
   };
 
   // Trzy źródła, bo żadne nie zna wszystkiego. Open Library ma dwa rejestry
-  // o różnym pokryciu — „jscmd=data" bywa puste tam, gdzie surowy rekord
-  // wydania istnieje — a polskich wydań często nie ma w żadnym z nich.
+  // o różnym pokryciu - "jscmd=data" bywa puste tam, gdzie surowy rekord
+  // wydania istnieje - a polskich wydań często nie ma w żadnym z nich.
   let book: IsbnBook | null = null;
 
   try {
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         unknown
       >;
 
-      // Autorzy przychodzą jako same klucze — nazwiska trzeba dobrać osobno.
+      // Autorzy przychodzą jako same klucze - nazwiska trzeba dobrać osobno.
       const keys = Array.isArray(edition.authors)
         ? edition.authors
             .map((a) =>
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
   }
 
   // Google Books tylko z kluczem: bez niego wszyscy dzielą jeden, stale
-  // wyczerpany limit, więc źródło działałoby losowo — a losowo działające
+  // wyczerpany limit, więc źródło działałoby losowo - a losowo działające
   // wyszukiwanie jest gorsze niż jego brak.
   if (!book && process.env.GOOGLE_BOOKS_API_KEY) {
     try {
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
         ),
       );
     } catch {
-      // Zostaje uczciwe „nie znaleziono".
+      // Zostaje uczciwe "nie znaleziono".
     }
   }
 
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
     // brak skanera.
     return NextResponse.json(
       {
-        error: "Nie znamy tej książki — wpisz tytuł sam, resztę zapamiętamy.",
+        error: "Nie znamy tej książki - wpisz tytuł sam, resztę zapamiętamy.",
         code: "not_found",
         isbn,
       },

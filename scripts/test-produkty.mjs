@@ -1,9 +1,9 @@
 /*
- * Wyszukiwanie produktów po nazwie — sprawdzenie na żywej bazie.
+ * Wyszukiwanie produktów po nazwie - sprawdzenie na żywej bazie.
  *
  * Trzy przypadki, na których wywracała się poprzednia wersja (`ilike '%fraza%'`),
  * zmierzone wcześniej na produkcji: ogonki, kolejność słów i marka. Do tego
- * rzecz, której wyszukiwarka nie ma prawa zrobić — pokazać cudzych produktów
+ * rzecz, której wyszukiwarka nie ma prawa zrobić - pokazać cudzych produktów
  * własnych. Wyszukiwarka omijająca RLS jest wyciekiem, nie funkcją.
  */
 import { bazaZMigracjami } from './supabase-stub.mjs';
@@ -13,7 +13,7 @@ const db = await bazaZMigracjami();
 let ok = 0, bad = 0;
 const check = (n, c, d = '') => {
   if (c) { ok++; console.log(`  ✅ ${n}`); }
-  else { bad++; console.log(`  ❌ ${n}${d ? ' — ' + d : ''}`); }
+  else { bad++; console.log(`  ❌ ${n}${d ? ' - ' + d : ''}`); }
 };
 const as = async (uid, sql) => {
   await db.exec(`set role authenticated; set request.jwt.claim.sub = '${uid}';`);
@@ -31,7 +31,7 @@ const szukaj = async (uid, fraza) => {
 const A = (await db.query(`insert into auth.users (email) values ('a@x.pl') returning id`)).rows[0].id;
 const B = (await db.query(`insert into auth.users (email) values ('b@x.pl') returning id`)).rows[0].id;
 
-// Wspólny cache Open Food Facts (user_id NULL) — tak zapisuje go skaner kodów.
+// Wspólny cache Open Food Facts (user_id NULL) - tak zapisuje go skaner kodów.
 await db.exec(`
   insert into public.foods (user_id, source, off_id, name, brand, kcal_100g) values
     (null, 'off', '5900000000001', 'Żurek śląski w słoiku', 'Krakus',   45),
@@ -43,7 +43,7 @@ await db.exec(`
 
 console.log('\n  Polskie ogonki\n');
 let w = await szukaj(A, 'zurek');
-check('„zurek" znajduje „Żurek"', w.some((n) => n.startsWith('Żurek')), JSON.stringify(w));
+check('"zurek" znajduje "Żurek"', w.some((n) => n.startsWith('Żurek')), JSON.stringify(w));
 w = await szukaj(A, 'ŻUREK');
 check('wielkość liter nie ma znaczenia', w.some((n) => n.startsWith('Żurek')), JSON.stringify(w));
 w = await szukaj(A, 'platki gorskie');
@@ -52,9 +52,9 @@ check('ogonki znikają też w środku frazy',
 
 console.log('\n  Kolejność słów\n');
 w = await szukaj(A, 'serek wiejski');
-check('„serek wiejski" znajduje', w.some((n) => n.startsWith('Serek')), JSON.stringify(w));
+check('"serek wiejski" znajduje', w.some((n) => n.startsWith('Serek')), JSON.stringify(w));
 w = await szukaj(A, 'wiejski serek');
-check('„wiejski serek" znajduje to samo', w.some((n) => n.startsWith('Serek')), JSON.stringify(w));
+check('"wiejski serek" znajduje to samo', w.some((n) => n.startsWith('Serek')), JSON.stringify(w));
 w = await szukaj(A, 'light wiejski');
 check('słowa nie muszą sąsiadować', w.some((n) => n.startsWith('Serek')), JSON.stringify(w));
 
@@ -98,7 +98,7 @@ check('B NIE widzi produktu własnego A przez wyszukiwarkę',
 w = await szukaj(B, 'zurek');
 check('ale wspólny cache widzą oboje', w.some((n) => n.startsWith('Żurek')), JSON.stringify(w));
 
-// Postgres domyślnie daje EXECUTE każdemu, łącznie z `anon` — sprawdzamy,
+// Postgres domyślnie daje EXECUTE każdemu, łącznie z `anon` - sprawdzamy,
 // czy revoke z migracji faktycznie zadziałał.
 const anon = (await db.query(
   `select has_function_privilege('anon', 'public.szukaj_produktow(text, integer)', 'execute') as moze`

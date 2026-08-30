@@ -2,7 +2,7 @@
 export function SetupNotice() {
   return (
     <div className="safe-top safe-bottom mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-6">
-      <h1 className="text-2xl font-bold">Grind — jeszcze jeden krok</h1>
+      <h1 className="text-2xl font-bold">Grind - jeszcze jeden krok</h1>
       <p className="text-[15px] text-muted">
         Aplikacja nie ma podpiętej bazy. Utwórz projekt na{" "}
         <a className="text-accent underline" href="https://supabase.com/dashboard">

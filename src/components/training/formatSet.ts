@@ -9,7 +9,7 @@ type SetLike = {
   rpe?: number | null;
 };
 
-/** Jedna seria w zwięzłej formie: „80 kg × 8”, „0:40”, „35 kg · 30 m”. */
+/** Jedna seria w zwięzłej formie: "80 kg × 8", "0:40", "35 kg · 30 m". */
 export function formatSet(set: SetLike, metric: ExerciseMetric = "weight_reps"): string {
   const parts: string[] = [];
 
@@ -25,13 +25,13 @@ export function formatSet(set: SetLike, metric: ExerciseMetric = "weight_reps"):
     parts.push(parts.length && metric !== "rounds" ? label : label);
   }
 
-  if (!parts.length) return "–";
+  if (!parts.length) return "-";
   return parts.join(metric === "weight_reps" ? " " : " · ");
 }
 
-/** Skrót całego wyniku z jednego dnia: „80 kg × 8, 8, 7”. */
+/** Skrót całego wyniku z jednego dnia: "80 kg × 8, 8, 7". */
 export function summarizeSets(sets: SetLike[], metric: ExerciseMetric = "weight_reps"): string {
-  if (!sets.length) return "–";
+  if (!sets.length) return "-";
 
   if (metric === "weight_reps") {
     const weights = new Set(sets.map((s) => s.weight_kg ?? 0));

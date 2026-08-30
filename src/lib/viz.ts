@@ -1,10 +1,10 @@
 /*
- * Moduł WSPÓŁDZIELONY — bez dyrektywy "use client" i bez hooków.
+ * Moduł WSPÓŁDZIELONY - bez dyrektywy "use client" i bez hooków.
  *
  * Kolory i progi statusów czyta zarówno serwer (pulpit koloruje ikonkę oceny
  * bólu przy renderze), jak i klient (wykresy). Gdyby ten plik był oznaczony
  * jako kliencki, każdy jego eksport stałby się referencją klienta i wywołanie
- * painStatus() na serwerze wysypywałoby stronę błędem „Attempted to call
+ * painStatus() na serwerze wysypywałoby stronę błędem "Attempted to call
  * painStatus() from the server". Hook czytający motyw systemowy mieszka
  * dlatego osobno, w useVizColors.ts.
  */
@@ -14,7 +14,7 @@
  *
  * Wartości pochodzą z przewalidowanej palety (sprawdzone walidatorem na
  * powierzchniach tej aplikacji: pasmo jasności, próg nasycenia, rozróżnialność
- * przy daltonizmie i kontrast >= 3:1 — w obu motywach).
+ * przy daltonizmie i kontrast >= 3:1 - w obu motywach).
  *
  * Nie są brane z CSS-owych zmiennych, bo var() nie działa w atrybutach
  * prezentacyjnych SVG, których używa recharts.
@@ -41,7 +41,7 @@ export const VIZ = {
   },
 } as const;
 
-/** Paleta statusów — stała w obu motywach, zawsze z etykietą obok koloru. */
+/** Paleta statusów - stała w obu motywach, zawsze z etykietą obok koloru. */
 export const STATUS = {
   good: "#0ca30c",
   warning: "#fab219",
@@ -51,7 +51,7 @@ export const STATUS = {
 
 export type VizColors = { [K in keyof (typeof VIZ)["light"]]: string };
 
-/** Kubełki bólu kolana: to stan, nie wielkość — stąd paleta statusów i opis słowny. */
+/** Kubełki bólu kolana: to stan, nie wielkość - stąd paleta statusów i opis słowny. */
 export function painStatus(level: number): { color: string; label: string; icon: string } {
   if (level <= 2) return { color: STATUS.good, label: "brak / minimalny", icon: "●" };
   if (level <= 4) return { color: STATUS.warning, label: "łagodny", icon: "▲" };
@@ -60,8 +60,8 @@ export function painStatus(level: number): { color: string; label: string; icon:
 }
 
 export const PAIN_LEGEND = [
-  { range: "0–2", ...painStatus(0) },
-  { range: "3–4", ...painStatus(3) },
-  { range: "5–7", ...painStatus(5) },
-  { range: "8–10", ...painStatus(9) },
+  { range: "0-2", ...painStatus(0) },
+  { range: "3-4", ...painStatus(3) },
+  { range: "5-7", ...painStatus(5) },
+  { range: "8-10", ...painStatus(9) },
 ];

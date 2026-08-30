@@ -50,7 +50,7 @@ export default async function ExerciseDetailPage({
 
   const logs = (logRows ?? []) as WorkoutLog[];
 
-  // Najcięższa seria z każdego dnia — to samo, co pokazuje wykres w Postępach.
+  // Najcięższa seria z każdego dnia - to samo, co pokazuje wykres w Postępach.
   const byDate = new Map<string, StrengthPoint>();
   for (const log of logs) {
     const weight = log.weight_kg ?? 0;
@@ -100,7 +100,7 @@ export default async function ExerciseDetailPage({
           {/*
             Kadr o stałych proporcjach rezerwuje miejsce, zanim zdjęcie
             dojdzie. Ilustracje z wgera mają różne wymiary, więc nie podajemy
-            ich w atrybutach — object-contain wpisuje każdą w to samo pole,
+            ich w atrybutach - object-contain wpisuje każdą w to samo pole,
             bez przycinania i bez skoku układu.
           */}
           <div className="aspect-[4/3] w-full">
@@ -207,7 +207,7 @@ export default async function ExerciseDetailPage({
             <div className="grid grid-cols-2 gap-2">
               <Stat
                 label="Rekord"
-                value={best?.weight_kg ? `${num(best.weight_kg, 2)} kg` : "–"}
+                value={best?.weight_kg ? `${num(best.weight_kg, 2)} kg` : "-"}
                 sub={best?.reps ? `× ${best.reps}` : undefined}
                 tone="accent"
               />

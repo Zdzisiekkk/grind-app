@@ -38,7 +38,7 @@ import type { Vice, ViceEvent } from "@/lib/database.types";
 
 export type ViceWithEvents = Vice & { events: ViceEvent[] };
 
-/** Ikony pod najczęstsze nałogi — reszta i tak jest do wpisania ręcznie. */
+/** Ikony pod najczęstsze nałogi - reszta i tak jest do wpisania ręcznie. */
 const VICE_ICONS = ["🚭", "🍺", "🍬", "📱", "🎰", "🎮", "☕", "🍔", "📺", "💊", "🛒", "🚬"];
 
 const EMPTY = {
@@ -128,7 +128,7 @@ export function VicesScreen({
     router.refresh();
   }
 
-  /** Chęć, która minęła. Licznika nie rusza — i o to chodzi. */
+  /** Chęć, która minęła. Licznika nie rusza - i o to chodzi. */
   async function logUrge(vice: ViceWithEvents) {
     const { error } = await supabase
       .from("vice_events")
@@ -169,7 +169,7 @@ export function VicesScreen({
   }
 
   async function remove(vice: ViceWithEvents) {
-    if (!confirm(`Usunąć „${vice.name}" razem z całą historią?`)) return;
+    if (!confirm(`Usunąć "${vice.name}" razem z całą historią?`)) return;
     const { error } = await supabase.from("vices").delete().eq("id", vice.id);
     if (error) setError(`Nie udało się usunąć: ${error.message}`);
     else router.refresh();
@@ -194,7 +194,7 @@ export function VicesScreen({
           <EmptyState
             icon="🚭"
             title="Nic tu jeszcze nie walczysz"
-            description="Papierosy, alkohol, słodycze, scrollowanie przed snem — dodaj to, co chcesz odstawić, a licznik zacznie iść od dziś."
+            description="Papierosy, alkohol, słodycze, scrollowanie przed snem - dodaj to, co chcesz odstawić, a licznik zacznie iść od dziś."
             action={
               <Button variant="primary" onClick={openNew}>
                 Dodaj pierwszy
@@ -308,11 +308,11 @@ export function VicesScreen({
       >
         <div className="flex flex-col gap-4">
           <Alert tone="info">
-            Zapisanie wpadki to nie kara. Bez niej licznik kłamie, a wzorzec — to, co ją
-            wywołuje — nigdy nie wyjdzie na jaw.
+            Zapisanie wpadki to nie kara. Bez niej licznik kłamie, a wzorzec - to, co ją
+            wywołuje - nigdy nie wyjdzie na jaw.
           </Alert>
 
-          <Field label="Co to wywołało" hint="Krótko i tak samo za każdym razem, np. „stres”, „alkohol”, „nuda”.">
+          <Field label="Co to wywołało" hint="Krótko i tak samo za każdym razem, np. stres, alkohol, nuda.">
             <Input
               value={lapseTrigger}
               onChange={(e) => setLapseTrigger(e.target.value)}
@@ -411,7 +411,7 @@ function ViceCard({
         </span>
       }
     >
-      {/* Licznik — jedyna liczba, po którą naprawdę się tu wchodzi. */}
+      {/* Licznik - jedyna liczba, po którą naprawdę się tu wchodzi. */}
       <div className="flex items-baseline gap-2">
         <span
           className={clsx(
@@ -437,7 +437,7 @@ function ViceCard({
         <Stat label="Rekord" value={best} sub={dayWord(best)} />
         <Stat
           label="Zaoszczędzone"
-          value={vice.daily_cost ? `${money.money.toFixed(0)} zł` : "—"}
+          value={vice.daily_cost ? `${money.money.toFixed(0)} zł` : "-"}
           sub={vice.daily_minutes ? formatMinutes(money.minutes) : undefined}
           tone={vice.daily_cost ? "success" : undefined}
         />
@@ -463,7 +463,7 @@ function ViceCard({
         </div>
       )}
 
-      {/* Passa w jednej liczbie nie pokazuje kształtu — a kształt widać od razu:
+      {/* Passa w jednej liczbie nie pokazuje kształtu - a kształt widać od razu:
           czy wpadki są rozrzucone, czy chodzą parami. */}
       <div className="mt-4">
         <p className="text-[12px] font-medium uppercase tracking-wide text-faint">
@@ -473,7 +473,7 @@ function ViceCard({
           {cells.map((cell) => (
             <span
               key={cell.date}
-              title={`${cell.date}${cell.state === "lapse" ? " — wpadka" : ""}`}
+              title={`${cell.date}${cell.state === "lapse" ? " - wpadka" : ""}`}
               className={clsx(
                 "size-[9px] rounded-[2px]",
                 cell.state === "before" && "bg-surface-2 opacity-40",
@@ -499,7 +499,7 @@ function ViceCard({
           </div>
           {parts.length > 0 && (
             <p className="mt-1.5 text-[12px] text-muted">
-              Najczęściej {parts[0].label} — {parts[0].count}×.
+              Najczęściej {parts[0].label} - {parts[0].count}×.
             </p>
           )}
         </div>
@@ -546,7 +546,7 @@ function ViceCard({
 /**
  * Prowadnica oddechu 4-7-8.
  *
- * Okrąg rośnie na wdechu, stoi przy wstrzymaniu i maleje na wydechu — tempo
+ * Okrąg rośnie na wdechu, stoi przy wstrzymaniu i maleje na wydechu - tempo
  * widać, więc nie trzeba go liczyć. Rozmiar zmieniamy stylem, nie animacją
  * CSS, bo faza musi się zgadzać z sekundą na zegarze, a nie biec własnym
  * rytmem. Przy `prefers-reduced-motion` przejście i tak jest wyłączone
@@ -583,7 +583,7 @@ function BreathingGuide({ elapsed }: { elapsed: number }) {
 /**
  * Panel na moment, w którym się chce.
  *
- * Fala chęci opada sama — problem w tym, że w jej środku nie da się w to
+ * Fala chęci opada sama - problem w tym, że w jej środku nie da się w to
  * uwierzyć. Dlatego zegar ma widoczny koniec, a obok stoi to, co realnie
  * jest do stracenia: passa i pieniądze. To jedyny ekran w aplikacji, który
  * ma coś odwlec, a nie coś zapisać.
@@ -664,7 +664,7 @@ function CrisisPanel({
           <Stat label="Passa" value={days} sub={dayWord(days)} tone="danger" />
           <Stat
             label="Odłożone"
-            value={vice.daily_cost ? `${money.money.toFixed(0)} zł` : "—"}
+            value={vice.daily_cost ? `${money.money.toFixed(0)} zł` : "-"}
             sub={vice.daily_minutes ? formatMinutes(money.minutes) : undefined}
           />
         </div>
@@ -673,7 +673,7 @@ function CrisisPanel({
       {triggers.length > 0 && (
         <Alert tone="info">
           Ostatnio łamał Cię najczęściej <strong>{triggers[0].trigger}</strong>. Jeśli to
-          teraz to samo — wiesz już, że to minie.
+          teraz to samo - wiesz już, że to minie.
         </Alert>
       )}
 

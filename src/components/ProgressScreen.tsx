@@ -37,7 +37,7 @@ export function ProgressScreen({
   waterGoal,
   workoutsPerWeek,
 }: {
-  /** Tygodnie nałogów — puste, gdy nikt nie prowadzi żadnego. */
+  /** Tygodnie nałogów - puste, gdy nikt nie prowadzi żadnego. */
   vices: VicePoint[];
   userId: string;
   prs: ExercisePr[];
@@ -51,14 +51,14 @@ export function ProgressScreen({
   }[];
   weeklyVolume: { label: string; volume: number; sets: number; workouts: number }[];
   summaries: { week: PeriodSummary; month: PeriodSummary };
-  /** Noce od najnowszej — starsze niż okno służą tylko za punkt odniesienia. */
+  /** Noce od najnowszej - starsze niż okno służą tylko za punkt odniesienia. */
   nights: SleepNight[];
   today: string;
   sleepGoalMin: number;
   targetBedtime: string | null;
   kcalGoal: number | null;
   waterGoal: number;
-  /** Ile treningów tygodniowo to komplet — z profilu, ustawia to kreator. */
+  /** Ile treningów tygodniowo to komplet - z profilu, ustawia to kreator. */
   workoutsPerWeek: number;
 }) {
   const [period, setPeriod] = useState<"week" | "month">("week");
@@ -100,8 +100,8 @@ export function ProgressScreen({
 
   const [exerciseId, setExerciseId] = useState<string>(prs[0]?.exercise_key ?? "");
   const [strengthMode, setStrengthMode] = useState<"weight" | "e1rm">("weight");
-  // Historia trzymana razem z kluczem ćwiczenia, którego dotyczy — dzięki temu
-  // „ładowanie” i „pusto” wychodzą z danych, bez czyszczenia stanu w efekcie.
+  // Historia trzymana razem z kluczem ćwiczenia, którego dotyczy - dzięki temu
+  // "ładowanie" i "pusto" wychodzą z danych, bez czyszczenia stanu w efekcie.
   const [history, setHistory] = useState<{ key: string; points: StrengthPoint[] } | null>(null);
 
   const selected = useMemo(
@@ -206,7 +206,7 @@ export function ProgressScreen({
           <Stat label="Objętość" value={fmtVolume(summary.volume_kg)} tone="accent" />
           <Stat
             label="Średnio kcal"
-            value={summary.avg_kcal || "–"}
+            value={summary.avg_kcal || "-"}
             sub={summary.days_logged_food ? `z ${summary.days_logged_food} dni` : "brak wpisów"}
           />
           <Stat
@@ -216,7 +216,7 @@ export function ProgressScreen({
           />
           <Stat
             label="Ból (średnia)"
-            value={summary.avg_pain ?? "–"}
+            value={summary.avg_pain ?? "-"}
             sub={
               summary.pain_by_injury?.length
                 ? `${summary.pain_by_injury.length} kontuzje w okresie`
@@ -226,7 +226,7 @@ export function ProgressScreen({
           />
           <Stat
             label="Sen (średnia)"
-            value={summary.avg_sleep_min != null ? sleepDuration(summary.avg_sleep_min) : "–"}
+            value={summary.avg_sleep_min != null ? sleepDuration(summary.avg_sleep_min) : "-"}
             sub={
               summary.nights_logged
                 ? `${summary.nights_logged} z ${summary.days_in_period} nocy`
@@ -235,7 +235,7 @@ export function ProgressScreen({
           />
           <Stat
             label="Waga"
-            value={summary.weight_end != null ? `${num(summary.weight_end, 1)} kg` : "–"}
+            value={summary.weight_end != null ? `${num(summary.weight_end, 1)} kg` : "-"}
             sub={
               weightDelta != null
                 ? `${weightDelta > 0 ? "+" : ""}${num(weightDelta, 1)} kg w okresie`
@@ -324,7 +324,7 @@ export function ProgressScreen({
       )}
 
       {painByInjury.length === 0 ? (
-        <Card title="Ból kontuzji" subtitle="Skala 0–10">
+        <Card title="Ból kontuzji" subtitle="Skala 0-10">
           <EmptyState
             icon="🩹"
             title="Nie śledzisz jeszcze żadnej kontuzji"
@@ -345,7 +345,7 @@ export function ProgressScreen({
                   {injury.name}
                 </span>
               }
-              subtitle={[side, "skala 0–10"].filter(Boolean).join(" · ")}
+              subtitle={[side, "skala 0-10"].filter(Boolean).join(" · ")}
               action={
                 last ? (
                   <Chip tone={last.level >= 5 ? "danger" : last.level >= 3 ? "warn" : "success"}>

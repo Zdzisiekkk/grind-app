@@ -4,7 +4,7 @@ import { EXPERIENCE_VALUES } from "@/lib/ai/planOptions";
 /**
  * Kształt planu, jakiego oczekujemy od modelu.
  * Ten sam schemat wymusza format odpowiedzi (structured outputs) i waliduje
- * wynik przed zapisem do bazy — nie ufamy odpowiedzi na słowo.
+ * wynik przed zapisem do bazy - nie ufamy odpowiedzi na słowo.
  */
 
 export const AiExerciseSchema = z.object({
@@ -24,13 +24,13 @@ export const AiExerciseSchema = z.object({
 });
 
 export const AiDaySchema = z.object({
-  name: z.string().describe('Nazwa dnia, np. "Dzień A — góra ciała".'),
+  name: z.string().describe('Nazwa dnia, np. "Dzień A - góra ciała".'),
   short_label: z.string().describe('Skrót do 4 znaków, np. "A".'),
   description: z.string().describe("Jedno zdanie o celu tego dnia."),
   day_type: z.enum(["gym", "conditioning", "mobility", "mma", "other"]),
   tracks_pain: z
     .boolean()
-    .describe("true dla dni obciążających miejsce zgłoszonej kontuzji — wtedy apka poprosi po treningu o ocenę bólu."),
+    .describe("true dla dni obciążających miejsce zgłoszonej kontuzji - wtedy apka poprosi po treningu o ocenę bólu."),
   exercises: z.array(AiExerciseSchema).min(1).max(12),
 });
 
@@ -43,7 +43,7 @@ export const AiPhaseSchema = z.object({
 
 export const AiPlanSchema = z.object({
   name: z.string().describe("Krótka nazwa planu po polsku."),
-  description: z.string().describe("2–3 zdania: dla kogo i na czym polega."),
+  description: z.string().describe("2-3 zdania: dla kogo i na czym polega."),
   goal: z.string().describe("Cel planu w jednym zdaniu."),
   coach_notes: z
     .string()

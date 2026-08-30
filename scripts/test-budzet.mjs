@@ -1,10 +1,10 @@
 /*
- * Miesięczny budżet na AI — sprawdzenie na żywej bazie.
+ * Miesięczny budżet na AI - sprawdzenie na żywej bazie.
  *
  * Limit kosztowy ma jedną własność, której nie da się sprawdzić okiem:
  * czy da się go obejść. Dlatego tutaj nie ma ani jednego wywołania modelu,
  * za to jest lista rzeczy, których konto NIE MOŻE zrobić ze swoim licznikiem
- * wydatków — łącznie z rozliczeniem prawdziwego wywołania na zero.
+ * wydatków - łącznie z rozliczeniem prawdziwego wywołania na zero.
  */
 import { bazaZMigracjami } from './supabase-stub.mjs';
 
@@ -13,7 +13,7 @@ const db = await bazaZMigracjami();
 let ok = 0, bad = 0;
 const check = (n, c, d = '') => {
   if (c) { ok++; console.log(`  ✅ ${n}`); }
-  else { bad++; console.log(`  ❌ ${n}${d ? ' — ' + d : ''}`); }
+  else { bad++; console.log(`  ❌ ${n}${d ? ' - ' + d : ''}`); }
 };
 const as = async (uid, sql) => {
   await db.exec(`set role authenticated; set request.jwt.claim.sub = '${uid}';`);

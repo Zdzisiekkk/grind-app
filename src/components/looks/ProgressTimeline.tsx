@@ -15,7 +15,7 @@ import { humanDate } from "@/lib/format";
  * Suwak jest tu najważniejszy. Liczba potrafi urosnąć o cztery punkty i nic
  * z tego nie wynika, bo model raz ocenia surowiej. Dwa zdjęcia tego samego
  * ujęcia nałożone na siebie są jedynym porównaniem, którego nie da się
- * podważyć — pod warunkiem, że kadr się zgadza. Od tego jest duch w skanerze.
+ * podważyć - pod warunkiem, że kadr się zgadza. Od tego jest duch w skanerze.
  */
 
 export type ZdjecieDoPorownania = { ujecie: string; url: string; data: string };
@@ -180,7 +180,7 @@ export function ProgressTimeline({
           </div>
           <p className="mt-3 text-[12px] text-faint">
             To są zestawienia, nie dowody. Przy kilku skanach taki związek równie dobrze może być
-            przypadkiem — traktuj je jak podpowiedź, gdzie szukać, a nie jak wyjaśnienie.
+            przypadkiem - traktuj je jak podpowiedź, gdzie szukać, a nie jak wyjaśnienie.
           </p>
         </Card>
       )}

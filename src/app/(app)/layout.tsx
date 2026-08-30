@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getUser();
   if (!user) redirect("/login");
 
-  // Dane do przypomnień — na tyle małe, że nie warto ich rozdzielać na trasy.
+  // Dane do przypomnień - na tyle małe, że nie warto ich rozdzielać na trasy.
   const supabase = await createClient();
   const today = todayISO();
 
@@ -39,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
     ]);
 
-  // Nowa osoba nie ma prawa zobaczyć pustego pulpitu z napisem „wybierz plan".
+  // Nowa osoba nie ma prawa zobaczyć pustego pulpitu z napisem "wybierz plan".
   // Kreator stoi poza tą grupą tras, więc przekierowanie się nie zapętli.
   if (profile && !profile.onboarded_at) redirect("/start");
 

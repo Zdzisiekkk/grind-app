@@ -36,10 +36,10 @@ import type {
 } from "@/lib/database.types";
 
 /**
- * Zakładka „Wygląd".
+ * Zakładka "Wygląd".
  *
  * Kolejność na ekranie nie jest przypadkowa: najpierw jedna rzecz do zrobienia
- * dzisiaj, potem liczba. Odwrotnie — wynik na górze, zadania gdzieś niżej —
+ * dzisiaj, potem liczba. Odwrotnie - wynik na górze, zadania gdzieś niżej -
  * robi z tego moduł do oceniania się, a nie do zmieniania czegokolwiek.
  */
 
@@ -107,7 +107,7 @@ export function LooksScreen(dane: LooksDane) {
           <div className="space-y-3 text-[14px] leading-relaxed">
             <p>
               Ten moduł ocenia zdjęcia Twojej twarzy. Zdjęcia trafiają na nasz serwer i są wysyłane
-              do modelu Anthropic, żeby je opisał. Nikt poza Tobą ich nie zobaczy — leżą w prywatnym
+              do modelu Anthropic, żeby je opisał. Nikt poza Tobą ich nie zobaczy - leżą w prywatnym
               magazynie, do którego nie ma adresu bez Twojego zalogowania.
             </p>
             <p>
@@ -125,7 +125,7 @@ export function LooksScreen(dane: LooksDane) {
 
           <div className="mt-4 flex flex-col gap-2">
             <Button onClick={przyjmijZgode} disabled={zgodaWTrakcie}>
-              Mam 16 lat lub więcej — rozumiem
+              Mam 16 lat lub więcej - rozumiem
             </Button>
             <Link href="/prywatnosc" className="text-center text-[13px] text-muted underline">
               Polityka prywatności
@@ -169,7 +169,7 @@ export function LooksScreen(dane: LooksDane) {
     await supabase
       .from("wyglad_protokoly")
       .upsert({ user_id: user.id, klucz, aktywny: true }, { onConflict: "user_id,klucz" });
-    setToast(`Protokół „${PROTOKOL_WG_KLUCZA.get(klucz as never)?.nazwa ?? klucz}" włączony.`);
+    setToast(`Protokół "${PROTOKOL_WG_KLUCZA.get(klucz as never)?.nazwa ?? klucz}" włączony.`);
     router.refresh();
   }
 
@@ -181,7 +181,7 @@ export function LooksScreen(dane: LooksDane) {
     : dane.limit?.powod === "limit_miesiaca"
       ? `Wykorzystałeś ${dane.limit.w_miesiacu} z ${dane.limit.limit_miesiaca} skanów w tym miesiącu.`
       : dane.limit?.powod === "odstep"
-        ? `Następny skan ${humanDate(String(dane.limit.nastepny_od).slice(0, 10))} — wcześniej i tak zobaczyłbyś zmianę oświetlenia, nie twarzy.`
+        ? `Następny skan ${humanDate(String(dane.limit.nastepny_od).slice(0, 10))} - wcześniej i tak zobaczyłbyś zmianę oświetlenia, nie twarzy.`
         : null;
 
   const rutynyDnia = dane.rutyny.filter((r) => r.aktywna);
@@ -231,7 +231,7 @@ export function LooksScreen(dane: LooksDane) {
                     </p>
                   ) : (
                     <p className="text-[13px] text-faint">
-                      Pierwszy skan — punktem odniesienia będzie on sam.
+                      Pierwszy skan - punktem odniesienia będzie on sam.
                     </p>
                   )}
                   {ostatni.jakosc_ok === false && (
@@ -366,14 +366,14 @@ export function LooksScreen(dane: LooksDane) {
               <p className="mt-2 text-[12px] text-faint">
                 {dane.limit.bez_limitu ? (
                   <>
-                    Konto administratora — bez limitu. W tym miesiącu: {dane.limit.w_miesiacu}.
+                    Konto administratora - bez limitu. W tym miesiącu: {dane.limit.w_miesiacu}.
                     Kadencja raz na tydzień nadal jest tą sensowną: częściej mierzy się
                     oświetlenie, nie zmianę.
                   </>
                 ) : (
                   <>
                     W tym miesiącu: {dane.limit.w_miesiacu} z {dane.limit.limit_miesiaca}. Sensowna
-                    kadencja to raz na tydzień — częściej mierzy się oświetlenie, nie zmianę.
+                    kadencja to raz na tydzień - częściej mierzy się oświetlenie, nie zmianę.
                   </>
                 )}
               </p>
@@ -420,7 +420,7 @@ export function LooksScreen(dane: LooksDane) {
       )}
 
       <FaceScanner
-        // Zamknięcie kasuje komponent razem ze zrobionymi zdjęciami — następne
+        // Zamknięcie kasuje komponent razem ze zrobionymi zdjęciami - następne
         // wejście zaczyna od pierwszego ujęcia, a nie w środku poprzedniego.
         key={skanerOtwarty ? "otwarty" : "zamkniety"}
         open={skanerOtwarty}
@@ -437,5 +437,5 @@ export function LooksScreen(dane: LooksDane) {
   );
 }
 
-/** Lista protokołów do włączenia — używana też przez edytor rutyn. */
+/** Lista protokołów do włączenia - używana też przez edytor rutyn. */
 export const WSZYSTKIE_PROTOKOLY = PROTOKOLY;

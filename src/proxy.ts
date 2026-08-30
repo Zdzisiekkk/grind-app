@@ -4,14 +4,14 @@ import { createServerClient } from "@supabase/ssr";
 /**
  * Trasy dostępne bez sesji.
  *
- * „/offline" musi tu być, bo service worker pokazuje ją dokładnie wtedy, gdy
- * nie ma jak sprawdzić sesji — przekierowanie na logowanie dawałoby wtedy
+ * "/offline" musi tu być, bo service worker pokazuje ją dokładnie wtedy, gdy
+ * nie ma jak sprawdzić sesji - przekierowanie na logowanie dawałoby wtedy
  * ekran, którego też nie da się pobrać.
  *
  * Dwie trasy API sprawdzają tożsamość SAME i z definicji przychodzą bez
  * ciasteczka: webhook Stripe'a (podpis zdarzenia) i wysyłka powiadomień
  * (sekret budzika). Bez tego wyjątku ich żądania POST lądowały na /login,
- * gdzie nie ma obsługi POST — czyli opłacona subskrypcja nigdy nie zostałaby
+ * gdzie nie ma obsługi POST - czyli opłacona subskrypcja nigdy nie zostałaby
  * zapisana, a powiadomienia nigdy nie wyszły. Obie usterki są niewidoczne
  * z poziomu aplikacji, bo nic w niej nie klika w te adresy.
  */
@@ -21,12 +21,12 @@ const PUBLIC_PATHS = [
   "/offline",
   "/api/stripe/webhook",
   "/api/push/send",
-  // Regulamin i polityka prywatności muszą być czytelne PRZED założeniem konta —
+  // Regulamin i polityka prywatności muszą być czytelne PRZED założeniem konta -
   // inaczej zgoda przy rejestracji byłaby zgodą na coś, czego nie dało się zobaczyć.
   "/regulamin",
   "/prywatnosc",
-  // Sam skrót commita. Sprawdzenie „czy nowy kod już stoi" musi działać
-  // wcześniej niż cokolwiek, co wymaga sesji — bo służy właśnie do tego,
+  // Sam skrót commita. Sprawdzenie "czy nowy kod już stoi" musi działać
+  // wcześniej niż cokolwiek, co wymaga sesji - bo służy właśnie do tego,
   // żeby wiedzieć, kiedy bezpiecznie ruszyć migrację zależną od kolejności.
   "/api/wersja",
 ];
@@ -36,7 +36,7 @@ const PUBLIC_PATHS = [
  * użytkownik nie wszedł na żaden ekran z danymi.
  *
  * Next.js 16 zastąpił konwencję `middleware` plikiem `proxy` (runtime Node.js,
- * bez wariantu edge) — stąd nazwa pliku i funkcji.
+ * bez wariantu edge) - stąd nazwa pliku i funkcji.
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

@@ -32,7 +32,7 @@ export default async function StartPage() {
       .order("days_per_week"),
   ]);
 
-  // Kto już przeszedł kreator, nie ma po co do niego wracać — wejście przez
+  // Kto już przeszedł kreator, nie ma po co do niego wracać - wejście przez
   // adres wprost odsyłamy na pulpit.
   if (profile?.onboarded_at) redirect("/");
 

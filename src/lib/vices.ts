@@ -3,7 +3,7 @@
  *
  * Moduł jest czysty (żadnego Reacta, żadnego Supabase), więc te same funkcje
  * liczą wynik na serwerze, w przeglądarce i w teście. To ważniejsze niż
- * zwykle: licznik „czystych dni" jest jedyną rzeczą, po którą się tu sięga,
+ * zwykle: licznik "czystych dni" jest jedyną rzeczą, po którą się tu sięga,
  * a licznik, który raz pokazuje 12, a raz 13, nie jest wart nic.
  */
 
@@ -24,7 +24,7 @@ const DAY_MS = 86_400_000;
 /**
  * Od kiedy trwa obecna passa.
  *
- * Ostatnia wpadka, a gdy jej nie ma — moment rzucenia. Wpadki wpisane wstecz
+ * Ostatnia wpadka, a gdy jej nie ma - moment rzucenia. Wpadki wpisane wstecz
  * liczą się od chwili zdarzenia, nie od chwili wpisania.
  */
 export function cleanSince(vice: ViceLike, events: ViceEventLike[]): Date {
@@ -46,7 +46,7 @@ export function daysClean(vice: ViceLike, events: ViceEventLike[], now = new Dat
 }
 
 /**
- * Najdłuższa passa w historii — łącznie z trwającą.
+ * Najdłuższa passa w historii - łącznie z trwającą.
  *
  * Odstępy liczymy między kolejnymi wpadkami, a pierwszy odstęp od momentu
  * rzucenia. Bez tego ostatniego rekord po pierwszej wpadce wynosiłby zero,
@@ -70,7 +70,7 @@ export function bestStreak(vice: ViceLike, events: ViceEventLike[], now = new Da
 /**
  * Co nałóg oddał: pieniądze i czas.
  *
- * Liczone od bieżącej passy, nie od sumy życia — po wpadce licznik startuje
+ * Liczone od bieżącej passy, nie od sumy życia - po wpadce licznik startuje
  * od nowa, tak samo jak dni. Nagroda za passę, którą się właśnie zerwało,
  * byłaby kłamstwem.
  */
@@ -82,7 +82,7 @@ export function saved(vice: ViceLike, days: number): { money: number; minutes: n
 }
 
 /**
- * Wyzwalacze, które się powtarzają — od najczęstszego.
+ * Wyzwalacze, które się powtarzają - od najczęstszego.
  *
  * Jedna wpadka to pech, trzy z tym samym powodem to wzorzec i dopiero z nim
  * da się coś zrobić. Dlatego zwracamy liczby, a nie samą listę.
@@ -103,12 +103,12 @@ export function topTriggers(events: ViceEventLike[], limit = 3): { trigger: stri
     .slice(0, limit);
 }
 
-/** Ile razy chęć minęła bez wpadki — jedyna liczba tutaj, która tylko rośnie. */
+/** Ile razy chęć minęła bez wpadki - jedyna liczba tutaj, która tylko rośnie. */
 export function urgesResisted(events: ViceEventLike[]): number {
   return events.filter((e) => e.kind === "urge").length;
 }
 
-/** „12 dni", „1 dzień", „0 dni" — polska odmiana bez zgadywania w JSX. */
+/** "12 dni", "1 dzień", "0 dni" - polska odmiana bez zgadywania w JSX. */
 export function dayWord(n: number): string {
   if (n === 1) return "dzień";
   return "dni";
@@ -122,7 +122,7 @@ export function formatMinutes(minutes: number): string {
   return `${Math.round(hours / 24)} dni`;
 }
 
-/** Progi, na których licznik dostaje inny kolor — pierwszy tydzień jest najtrudniejszy. */
+/** Progi, na których licznik dostaje inny kolor - pierwszy tydzień jest najtrudniejszy. */
 export function cleanBand(days: number): "start" | "week" | "month" | "solid" {
   if (days < 7) return "start";
   if (days < 30) return "week";
@@ -137,7 +137,7 @@ export function cleanBand(days: number): "start" | "week" | "month" | "solid" {
 /**
  * Progi, po które się sięga.
  *
- * Gęste na początku, rzadsze później — pierwszy tydzień jest najtrudniejszy
+ * Gęste na początku, rzadsze później - pierwszy tydzień jest najtrudniejszy
  * i to wtedy najbardziej potrzeba czegoś blisko. Przy 200 dniach nikt nie
  * potrzebuje już celu na jutro.
  */
@@ -160,7 +160,7 @@ const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 /**
  * Ostatnie `count` dni jako siatka.
  *
- * Passa policzona w jednej liczbie nie pokazuje kształtu — a kształt jest
+ * Passa policzona w jednej liczbie nie pokazuje kształtu - a kształt jest
  * tym, co widać od razu: czy wpadki są rozrzucone, czy chodzą parami.
  * Dni sprzed rzucenia zostają puste, żeby nie udawać sukcesu, którego
  * wtedy nie było.
@@ -186,7 +186,7 @@ export function dayCells(vice: ViceLike, events: ViceEventLike[], count = 90, no
 /**
  * Kiedy w ciągu doby przychodzą wpadki.
  *
- * Wyzwalacz mówi „co", to mówi „kiedy" — a plan da się zrobić tylko wtedy,
+ * Wyzwalacz mówi "co", to mówi "kiedy" - a plan da się zrobić tylko wtedy,
  * gdy wiadomo, o której godzinie ma zadziałać.
  */
 export function lapsesByPartOfDay(events: ViceEventLike[]): { label: string; count: number }[] {
@@ -213,8 +213,8 @@ export function lapsesByPartOfDay(events: ViceEventLike[]): { label: string; cou
 /**
  * Ile minut trwa fala chęci, zanim opadnie.
  *
- * Liczba jest przybliżona z założenia — chodzi o to, żeby dać jej koniec.
- * „Przeczekaj" bez widocznego końca to nie jest instrukcja.
+ * Liczba jest przybliżona z założenia - chodzi o to, żeby dać jej koniec.
+ * "Przeczekaj" bez widocznego końca to nie jest instrukcja.
  */
 export const URGE_SECONDS = 15 * 60;
 
@@ -237,8 +237,8 @@ export type ViceWeek = {
  * Ekran nałogów pokazuje jeden nałóg naraz i ostatnie 90 dni. Ekran postępów
  * ma inne zadanie: postawić nałogi OBOK snu i objętości treningowej, bo to
  * jedyne miejsce w aplikacji, gdzie widać rzeczy naraz. Dlatego liczymy tu
- * wszystkie nałogi razem — pytanie brzmi „jak wyglądał ten tydzień", a nie
- * „jak wyglądał ten jeden nałóg".
+ * wszystkie nałogi razem - pytanie brzmi "jak wyglądał ten tydzień", a nie
+ * "jak wyglądał ten jeden nałóg".
  */
 export function viceWeeks(
   vices: (ViceLike & { id: string })[],
@@ -246,7 +246,7 @@ export function viceWeeks(
   weeks = 12,
   now = new Date(),
 ): ViceWeek[] {
-  // Poniedziałek bieżącego tygodnia, liczony w UTC — to czysta arytmetyka
+  // Poniedziałek bieżącego tygodnia, liczony w UTC - to czysta arytmetyka
   // kalendarzowa, a doba w UTC zawsze ma 24 godziny.
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const shift = (today.getUTCDay() + 6) % 7;
@@ -261,7 +261,7 @@ export function viceWeeks(
     let urges = 0;
     let lapses = 0;
     // Dzień liczy się do czystych tylko wtedy, gdy JAKIKOLWIEK nałóg był już
-    // wtedy rzucony — inaczej tygodnie sprzed założenia konta wyglądałyby
+    // wtedy rzucony - inaczej tygodnie sprzed założenia konta wyglądałyby
     // na siedem dni sukcesu.
     let tracked = false;
 
@@ -281,7 +281,7 @@ export function viceWeeks(
       }
     }
 
-    // Tydzień bieżący jeszcze trwa — liczymy tylko dni, które się wydarzyły.
+    // Tydzień bieżący jeszcze trwa - liczymy tylko dni, które się wydarzyły.
     const elapsed = Math.min(7, Math.round((today.getTime() - start.getTime()) / DAY_MS) + 1);
     const days = Math.max(0, Math.min(7, elapsed));
 
@@ -295,14 +295,14 @@ export function viceWeeks(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Kryzys — co robić przez te piętnaście minut                                */
+/*  Kryzys - co robić przez te piętnaście minut                                */
 /* -------------------------------------------------------------------------- */
 
 /**
  * Oddech 4-7-8: wdech 4 s, wstrzymanie 7 s, wydech 8 s.
  *
  * Cykl trwa 19 sekund. Wybrany nie dlatego, że jest magiczny, tylko dlatego,
- * że wydech dłuższy od wdechu wymusza wolniejsze tempo — a policzalne fazy
+ * że wydech dłuższy od wdechu wymusza wolniejsze tempo - a policzalne fazy
  * dają rękom i głowie jedno zadanie zamiast żadnego.
  */
 export const BREATH_CYCLE = 19;
@@ -311,7 +311,7 @@ export function breathPhase(elapsedSeconds: number): {
   label: string;
   left: number;
   total: number;
-  /** 0–1: jak daleko w tej fazie. Sterujemy tym rozmiarem okręgu. */
+  /** 0-1: jak daleko w tej fazie. Sterujemy tym rozmiarem okręgu. */
   progress: number;
 } {
   const t = ((elapsedSeconds % BREATH_CYCLE) + BREATH_CYCLE) % BREATH_CYCLE;
@@ -335,7 +335,7 @@ export type CrisisStep = {
  *
  * Panel pokazywał wcześniej sam licznik, passę i zaoszczędzone pieniądze.
  * Piętnaście minut to długo, gdy patrzy się na zegar, a człowiek w kryzysie
- * o pierwszej w nocy nie potrzebuje statystyki — potrzebuje czegoś do zrobienia
+ * o pierwszej w nocy nie potrzebuje statystyki - potrzebuje czegoś do zrobienia
  * rękami. Kroki idą od najbardziej fizycznego do najbardziej twojego, bo
  * w pierwszej minucie nikt nie jest gotowy czytać własnych powodów.
  */
@@ -343,27 +343,27 @@ export const CRISIS_STEPS: CrisisStep[] = [
   {
     from: 0,
     title: "Oddychaj razem z kółkiem",
-    body: "Cztery sekundy wdech, siedem wstrzymania, osiem wydechu. Nie licz w głowie — patrz na kółko. To ma zająć ręce i głowę, a nie cię uleczyć.",
+    body: "Cztery sekundy wdech, siedem wstrzymania, osiem wydechu. Nie licz w głowie - patrz na kółko. To ma zająć ręce i głowę, a nie cię uleczyć.",
     breathing: true,
   },
   {
     from: 180,
     title: "Wstań i się rusz",
-    body: "Szklanka wody i dwie minuty ruchu: dwadzieścia przysiadów, spacer po mieszkaniu, cokolwiek. Chęć jest przywiązana do miejsca, w którym siedzisz — zmień miejsce.",
+    body: "Szklanka wody i dwie minuty ruchu: dwadzieścia przysiadów, spacer po mieszkaniu, cokolwiek. Chęć jest przywiązana do miejsca, w którym siedzisz - zmień miejsce.",
   },
   {
     from: 420,
     title: "Przypomnij sobie, po co",
-    body: "Przeczytaj swój powód poniżej. Jeśli go nie wpisałeś, wpisz go teraz w ustawieniach nałogu — nie na tę falę, tylko na następną.",
+    body: "Przeczytaj swój powód poniżej. Jeśli go nie wpisałeś, wpisz go teraz w ustawieniach nałogu - nie na tę falę, tylko na następną.",
   },
   {
     from: 660,
     title: "Zostały cztery minuty",
-    body: "Najgorsze już minęło; fala zwykle opada wcześniej, niż kończy się ten zegar. Sprawdź, ile razy przeczekałeś ją wcześniej — ta liczba nie kłamie.",
+    body: "Najgorsze już minęło; fala zwykle opada wcześniej, niż kończy się ten zegar. Sprawdź, ile razy przeczekałeś ją wcześniej - ta liczba nie kłamie.",
   },
 ];
 
-/** Krok aktualny dla danego stanu zegara i numer kroku (do „2 z 4"). */
+/** Krok aktualny dla danego stanu zegara i numer kroku (do "2 z 4"). */
 export function crisisStepAt(secondsLeft: number, total = URGE_SECONDS): {
   step: CrisisStep;
   index: number;

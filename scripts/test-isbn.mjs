@@ -1,8 +1,8 @@
 /*
  * Sprawdza czytanie numerów ISBN.
  *
- * Kod z okładki bywa odczytany z jedną przekłamaną cyfrą — i wtedy suma
- * kontrolna jest jedyną rzeczą, która stoi między „przeskanuj jeszcze raz"
+ * Kod z okładki bywa odczytany z jedną przekłamaną cyfrą - i wtedy suma
+ * kontrolna jest jedyną rzeczą, która stoi między "przeskanuj jeszcze raz"
  * a cichym dodaniem cudzej książki na półkę.
  *
  * Uruchom: npm run test:isbn
@@ -13,7 +13,7 @@ import { bookFromGoogleBooks, bookFromOpenLibrary, bookFromOpenLibraryEdition, c
 let fails = 0;
 const check = (label, cond, extra = "") => {
   if (!cond) fails++;
-  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
+  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " - " + extra : ""}`);
 };
 
 console.log("\n  Normalizacja\n");
@@ -34,7 +34,7 @@ check("polska książka z prefiksem 978-83",
 
 console.log("\n  Suma kontrolna\n");
 
-// Ta sama książka z jedną przekłamaną cyfrą — dokładnie to, co robi zły odczyt.
+// Ta sama książka z jedną przekłamaną cyfrą - dokładnie to, co robi zły odczyt.
 check("jedna zmieniona cyfra odrzucona",
   normalizeIsbn("9780735211293") === null, String(normalizeIsbn("9780735211293")));
 
@@ -51,7 +51,7 @@ console.log("\n  Kody kreskowe\n");
 check("kod książki rozpoznany", looksLikeBookBarcode("9780735211292"));
 check("kod z prefiksem 979 też jest książką", looksLikeBookBarcode("9791234567896"),
   String(looksLikeBookBarcode("9791234567896")));
-// Kod produktu spożywczego ma poprawną sumę EAN-13, ale nie jest ISBN-em —
+// Kod produktu spożywczego ma poprawną sumę EAN-13, ale nie jest ISBN-em -
 // bez sprawdzenia prefiksu skaner łapałby paczkę ryżu leżącą obok książki.
 check("kod zwykłego produktu odrzucony", !looksLikeBookBarcode("5901234123457"));
 check("czyszczenie zostawia same znaki numeru",
@@ -122,7 +122,7 @@ const gb = bookFromGoogleBooks("9788328302341", { items: [{ volumeInfo: {
 check("Google Books czyta tytuł, autora i strony",
   gb.title === "Czysty kod" && gb.author === "Robert C. Martin" && gb.pages === 424,
   JSON.stringify(gb));
-// Strona chodzi po https — obrazek po http zostałby zablokowany.
+// Strona chodzi po https - obrazek po http zostałby zablokowany.
 check("adres okładki podnoszony do https",
   gb.coverUrl === "https://books.google.com/x.jpg", gb.coverUrl);
 check("pusta lista wyników daje null",

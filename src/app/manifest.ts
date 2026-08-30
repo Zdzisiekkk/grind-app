@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 
-/** Next generuje z tego plik /manifest.webmanifest — pozwala „dodać do ekranu głównego”. */
+/** Next generuje z tego plik /manifest.webmanifest - pozwala "dodać do ekranu głównego". */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Grind — trening, dieta, aktywności",
+    name: "Grind - trening, dieta, aktywności",
     short_name: "Grind",
     description:
-      "Plan treningowy, dziennik serii, dieta z Open Food Facts i wykresy postępów — wszystko w jednym miejscu.",
+      "Plan treningowy, dziennik serii, dieta z Open Food Facts i wykresy postępów - wszystko w jednym miejscu.",
     start_url: "/",
     scope: "/",
     display: "standalone",

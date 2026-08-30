@@ -3,11 +3,11 @@
  *
  * CAŁA ARYTMETYKA JEST TUTAJ, nie w modelu. To jest świadoma decyzja:
  * model językowy potrafi przekonująco pomylić się w liczeniu trendu, a taka
- * pomyłka kończy się poradą „dodaj 300 kcal", gdy waga i tak rośnie. Kod
+ * pomyłka kończy się poradą "dodaj 300 kcal", gdy waga i tak rośnie. Kod
  * liczy fakty, model dostaje je gotowe i ma za zadanie wytłumaczyć je po
  * ludzku oraz zaproponować jedną konkretną zmianę.
  *
- * Dzięki temu darmowy użytkownik też widzi sygnał („waga stoi trzeci tydzień") —
+ * Dzięki temu darmowy użytkownik też widzi sygnał ("waga stoi trzeci tydzień") -
  * płatne jest wyjaśnienie i propozycja, a nie dostęp do własnych danych.
  */
 
@@ -38,7 +38,7 @@ export type DietFinding = {
 };
 
 /**
- * Trend wagi liczymy regresją liniową, a nie różnicą „pierwszy minus ostatni".
+ * Trend wagi liczymy regresją liniową, a nie różnicą "pierwszy minus ostatni".
  *
  * Waga potrafi skoczyć o dwa kilogramy po słonym obiedzie. Odejmowanie dwóch
  * pojedynczych pomiarów daje wtedy wynik mówiący o zawartości wody, a nie
@@ -74,7 +74,7 @@ export function analyseDietVsWeight({
   daysLogged,
   periodDays,
 }: {
-  /** Posortowane rosnąco po dacie, z okna 14–28 dni. */
+  /** Posortowane rosnąco po dacie, z okna 14-28 dni. */
   weights: WeightPoint[];
   goal: Goal;
   kcalGoal: number | null;
@@ -110,7 +110,7 @@ export function analyseDietVsWeight({
       onTrack: true,
       problem: "no_data",
       message:
-        "Za mało pomiarów wagi, żeby cokolwiek stwierdzić. Wchodź na wagę 3–4 razy w tygodniu, rano, po toalecie — po dwóch tygodniach będzie o czym rozmawiać.",
+        "Za mało pomiarów wagi, żeby cokolwiek stwierdzić. Wchodź na wagę 3-4 razy w tygodniu, rano, po toalecie - po dwóch tygodniach będzie o czym rozmawiać.",
       suggestKcal: 0,
     };
   }
@@ -133,7 +133,7 @@ export function analyseDietVsWeight({
       onTrack: false,
       problem: "adherence",
       message: over
-        ? `Jesz średnio ${avgKcal} kcal przy celu ${kcalGoal}. Zanim ruszymy cel, warto najpierw w niego trafić — zmiana liczby, której i tak nie realizujesz, niczego nie naprawi.`
+        ? `Jesz średnio ${avgKcal} kcal przy celu ${kcalGoal}. Zanim ruszymy cel, warto najpierw w niego trafić - zmiana liczby, której i tak nie realizujesz, niczego nie naprawi.`
         : `Jesz średnio ${avgKcal} kcal przy celu ${kcalGoal}, czyli sporo poniżej. Zbyt duży deficyt zabiera siłę i sen szybciej niż tłuszcz.`,
       suggestKcal: 0,
     };
@@ -195,7 +195,7 @@ const STALL_MIN_DAYS = 21;
  *
  * Raz w tygodniu to podłoga, przy której w ogóle wypada oczekiwać postępu
  * w ćwiczeniu złożonym. 0,75 zamiast równego 1 daje zapas na jeden opuszczony
- * trening w miesiącu — nie chcemy besztać kogoś za chorobę.
+ * trening w miesiącu - nie chcemy besztać kogoś za chorobę.
  */
 const MIN_SESSIONS_PER_WEEK = 0.75;
 
@@ -203,7 +203,7 @@ const MIN_SESSIONS_PER_WEEK = 0.75;
  * Stagnacja to brak poprawy MIMO regularnej pracy.
  *
  * Dlatego zanim nazwiemy coś stagnacją, sprawdzamy częstotliwość: ćwiczenie
- * robione raz na trzy tygodnie nie stoi w miejscu — po prostu go nie robisz.
+ * robione raz na trzy tygodnie nie stoi w miejscu - po prostu go nie robisz.
  * Doradzanie deloadu komuś, kto nie przychodzi, to najgorsza możliwa porada.
  */
 export function findStrengthStalls(rows: SetRow[], today: string, windowDays = 56): StrengthFinding[] {
@@ -247,7 +247,7 @@ export function findStrengthStalls(rows: SetRow[], today: string, windowDays = 5
         changeKg: Math.round(changeKg * 10) / 10,
         perWeek: Math.round(perWeek * 10) / 10,
         problem: "frequency",
-        message: `${exercise}: ${sessions.length} sesji w ${windowDays} dni, czyli rzadziej niż raz w tygodniu. To nie jest stagnacja — po prostu za rzadko, żeby oczekiwać postępu.`,
+        message: `${exercise}: ${sessions.length} sesji w ${windowDays} dni, czyli rzadziej niż raz w tygodniu. To nie jest stagnacja - po prostu za rzadko, żeby oczekiwać postępu.`,
       });
       continue;
     }
@@ -265,6 +265,6 @@ export function findStrengthStalls(rows: SetRow[], today: string, windowDays = 5
     });
   }
 
-  // Najpierw to, co stoi najdłużej — tam jest największa strata.
+  // Najpierw to, co stoi najdłużej - tam jest największa strata.
   return findings.sort((a, b) => b.daysSincePr - a.daysSincePr);
 }

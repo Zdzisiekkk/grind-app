@@ -1,13 +1,13 @@
 /**
- * Health Score — jedna liczba 0–100 złożona z sześciu filarów.
+ * Health Score - jedna liczba 0-100 złożona z sześciu filarów.
  *
  * Trzy zasady, które decydują o tym, czy taka liczba jest uczciwa:
  *
  *  1. BRAK DANYCH NIE KARZE. Filar bez wpisów wypada z rachunku, a jego waga
  *     rozkłada się na pozostałe. Inaczej wynik mierzyłby pilność w prowadzeniu
- *     dziennika, a nie formę — i spadałby najmocniej dokładnie wtedy, gdy
+ *     dziennika, a nie formę - i spadałby najmocniej dokładnie wtedy, gdy
  *     jesteś zajęty. Widok zawsze pokazuje, ile filarów weszło do wyniku.
- *  2. NIGDY SAMA LICZBA. Zawsze obok rozbicie na filary z opisem, bo „68"
+ *  2. NIGDY SAMA LICZBA. Zawsze obok rozbicie na filary z opisem, bo "68"
  *     bez kontekstu nie mówi, co poprawić.
  *  3. OKNO KROCZĄCE 7 DNI. Jedna nieprzespana noc nie ma prawa zawalić wyniku,
  *     a tydzień porządnej roboty ma prawo go odbudować.
@@ -25,14 +25,14 @@ export type Pillar = {
   icon: string;
   /** Udział w wyniku, gdy filar ma dane. */
   weight: number;
-  /** 0–100 albo null, gdy brak danych. */
+  /** 0-100 albo null, gdy brak danych. */
   score: number | null;
-  /** Krótkie „skąd ta liczba". */
+  /** Krótkie "skąd ta liczba". */
   detail: string;
 };
 
 export type HealthResult = {
-  /** 0–100 albo null, gdy żaden filar nie ma danych. */
+  /** 0-100 albo null, gdy żaden filar nie ma danych. */
   total: number | null;
   pillars: Pillar[];
   /** Ile filarów weszło do wyniku i ile ich jest w ogóle. */
@@ -53,7 +53,7 @@ const clamp = (x: number) => Math.max(0, Math.min(100, Math.round(x)));
 
 /**
  * Kaloryczna trafność: pełne punkty w promieniu 10 % od celu, zero przy 40 %.
- * Odchylenie w obie strony liczy się tak samo — 1000 kcal ponad cel to nie
+ * Odchylenie w obie strony liczy się tak samo - 1000 kcal ponad cel to nie
  * większy sukces niż 1000 kcal pod celem.
  */
 function kcalAccuracy(avg: number, goal: number): number {
@@ -110,8 +110,8 @@ export function healthScore({
       : null;
 
   /* --- Nawodnienie --- */
-  // Średnia z dni, w których cokolwiek zapisałeś — przemnożona przez pokrycie,
-  // bo „wypiłem 3 l w jeden dzień z siedmiu" to nie jest nawodniony tydzień.
+  // Średnia z dni, w których cokolwiek zapisałeś - przemnożona przez pokrycie,
+  // bo "wypiłem 3 l w jeden dzień z siedmiu" to nie jest nawodniony tydzień.
   const waterGoal = goals.waterMl || DEFAULT_WATER_GOAL_ML;
   const water =
     summary.avg_water_ml != null && summary.days_water_logged > 0
@@ -123,7 +123,7 @@ export function healthScore({
       : null;
 
   /* --- Regeneracja --- */
-  // Odwrotność średniego bólu. Bez kontuzji filar po prostu nie istnieje —
+  // Odwrotność średniego bólu. Bez kontuzji filar po prostu nie istnieje -
   // nie dajemy za to ani premii, ani kary.
   const recovery = summary.avg_pain != null ? clamp(100 - summary.avg_pain * 10) : null;
 
@@ -193,7 +193,7 @@ export function healthScore({
   return { total, pillars, covered: active.length, possible: pillars.length };
 }
 
-/** Pasmo wyniku — ta sama paleta statusów co ból i sen, zawsze z opisem. */
+/** Pasmo wyniku - ta sama paleta statusów co ból i sen, zawsze z opisem. */
 export function healthBand(score: number): { label: string; color: string; icon: string } {
   if (score >= 80) return { label: "forma na plus", color: STATUS.good, icon: "●" };
   if (score >= 65) return { label: "jest nieźle", color: STATUS.warning, icon: "▲" };
@@ -201,7 +201,7 @@ export function healthBand(score: number): { label: string; color: string; icon:
   return { label: "słaby tydzień", color: STATUS.critical, icon: "■" };
 }
 
-/** Najsłabszy filar z danymi — podpowiedź „co ruszyć najpierw". */
+/** Najsłabszy filar z danymi - podpowiedź "co ruszyć najpierw". */
 export function weakestPillar(result: HealthResult): Pillar | null {
   const withData = result.pillars.filter((p) => p.score != null);
   if (withData.length === 0) return null;

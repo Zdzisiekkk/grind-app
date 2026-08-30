@@ -2,7 +2,7 @@
  * Wynik nocy a drzemki.
  *
  * Sedno: trzy drzemki po 20 minut i jedna sześćdziesięciominutowa dają tę samą
- * sumę minut, ale nie to samo dla organizmu — i wynik ma to widzieć. Do tego
+ * sumę minut, ale nie to samo dla organizmu - i wynik ma to widzieć. Do tego
  * dzień bez drzemki nie może być z tego powodu ani lepszy, ani gorszy.
  */
 import { scoreNight, SLEEP_WEIGHTS } from "@/lib/sleep";
@@ -10,7 +10,7 @@ import { scoreNight, SLEEP_WEIGHTS } from "@/lib/sleep";
 let ok = 0, bad = 0;
 const check = (n, c, d = "") => {
   if (c) { ok++; console.log(`  ✅ ${n}`); }
-  else { bad++; console.log(`  ❌ ${n}${d ? " — " + d : ""}`); }
+  else { bad++; console.log(`  ❌ ${n}${d ? " - " + d : ""}`); }
 };
 
 /** Porządna noc, żeby zmiana wyniku brała się wyłącznie z drzemek. */
@@ -86,12 +86,12 @@ check("idealna drzemka nie zmienia wyniku dobrej nocy",
   `${wynik([{ minutes: 20, start: 13 * 60 }])} vs ${bezDrzemki.total}`);
 
 console.log("\n  Zgodność ze starymi zapisami\n");
-// Wiersz sprzed migracji nie ma pola `naps` w ogóle — ma tylko sumę minut.
+// Wiersz sprzed migracji nie ma pola `naps` w ogóle - ma tylko sumę minut.
 const bezPola = noc([]);
 delete bezPola.naps;
 const stary = scoreNight({ ...bezPola, nap_min: 60 }, { goalMin: 480, referenceBedtime: 1380 });
 check("wiersz sprzed migracji liczy się jak jedna drzemka o tej długości",
   stary.total === wynik(jednaGodzina), `${stary.total} vs ${wynik(jednaGodzina)}`);
 
-console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : " — WSZYSTKO PRZESZŁO"}\n`);
+console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : " - WSZYSTKO PRZESZŁO"}\n`);
 process.exit(bad ? 1 : 0);

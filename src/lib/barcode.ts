@@ -4,13 +4,13 @@
  * Sprawdzamy sumę kontrolną, zanim pójdziemy do Open Food Facts. Aparat potrafi
  * odczytać kod z wygniecionej folii o jedną cyfrę za dobrze i zwrócić numer,
  * który nie istnieje. Zapytanie o niego to sekunda czekania i komunikat
- * „nie znaleziono" zamiast prośby o ponowne przyłożenie kodu — a to dwie różne
+ * "nie znaleziono" zamiast prośby o ponowne przyłożenie kodu - a to dwie różne
  * rzeczy dla człowieka stojącego w kuchni z otwartym jogurtem.
  *
  * Obsługujemy trzy formaty, bo tyle chodzi po polskich sklepach:
- *   EAN-13 — standard europejski,
- *   EAN-8  — małe opakowania (guma, batony),
- *   UPC-A  — 12 cyfr, głównie import z USA.
+ *   EAN-13 - standard europejski,
+ *   EAN-8  - małe opakowania (guma, batony),
+ *   UPC-A  - 12 cyfr, głównie import z USA.
  */
 
 /** Suma kontrolna EAN/UPC: wagi 3 i 1 naprzemiennie, licząc od prawej. */
@@ -31,7 +31,7 @@ function poprawny(kod: string): boolean {
 /**
  * Sprowadza odczyt do postaci, jakiej używa Open Food Facts.
  *
- * UPC-A rozszerzamy do EAN-13 zerem z przodu — OFF trzyma amerykańskie
+ * UPC-A rozszerzamy do EAN-13 zerem z przodu - OFF trzyma amerykańskie
  * produkty właśnie tak, więc bez tego ten sam batonik raz by się znajdował,
  * a raz nie, zależnie od tego, czym go zeskanowano.
  */

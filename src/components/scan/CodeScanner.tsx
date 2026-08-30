@@ -9,11 +9,11 @@ import { Alert, Button, Spinner } from "@/components/ui";
  * Dwa sposoby odczytu, bo jeden nie wystarcza: przeglądarki oparte na Chrome
  * mają wbudowany BarcodeDetector (zero dodatkowych kilobajtów), a Safari na
  * iPhonie go nie ma i nigdy nie miało. Tam dociągamy dekoder dynamicznym
- * importem — dopiero po włączeniu aparatu, żeby nie obciążać nim całej
+ * importem - dopiero po włączeniu aparatu, żeby nie obciążać nim całej
  * aplikacji.
  *
  * Komponent jest sam z siebie głupi: rozpoznaje kod i oddaje go dalej. Co
- * znaczy dany numer — książka czy jogurt — rozstrzyga ten, kto go osadza.
+ * znaczy dany numer - książka czy jogurt - rozstrzyga ten, kto go osadza.
  *
  * Aparat zapala się z przycisku, nie po samym pojawieniu się na ekranie.
  * Kamera włączona bez wyraźnego kliknięcia zaskakuje, a na iPhonie prośba
@@ -36,7 +36,7 @@ export type CodeScannerProps = {
   aktywny: boolean;
   /** Formaty dla BarcodeDetectora, np. ["ean_13", "ean_8", "upc_a"]. */
   formaty: string[];
-  /** Filtr wstępny — odrzuca odczyty, które nie są tym, czego szukamy. */
+  /** Filtr wstępny - odrzuca odczyty, które nie są tym, czego szukamy. */
   akceptuj: (kod: string) => boolean;
   onKod: (kod: string) => void;
   /** Zdanie pod podglądem: co przyłożyć do aparatu. */
@@ -124,7 +124,7 @@ export function CodeScanner({ aktywny, formaty, akceptuj, onKod, podpowiedz }: C
             return;
           }
         } catch {
-          // Pojedyncza nieudana klatka nic nie znaczy — próbujemy dalej.
+          // Pojedyncza nieudana klatka nic nie znaczy - próbujemy dalej.
         }
         if (!przerwane) requestAnimationFrame(() => void tick());
       };
@@ -163,7 +163,7 @@ export function CodeScanner({ aktywny, formaty, akceptuj, onKod, podpowiedz }: C
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-black">
         <video ref={videoRef} className="h-full w-full object-cover" aria-label="Podgląd z aparatu" />
 
-        {/* Ramka celownika — kod ma trafić w poprzeczkę, nie gdziekolwiek. */}
+        {/* Ramka celownika - kod ma trafić w poprzeczkę, nie gdziekolwiek. */}
         {dziala && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="h-24 w-4/5 rounded-lg border-2 border-white/70">

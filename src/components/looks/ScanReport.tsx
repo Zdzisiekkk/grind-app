@@ -10,7 +10,7 @@ import type { Kategoria, PodocenaKlucz, WygladAnalysis } from "@/lib/ai/wygladSc
  * Pełny raport z ostatniego skanu.
  *
  * Plan jest zwinięty. Sześć rozwiniętych zaleceń naraz czyta się jak wyrok,
- * a nie jak listę rzeczy do zrobienia — i kończy się tym, że nie robi się
+ * a nie jak listę rzeczy do zrobienia - i kończy się tym, że nie robi się
  * żadnego. Rozwinięte jest tylko pierwsze, czyli to o największym wpływie.
  */
 
@@ -41,7 +41,7 @@ export function ScanReport({
       {!analiza.jakosc_zdjecia.wystarczajaca && (
         <Alert tone="warn">
           <strong>Zdjęcie utrudniło ocenę.</strong> {analiza.jakosc_zdjecia.uwagi} Wynik tego skanu
-          traktuj ostrożnie — nie liczymy go też do porównań.
+          traktuj ostrożnie - nie liczymy go też do porównań.
         </Alert>
       )}
 
@@ -157,7 +157,7 @@ export function ScanReport({
         </div>
 
         <p className="mt-3 text-[12px] text-faint">
-          Zalecenia z pielęgnacji trafiły już do rutyn — znajdziesz je na liście dnia.
+          Zalecenia z pielęgnacji trafiły już do rutyn - znajdziesz je na liście dnia.
         </p>
       </Card>
     </div>

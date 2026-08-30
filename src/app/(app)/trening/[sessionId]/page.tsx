@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Trening" };
 
-/** Grupuje logi w „ostatni raz, gdy to robiłem”: bierzemy komplet serii z najświeższej daty. */
+/** Grupuje logi w "ostatni raz, gdy to robiłem": bierzemy komplet serii z najświeższej daty. */
 function lastTimeFrom(logs: WorkoutLog[]): { date: string; sets: LastExerciseSet[] } | null {
   if (!logs.length) return null;
   const date = logs[0].date;
@@ -190,7 +190,7 @@ export default async function SessionPage({
     });
   }
 
-  // Kontuzje, o które apka pyta po treningu, plus dzisiejsze oceny — żeby
+  // Kontuzje, o które apka pyta po treningu, plus dzisiejsze oceny - żeby
   // powtórne wejście w arkusz pokazywało to, co już wpisane.
   const [{ data: injuries }, { data: painToday }] = await Promise.all([
     supabase

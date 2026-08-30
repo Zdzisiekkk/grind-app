@@ -9,7 +9,7 @@ const PERKS = [
   {
     icon: "💬",
     title: "Rozmowa z trenerem AI",
-    desc: "Pytasz, on patrzy na Twoje treningi, dietę, sen i kontuzje — i odpowiada konkretnie, a nie ogólnikami z internetu.",
+    desc: "Pytasz, on patrzy na Twoje treningi, dietę, sen i kontuzje - i odpowiada konkretnie, a nie ogólnikami z internetu.",
   },
   {
     icon: "📋",
@@ -79,11 +79,11 @@ export function SubscriptionScreen({
       {notice === "ok" && (
         <Alert tone="success">
           Płatność przyjęta. Dostęp włącza się w chwili, gdy Stripe potwierdzi ją
-          po swojej stronie — zwykle kilka sekund. Odśwież stronę, jeśli poniżej
+          po swojej stronie - zwykle kilka sekund. Odśwież stronę, jeśli poniżej
           nadal widzisz starą informację.
         </Alert>
       )}
-      {notice === "anulowana" && <Alert tone="warn">Płatność przerwana — nic nie pobraliśmy.</Alert>}
+      {notice === "anulowana" && <Alert tone="warn">Płatność przerwana - nic nie pobraliśmy.</Alert>}
       {error && <Alert>{error}</Alert>}
 
       {/* --- Stan konta --- */}
@@ -97,7 +97,7 @@ export function SubscriptionScreen({
       >
         {access.viaAdmin ? (
           <p className="text-[14px]">
-            Masz dostęp jako <span className="font-semibold">administrator</span> — bez płacenia,
+            Masz dostęp jako <span className="font-semibold">administrator</span> - bez płacenia,
             bezterminowo.
           </p>
         ) : access.pro ? (
@@ -120,7 +120,7 @@ export function SubscriptionScreen({
               Zarządzaj płatnością
             </Button>
             <p className="text-[12px] text-faint">
-              Zmiana karty, faktury i rezygnacja — wszystko w panelu Stripe&apos;a.
+              Zmiana karty, faktury i rezygnacja - wszystko w panelu Stripe&apos;a.
               Rezygnacja działa od razu i nie trzeba nikogo o nią prosić.
             </p>
           </div>
@@ -176,7 +176,7 @@ export function SubscriptionScreen({
               </Button>
             ) : (
               <Alert tone="info">
-                Płatności nie są jeszcze uruchomione. Gdy ruszą, przycisk pojawi się tutaj —
+                Płatności nie są jeszcze uruchomione. Gdy ruszą, przycisk pojawi się tutaj -
                 nic nie musisz robić.
               </Alert>
             )}
@@ -184,7 +184,7 @@ export function SubscriptionScreen({
 
           {canBuy && (
             <p className="mt-2 text-[12px] leading-relaxed text-faint">
-              Płatność obsługuje Stripe — BLIK, przelew albo karta. Rezygnacja jednym kliknięciem
+              Płatność obsługuje Stripe - BLIK, przelew albo karta. Rezygnacja jednym kliknięciem
               w panelu, bez dzwonienia i pisania maili.
               {pricing.trial_days > 0 &&
                 ` Pierwsze ${pricing.trial_days} dni nic nie kosztuje; jeśli zrezygnujesz przed końcem, nie pobierzemy nic.`}
@@ -208,7 +208,7 @@ export function SubscriptionScreen({
         <p className="mt-3 text-[12px] leading-relaxed text-faint">
           Historia i wykresy zostają darmowe świadomie: nic nas nie kosztują, a odcinanie
           człowieka od jego własnych danych byłoby zwykłym szantażem. Płatne jest tylko to,
-          co realnie kosztuje przy każdym użyciu — czyli praca modelu AI.
+          co realnie kosztuje przy każdym użyciu - czyli praca modelu AI.
         </p>
       </Card>
     </div>

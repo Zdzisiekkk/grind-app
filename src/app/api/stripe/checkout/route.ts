@@ -6,7 +6,7 @@ import { getPricing } from "@/lib/subscription";
 /**
  * Rozpoczęcie płatności.
  *
- * BLIK i Przelewy24 nie są tu wypisane z palca — metody płatności ustawia się
+ * BLIK i Przelewy24 nie są tu wypisane z palca - metody płatności ustawia się
  * raz w panelu Stripe'a i Checkout sam pokazuje te, które pasują do waluty
  * i kraju kupującego. Wpisanie ich na sztywno w kodzie kończy się błędem
  * u kogoś, kto płaci kartą spoza Polski.

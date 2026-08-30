@@ -62,7 +62,7 @@ export function CatalogScreen({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Szukaj ćwiczenia…"
+          placeholder="Szukaj ćwiczenia..."
         />
         <div className="flex gap-2">
           <Select value={muscle} onChange={(e) => setMuscle(e.target.value)} className="flex-1">

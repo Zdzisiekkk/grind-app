@@ -4,14 +4,14 @@
  *   SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... \
  *   node scripts/verify-plan-import.mjs <plan.json>
  *
- * Porównuje dzień po dniu, po nazwie dnia — nie po kolejności, żeby zmiana
+ * Porównuje dzień po dniu, po nazwie dnia - nie po kolejności, żeby zmiana
  * układu faz nie dawała fałszywych alarmów.
  */
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const ref = process.env.SUPABASE_PROJECT_REF;
 const file = process.argv[2];
 if (!token || !ref || !file) {
-  console.error("Użycie: SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_REF=… node scripts/verify-plan-import.mjs <plan.json>");
+  console.error("Użycie: SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... node scripts/verify-plan-import.mjs <plan.json>");
   process.exit(1);
 }
 
@@ -67,9 +67,9 @@ const fail = (msg) => { problems++; console.log(`  ❌ ${msg}`); };
 
 for (const [dayName, exercises] of expected) {
   const got = actual.get(dayName);
-  if (!got) { fail(`brak dnia „${dayName}" w bazie`); continue; }
+  if (!got) { fail(`brak dnia "${dayName}" w bazie`); continue; }
   if (got.length !== exercises.length) {
-    fail(`„${dayName}": ${got.length} pozycji w bazie, ${exercises.length} w pliku`);
+    fail(`"${dayName}": ${got.length} pozycji w bazie, ${exercises.length} w pliku`);
     continue;
   }
   for (let i = 0; i < exercises.length; i++) {
@@ -77,25 +77,25 @@ for (const [dayName, exercises] of expected) {
     const has = got[i];
     const rebuilt = has.target_sets ? `${has.target_sets}x${has.target_reps}` : has.target_note;
 
-    if (has.cwiczenie !== want.name) fail(`„${dayName}" #${i + 1} nazwa: baza=${has.cwiczenie} plik=${want.name}`);
+    if (has.cwiczenie !== want.name) fail(`"${dayName}" #${i + 1} nazwa: baza=${has.cwiczenie} plik=${want.name}`);
     if ((rebuilt || null) !== (want.target_sets_reps || null))
-      fail(`„${dayName}" #${i + 1} serie: baza=${rebuilt} plik=${want.target_sets_reps}`);
+      fail(`"${dayName}" #${i + 1} serie: baza=${rebuilt} plik=${want.target_sets_reps}`);
     if ((has.technique_notes || null) !== (want.technique || null))
-      fail(`„${dayName}" #${i + 1} technika różni się`);
+      fail(`"${dayName}" #${i + 1} technika różni się`);
     if (has.icon_key !== want.icon_key)
-      fail(`„${dayName}" #${i + 1} ikona: baza=${has.icon_key} plik=${want.icon_key}`);
+      fail(`"${dayName}" #${i + 1} ikona: baza=${has.icon_key} plik=${want.icon_key}`);
   }
-  console.log(`  ✅ ${dayName} — ${exercises.length} pozycji zgodnych`);
+  console.log(`  ✅ ${dayName} - ${exercises.length} pozycji zgodnych`);
 }
 
 const extra = [...actual.keys()].filter((d) => !expected.has(d));
-for (const d of extra) fail(`w bazie jest dzień spoza pliku: „${d}"`);
+for (const d of extra) fail(`w bazie jest dzień spoza pliku: "${d}"`);
 
 const dupes = await query(`
   select name, count(*) as ile from public.exercise_catalog
    where user_id is null group by name having count(*) > 1
 `);
-for (const d of dupes) fail(`duplikat w katalogu: „${d.name}" ×${d.ile}`);
+for (const d of dupes) fail(`duplikat w katalogu: "${d.name}" ×${d.ile}`);
 
 console.log(problems === 0 ? "\n  PLAN ZGODNY Z PLIKIEM" : `\n  PROBLEMÓW: ${problems}`);
 process.exit(problems ? 1 : 0);

@@ -5,7 +5,7 @@ import { AiPlanSchema, EXPERIENCE_LABEL, PlanRequestSchema } from "@/lib/ai/plan
 import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 
-/** Układanie planu potrafi potrwać — dajemy zapas ponad domyślne 60 s Vercela. */
+/** Układanie planu potrafi potrwać - dajemy zapas ponad domyślne 60 s Vercela. */
 export const maxDuration = 300;
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
@@ -18,8 +18,8 @@ const SYSTEM = `Jesteś doświadczonym trenerem przygotowania motorycznego. Ukł
 Zasady, których nie łamiesz:
 1. Każde ćwiczenie wybierasz z KATALOGU podanego przez użytkownika i przepisujesz jego "slug" dokładnie tak, jak w katalogu. Tylko jeśli w katalogu naprawdę nie ma odpowiednika, zostawiasz slug pusty i podajesz samą nazwę po polsku.
 2. Liczba dni treningowych w planie musi zgadzać się z deklarowaną liczbą dni w tygodniu.
-3. Objętość dopasowujesz do zadeklarowanego czasu sesji — licz około 3-4 minuty na serię razem z przerwą.
-4. Ograniczenia zdrowotne traktujesz priorytetowo. Dla każdej zgłoszonej kontuzji w dniach, które ją obciążają, ustawiasz tracks_pain na true, a ćwiczenia dobierasz tak, żeby jej nie prowokować. Przy kontuzji kolana unikasz głębokich przysiadów i plyometrii, przy barku — wyciskania zza głowy i dipów, przy dolnym odcinku pleców — martwego ciągu z podłogi i skłonów z obciążeniem, dopóki nie ma mowy o zgodzie fizjoterapeuty.
+3. Objętość dopasowujesz do zadeklarowanego czasu sesji - licz około 3-4 minuty na serię razem z przerwą.
+4. Ograniczenia zdrowotne traktujesz priorytetowo. Dla każdej zgłoszonej kontuzji w dniach, które ją obciążają, ustawiasz tracks_pain na true, a ćwiczenia dobierasz tak, żeby jej nie prowokować. Przy kontuzji kolana unikasz głębokich przysiadów i plyometrii, przy barku - wyciskania zza głowy i dipów, przy dolnym odcinku pleców - martwego ciągu z podłogi i skłonów z obciążeniem, dopóki nie ma mowy o zgodzie fizjoterapeuty.
 5. Używasz wyłącznie sprzętu, który użytkownik ma do dyspozycji.
 6. Ćwiczenia w dniu układasz w sensownej kolejności: najpierw złożone i najcięższe, potem izolowane, na końcu core i mobilność.
 7. Nie jesteś fizjoterapeutą ani lekarzem. Przy zgłoszonej kontuzji zaznaczasz w coach_notes, żeby skonsultować plan ze specjalistą.
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
   // Układanie planu przez model kosztuje realne pieniądze na koncie Anthropic,
   // a aplikacja jest publiczna. Bez tej bramki każde świeżo założone konto
-  // generowało plany na cudzy rachunek — sprawdzone, tak właśnie było.
+  // generowało plany na cudzy rachunek - sprawdzone, tak właśnie było.
   const { data: pro } = await supabase.rpc("has_pro", {});
   if (!pro) {
     return NextResponse.json(
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Ten sam dzienny licznik, co u trenera — jedno konto nie wyczerpie budżetu
+  // Ten sam dzienny licznik, co u trenera - jedno konto nie wyczerpie budżetu
   // w kwadrans, nawet mając subskrypcję.
   const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
   if (!allowed) {
@@ -70,8 +70,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // I ten sam miesięczny budżet. Plan jest najdroższą rzeczą w aplikacji —
-  // około 3500 tokenów wyjścia — więc rezerwacja jest pięć razy większa niż
+  // I ten sam miesięczny budżet. Plan jest najdroższą rzeczą w aplikacji -
+  // około 3500 tokenów wyjścia - więc rezerwacja jest pięć razy większa niż
   // przy pytaniu do trenera. Bez tego dziesięć planów dziennie mieściłoby się
   // w limicie wywołań i zjadało budżet miesiąca w jedno popołudnie.
   const limit = await rezerwuj(supabase, "plan");
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
           {
             type: "text",
             text: `KATALOG ĆWICZEŃ (slug | nazwa | partia | sprzęt | metryka zapisu):\n${catalogText}`,
-            // Katalog jest ten sam przy każdym generowaniu — trzymamy go w cache'u.
+            // Katalog jest ten sam przy każdym generowaniu - trzymamy go w cache'u.
             cache_control: { type: "ephemeral" },
           },
         ],
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Nieznany błąd.";
 
-    // Plan się nie ułożył — rezerwacja idzie z powrotem do budżetu.
+    // Plan się nie ułożył - rezerwacja idzie z powrotem do budżetu.
     await zwolnij(supabase, limit.id);
 
     if (logRow) {

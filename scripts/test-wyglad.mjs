@@ -1,8 +1,8 @@
 /*
- * Moduł „Wygląd" — sprawdzenie reguł dostępu na żywej bazie.
+ * Moduł "Wygląd" - sprawdzenie reguł dostępu na żywej bazie.
  *
- * Migracja, która „się nałożyła", nie mówi nic o tym, czy polityki działają.
- * Tutaj są dwie osoby i lista rzeczy, których jedna NIE MOŻE zrobić drugiej —
+ * Migracja, która "się nałożyła", nie mówi nic o tym, czy polityki działają.
+ * Tutaj są dwie osoby i lista rzeczy, których jedna NIE MOŻE zrobić drugiej -
  * plus limity, bo limit kosztowy sprawdzany wyłącznie w interfejsie nie jest
  * limitem, tylko sugestią.
  */
@@ -13,7 +13,7 @@ const db = await bazaZMigracjami();
 let ok = 0, bad = 0;
 const check = (n, c, d = '') => {
   if (c) { ok++; console.log(`  ✅ ${n}`); }
-  else { bad++; console.log(`  ❌ ${n}${d ? ' — ' + d : ''}`); }
+  else { bad++; console.log(`  ❌ ${n}${d ? ' - ' + d : ''}`); }
 };
 const as = async (uid, sql) => {
   await db.exec(`set role authenticated; set request.jwt.claim.sub = '${uid}';`);
@@ -83,7 +83,7 @@ check('po pierwszym skanie kolejny jest zablokowany', r.ok && r.rows[0].l.mozna 
 r = await as(A, `insert into public.wyglad_skany (user_id, ocena_ogolna) values ('${A}', 71)`);
 check('próba drugiego skanu tego samego dnia odrzucona', !r.ok);
 
-// Cofamy pierwszy skan o osiem dni — odstęp minął.
+// Cofamy pierwszy skan o osiem dni - odstęp minął.
 await db.exec(`update public.wyglad_skany set utworzono = now() - interval '8 days' where id = '${skanA}'`);
 r = await as(A, `select public.wyglad_limit() as l`);
 check('po ośmiu dniach znowu można', r.ok && r.rows[0].l.mozna === true, JSON.stringify(r.rows?.[0]?.l));
@@ -107,12 +107,12 @@ console.log('\n  Administrator bez limitu\n');
 /*
  * Limity mają pilnować rachunku i chronić przed codziennym ocenianiem się.
  * Osoba budująca aplikację musi móc sprawdzić skaner pięć razy pod rząd,
- * więc zwolnienie idzie przez is_admin() — tę samą funkcję co reszta
+ * więc zwolnienie idzie przez is_admin() - tę samą funkcję co reszta
  * uprawnień, a nie przez osobną listę adresów.
  */
 await db.exec(`update public.profiles set role = 'admin' where id = '${B}'`);
 
-// B ma już wyczerpany odstęp? Nie — B nie zrobił dotąd żadnego skanu.
+// B ma już wyczerpany odstęp? Nie - B nie zrobił dotąd żadnego skanu.
 // Robimy dwa pod rząd: dla zwykłego konta drugi odbiłby się od reguły 7 dni.
 let r1 = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}') returning id`);
 let r2 = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}') returning id`);
@@ -132,7 +132,7 @@ check('po odebraniu roli limit wraca', !r.ok, r.ok ? 'ZAPISAŁO SIĘ' : '');
 console.log('\n  Po usunięciu konta\n');
 
 /*
- * Baza gwarantuje kaskadę na wierszach — i tylko tyle.
+ * Baza gwarantuje kaskadę na wierszach - i tylko tyle.
  *
  * Pierwsza wersja migracji miała wyzwalacz kasujący też wiersze ze
  * storage.objects. Supabase broni tej tabeli przed bezpośrednim DELETE, więc
@@ -153,5 +153,5 @@ check('rutyny znikają razem z kontem', poRutyny.length === 0, `wierszy: ${poRut
 const drugieKonto = (await db.query(`select id from auth.users where id = '${B}'`)).rows;
 check('drugie konto zostaje nietknięte', drugieKonto.length === 1);
 
-console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : ' — WSZYSTKO PRZESZŁO'}\n`);
+console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : ' - WSZYSTKO PRZESZŁO'}\n`);
 process.exit(bad ? 1 : 0);

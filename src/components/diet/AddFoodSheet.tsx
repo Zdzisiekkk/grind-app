@@ -71,7 +71,7 @@ export function AddFoodSheet({
   /*
    * Gotowe dania.
    *
-   * Open Food Facts to baza produktów z kodem kreskowym — nie ma w niej
+   * Open Food Facts to baza produktów z kodem kreskowym - nie ma w niej
    * schabowego ani rosołu, a to jest to, co ludzie jedzą na obiad. Dlatego
    * osobna, kuratorowana lista, którą da się przejrzeć bez wpisywania.
    */
@@ -93,7 +93,7 @@ export function AddFoodSheet({
     };
   }, [open, supabase]);
 
-  // Własne dania — te wracają codziennie, więc idą na samą górę zakładki.
+  // Własne dania - te wracają codziennie, więc idą na samą górę zakładki.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -110,14 +110,14 @@ export function AddFoodSheet({
     };
   }, [open, supabase]);
 
-  // Lokalne produkty (własne + wcześniej zapisany cache OFF) — szybkie, działa od razu.
+  // Lokalne produkty (własne + wcześniej zapisany cache OFF) - szybkie, działa od razu.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      // Szukanie po słowach, nie po fragmencie tekstu: „wiejski serek" ma
-      // znaleźć to samo co „serek wiejski", a „zurek" ma znaleźć „Żurek".
-      // Pusta fraza zwraca ostatnio używane — to sensowny stan startowy.
+      // Szukanie po słowach, nie po fragmencie tekstu: "wiejski serek" ma
+      // znaleźć to samo co "serek wiejski", a "zurek" ma znaleźć "Żurek".
+      // Pusta fraza zwraca ostatnio używane - to sensowny stan startowy.
       const { data } = await supabase.rpc("szukaj_produktow", {
         p_fraza: query.trim(),
         p_limit: 25,
@@ -129,7 +129,7 @@ export function AddFoodSheet({
     };
   }, [open, query, supabase]);
 
-  // Open Food Facts — z opóźnieniem, żeby nie strzelać przy każdej literze.
+  // Open Food Facts - z opóźnieniem, żeby nie strzelać przy każdej literze.
   useEffect(() => {
     const q = query.trim();
     if (!open || q.length < MIN_QUERY) return;
@@ -157,7 +157,7 @@ export function AddFoodSheet({
     };
   }, [query, open]);
 
-  // Wyniki należą do ostatniego zapytania — przy zbyt krótkiej frazie po prostu
+  // Wyniki należą do ostatniego zapytania - przy zbyt krótkiej frazie po prostu
   // ich nie pokazujemy, zamiast czyścić stan efektem.
   const offResults = query.trim().length < MIN_QUERY ? EMPTY_OFF : offRaw;
 
@@ -203,7 +203,7 @@ export function AddFoodSheet({
               onDodaj={async (skladniki) => {
                 const mealId = await ensureMeal(supabase, userId, date, mealType);
                 const wpisy = await addOpisaneEntries(supabase, { userId, mealId, skladniki });
-                // Ekran rodzica dolicza wpisy pojedynczo — dokładnie tak samo
+                // Ekran rodzica dolicza wpisy pojedynczo - dokładnie tak samo
                 // jak przy produkcie z wyszukiwarki, więc bilans dnia i sumy
                 // makr aktualizują się bez osobnej ścieżki.
                 for (const wpis of wpisy) onAdded(wpis as MealEntry);
@@ -231,7 +231,7 @@ export function AddFoodSheet({
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="np. twaróg, ryż, pierś z kurczaka…"
+                  placeholder="np. twaróg, ryż, pierś z kurczaka..."
                 />
                 {/*
                   Kod kreskowy obok wyszukiwarki, a nie w osobnej zakładce.
@@ -268,7 +268,7 @@ export function AddFoodSheet({
 
               {searching && (
                 <div className="flex items-center justify-center gap-2 py-4 text-[13px] text-muted">
-                  <Spinner /> szukam w Open Food Facts…
+                  <Spinner /> szukam w Open Food Facts...
                 </div>
               )}
 
@@ -295,7 +295,7 @@ export function AddFoodSheet({
                 <EmptyState
                   icon="🔍"
                   title="Nie znaleziono produktu"
-                  description="Opisz go słowami w zakładce „Opisz” albo wpisz wartości ręcznie w „Własne”."
+                  description="Opisz go słowami w zakładce Opisz albo wpisz wartości ręcznie w zakładce Własne."
                 />
               )}
             </>
@@ -592,11 +592,11 @@ function DishList({
       <Input
         value={query}
         onChange={(e) => onQuery(e.target.value)}
-        placeholder="Filtruj dania…"
+        placeholder="Filtruj dania..."
         aria-label="Filtruj dania"
       />
 
-      {/* Własne dania idą pierwsze — to one wracają codziennie. */}
+      {/* Własne dania idą pierwsze - to one wracają codziennie. */}
       {mine.length > 0 && (
         <div className="flex flex-col gap-1">
           <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
@@ -651,7 +651,7 @@ function DishList({
         <EmptyState
           icon="🍲"
           title="Nie ma takiego dania"
-          description="Zapisz posiłek jako własne danie w dzienniku albo wpisz go raz jako własny produkt — następnym razem znajdziesz go od ręki."
+          description="Zapisz posiłek jako własne danie w dzienniku albo wpisz go raz jako własny produkt - następnym razem znajdziesz go od ręki."
         />
       ) : (
         <ul className="flex flex-col divide-y divide-border">
@@ -683,7 +683,7 @@ function DishList({
       )}
 
       <p className="text-[11px] leading-relaxed text-faint">
-        Wartości są przeciętne — talerz u babci będzie inny niż w barze. Traktuj je jako
+        Wartości są przeciętne - talerz u babci będzie inny niż w barze. Traktuj je jako
         przybliżenie, a nie pomiar. Jeśli gotujesz coś regularnie, wpisz to raz jako własny
         produkt z prawdziwymi wartościami.
       </p>

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "Grind",
     // "default" każe iOS zarezerwować miejsce na pasek stanu i samemu dobrać
     // kolor zegarka do tła. Przy "black-translucent" tekst paska jest zawsze
-    // biały — w jasnym motywie znikał, a treść wchodziła pod notch.
+    // biały - w jasnym motywie znikał, a treść wchodziła pod notch.
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },

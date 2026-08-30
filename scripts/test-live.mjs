@@ -26,11 +26,11 @@ const EMAIL = `e2e-${Date.now()}@example.com`;
 const PASS = "TestoweHaslo123";
 
 /*
- * „Dzisiaj" liczone w strefie aplikacji, nie w UTC.
+ * "Dzisiaj" liczone w strefie aplikacji, nie w UTC.
  *
  * Aplikacja od migracji stref czasowych rozstrzyga datę w Europe/Warsaw.
  * Test liczący ją przez toISOString() trafiał w inny dzień między północą
- * a drugą w nocy — i wtedy wpis „ból dzisiaj" nie pokazywał się na pulpicie,
+ * a drugą w nocy - i wtedy wpis "ból dzisiaj" nie pokazywał się na pulpicie,
  * bo pulpit szukał go pod jutrzejszą datą. To był błąd testu, nie aplikacji,
  * ale wyglądał dokładnie jak ten drugi.
  */
@@ -44,9 +44,9 @@ const dzisiaj = () => {
 
 const ok = (b) => (b ? "✅" : "❌");
 let fails = 0;
-const check = (label, cond, extra = "") => { if (!cond) fails++; console.log(`  ${ok(cond)} ${label}${extra ? " — " + extra : ""}`); };
+const check = (label, cond, extra = "") => { if (!cond) fails++; console.log(`  ${ok(cond)} ${label}${extra ? " - " + extra : ""}`); };
 
-// 1. Rejestracja przez publiczne API — dokładnie to robi formularz
+// 1. Rejestracja przez publiczne API - dokładnie to robi formularz
 const su = await (await fetch(`${SB}/auth/v1/signup`, {
   method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" },
   body: JSON.stringify({ email: EMAIL, password: PASS }),
@@ -83,7 +83,7 @@ const cookie = (enc.length <= C
   : Array.from({ length: Math.ceil(enc.length / C) }, (_, i) => `sb-${REF}-auth-token.${i}=${enc.slice(i*C,(i+1)*C)}`)
 ).join("; ");
 
-// Nagłówki do REST-a — potrzebne już przy sprawdzaniu kreatora.
+// Nagłówki do REST-a - potrzebne już przy sprawdzaniu kreatora.
 const H = { apikey: KEY, Authorization: `Bearer ${li.access_token}`, "Content-Type": "application/json" };
 
 const text = (h) => h.replace(/<script[\s\S]*?<\/script>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
@@ -110,13 +110,13 @@ check("każdy szablon mówi, ile dni i jaki sprzęt",
   (tpls || []).every(p => p.days_per_week && p.equipment && p.level));
 check("jest plan bez sprzętu", (tpls || []).some(p => p.equipment === "home"));
 
-// Dalsza część testu udaje, że kreator został przeszedł — resztę aplikacji
-// sprawdzamy w stanie „konto już używane".
+// Dalsza część testu udaje, że kreator został przeszedł - resztę aplikacji
+// sprawdzamy w stanie "konto już używane".
 const konczyKreator = await fetch(`${SB}/rest/v1/profiles?id=eq.${li.user.id}`, {
   method: "PATCH", headers: H,
   body: JSON.stringify({ onboarded_at: new Date().toISOString(), weekly_workouts: 4 }) });
 // Osobne sprawdzenie, bo cichy błąd TUTAJ zostawia nowe konto uwięzione
-// w kreatorze, a wszystkie kolejne testy pokazują wtedy tylko „status 307"
+// w kreatorze, a wszystkie kolejne testy pokazują wtedy tylko "status 307"
 // i trzeba zgadywać, co się właściwie stało.
 check("nowe konto może domknąć kreator", konczyKreator.ok,
   konczyKreator.ok ? "" : JSON.stringify(await konczyKreator.json().catch(() => null)).slice(0, 160));
@@ -131,14 +131,14 @@ for (const [path, expect] of [["/","Dziś"],["/trening","Trening"],["/dieta","Di
 const anon = await fetch(APP + "/dieta", { redirect: "manual" });
 check("bez sesji przekierowanie na logowanie", anon.status === 307);
 
-// 7. Skopiowanie szablonu planu i zapis serii — najważniejsza ścieżka aplikacji
+// 7. Skopiowanie szablonu planu i zapis serii - najważniejsza ścieżka aplikacji
 const [tpl] = await (await fetch(`${SB}/rest/v1/plans?select=id&is_template=eq.true`, { headers: H })).json();
 const planId = await (await fetch(`${SB}/rest/v1/rpc/clone_plan`, { method:"POST", headers:H,
   body: JSON.stringify({ p_source_plan_id: tpl.id, p_new_name: "Mój plan", p_activate: true }) })).json();
 check("skopiowanie szablonu planu", typeof planId === "string");
 
 const days = await (await fetch(`${SB}/rest/v1/workout_days?select=id,name,phases!inner(plan_id)&phases.plan_id=eq.${planId}`, { headers: H })).json();
-// Liczbę dni bierzemy z szablonu, nie z głowy — plan bywa zmieniany.
+// Liczbę dni bierzemy z szablonu, nie z głowy - plan bywa zmieniany.
 const tplDays = await (await fetch(`${SB}/rest/v1/workout_days?select=id,phases!inner(plan_id)&phases.plan_id=eq.${tpl.id}`, { headers: H })).json();
 check("kopia ma tyle dni co szablon", days.length === tplDays.length && days.length > 0,
   `kopia ${days.length}, szablon ${tplDays.length}`);
@@ -247,13 +247,13 @@ check("pulpit pokazuje Health Score", pulpit.status === 200 && pulpitText.includ
 
 // Regresja: pulpit koloruje ikonkę oceny bólu po stronie serwera. Gdy paleta
 // statusów siedzi w module oznaczonym "use client", ten render wysypuje całą
-// stronę — a status i tak jest 200, więc sam kod odpowiedzi tego nie łapie.
+// stronę - a status i tak jest 200, więc sam kod odpowiedzi tego nie łapie.
 // Luźne odstępy, bo React rozbija sąsiadujące wyrażenia komentarzami HTML,
 // a nasz zdejmowacz tagów zamienia je na spacje.
 check("pulpit renderuje ocenę bólu z dzisiaj", /Lewe kolano\s*:\s*4\s*\/\s*10/.test(pulpitText),
   pulpitText.length < 400 ? "strona zwróciła sam szkielet ładowania" : "");
 
-// 7f. Paywall — najważniejsze jest to, czego NIE da się zrobić
+// 7f. Paywall - najważniejsze jest to, czego NIE da się zrobić
 const proBefore = await (await fetch(`${SB}/rest/v1/rpc/has_pro`, { method:"POST", headers:H, body:"{}" })).json();
 check("nowe konto nie ma dostępu do funkcji płatnych", proBefore === false, `has_pro=${proBefore}`);
 
@@ -263,8 +263,8 @@ const selfGrant = await fetch(`${SB}/rest/v1/subscriptions`, { method:"POST", he
   body: JSON.stringify({ user_id: li.user.id, status: "active" }) });
 check("nie można sobie samemu wpisać subskrypcji", selfGrant.status >= 400, `status ${selfGrant.status}`);
 
-// return=representation, bo PostgREST na PATCH bez tego oddaje puste 204 —
-// i „udało się" nie da się odróżnić od „nic nie pasowało".
+// return=representation, bo PostgREST na PATCH bez tego oddaje puste 204 -
+// i "udało się" nie da się odróżnić od "nic nie pasowało".
 const selfPatch = await fetch(`${SB}/rest/v1/subscriptions?user_id=eq.${li.user.id}`,
   { method:"PATCH", headers:{...H, Prefer:"return=representation"}, body: JSON.stringify({ status: "active" }) });
 const patched = await selfPatch.json().catch(() => null);
@@ -311,7 +311,7 @@ const off1Body = await off1.json().catch(() => null);
 check("produkt z OFF zapisuje się do cache'u", off1.ok && Boolean(off1Body?.id),
   off1.ok ? "" : JSON.stringify(off1Body).slice(0, 160));
 
-// Drugie dodanie tego samego kodu — tak wygląda wpisanie tego produktu jutro.
+// Drugie dodanie tego samego kodu - tak wygląda wpisanie tego produktu jutro.
 const off2 = await cacheOff(750);
 check("ten sam produkt drugi raz nie wywala błędu", off2.ok,
   off2.ok ? "" : JSON.stringify(await off2.json().catch(() => null)).slice(0, 160));
@@ -320,7 +320,7 @@ const offRows = await (await fetch(`${SB}/rest/v1/foods?select=id&off_id=eq.${of
 check("w cache'u zostaje jeden wiersz, nie dwa",
   Array.isArray(offRows) && offRows.length === 1, `wierszy: ${offRows?.length}`);
 
-// Bezpośredni zapis do wiersza wspólnego musi się odbić — to była realna
+// Bezpośredni zapis do wiersza wspólnego musi się odbić - to była realna
 // dziura: jedna osoba mogła popsuć liczenie kalorii wszystkim pozostałym.
 const naSkroty = await fetch(`${SB}/rest/v1/foods`, {
   method: "POST", headers: { ...H, Prefer: "return=representation" },
@@ -330,7 +330,7 @@ const naSkroty = await fetch(`${SB}/rest/v1/foods`, {
 check("nie da się dopisać produktu wspólnego z pominięciem funkcji",
   !naSkroty.ok, `status ${naSkroty.status}`);
 
-// 7h. Prawa użytkownika — muszą działać, a nie być obietnicą w regulaminie
+// 7h. Prawa użytkownika - muszą działać, a nie być obietnicą w regulaminie
 const regulamin = await fetch(APP + "/regulamin", { redirect: "manual" });
 const regulaminText = regulamin.status === 200 ? text(await regulamin.text()) : "";
 check("regulamin czytelny BEZ logowania",
@@ -346,7 +346,7 @@ check("polityka prywatności czytelna BEZ logowania",
 const dishes = await (await fetch(`${SB}/rest/v1/foods?select=name,serving_size_g&kind=eq.dish&user_id=is.null&limit=200`, { headers: H })).json();
 check("gotowe dania są dostępne dla każdego", Array.isArray(dishes) && dishes.length >= 40,
   `${dishes.length ?? 0} dań`);
-// Migracja seedująca musi być idempotentna — bez tego każde wdrożenie
+// Migracja seedująca musi być idempotentna - bez tego każde wdrożenie
 // dokładało komplet dań od nowa, a lista z duplikatami wygląda jak lista.
 check("dania nie są zdublowane",
   new Set((dishes || []).map((d) => d.name.toLowerCase())).size === (dishes || []).length,
@@ -365,7 +365,7 @@ const bookNote = await (await fetch(`${SB}/rest/v1/book_notes`, { method:"POST",
     quote: "Nie wznosisz się do poziomu celów, spadasz do poziomu systemów.", note: "To samo co z planem treningowym." }) })).json();
 check("notatka z cytatem i stroną", Array.isArray(bookNote) && bookNote[0]?.page === 37);
 
-// Notatka bez treści nie ma sensu — baza tego pilnuje.
+// Notatka bez treści nie ma sensu - baza tego pilnuje.
 const emptyNote = await fetch(`${SB}/rest/v1/book_notes`, { method:"POST", headers:H,
   body: JSON.stringify({ user_id: li.user.id, book_id: book[0].id, page: 10 }) });
 check("pusta notatka odrzucona", emptyNote.status >= 400, `status ${emptyNote.status}`);
@@ -375,7 +375,7 @@ const tooFar = await fetch(`${SB}/rest/v1/books?id=eq.${book[0].id}`, { method:"
   body: JSON.stringify({ current_page: 999 }) });
 check("nie da się być na stronie 999 w książce o 320 stronach", tooFar.status >= 400, `status ${tooFar.status}`);
 
-// Wyszukiwanie po ISBN — trasa bije do Open Library, więc sprawdzamy też,
+// Wyszukiwanie po ISBN - trasa bije do Open Library, więc sprawdzamy też,
 // czy nie stała się otwartym pośrednikiem pod naszą domeną.
 const isbnOk = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211292", { headers: { cookie } });
 const isbnBody = isbnOk.status === 200 ? await isbnOk.json() : null;
@@ -396,14 +396,14 @@ check("brak wyniku oddaje numer, żeby dało się dopisać tytuł",
   isbnBrak.status !== 404 || isbnBrakBody?.isbn === "9790000000001",
   JSON.stringify(isbnBrakBody).slice(0, 80));
 
-// Ta książka jest tylko w drugim rejestrze Open Library — pierwszy o niej milczy.
+// Ta książka jest tylko w drugim rejestrze Open Library - pierwszy o niej milczy.
 const isbnZapas = await fetch(APP + "/api/ksiazki/isbn?isbn=9788328302341", { headers: { cookie } });
 const isbnZapasBody = isbnZapas.status === 200 ? await isbnZapas.json() : null;
 check("zapasowe źródło znajduje polską książkę",
   isbnZapas.status === 200 && (isbnZapasBody?.title || "").toLowerCase().includes("czysty"),
   isbnZapas.status !== 200 ? `status ${isbnZapas.status}` : isbnZapasBody.title);
 
-// Generowanie planu przez AI kosztuje realne pieniądze — musi być za paywallem.
+// Generowanie planu przez AI kosztuje realne pieniądze - musi być za paywallem.
 const planAi = await fetch(APP + "/api/ai/plan", { method: "POST",
   headers: { cookie, "Content-Type": "application/json" },
   body: JSON.stringify({ goal: "sila", experience: "beginner", days_per_week: 2,
@@ -417,7 +417,7 @@ const isbnAnon = await fetch(APP + "/api/ksiazki/isbn?isbn=9780735211292", { red
 check("bez sesji ISBN nie działa jako otwarty pośrednik",
   isbnAnon.status !== 200, `status ${isbnAnon.status}`);
 
-// Ta sama książka drugi raz — indeks częściowy na (user_id, isbn).
+// Ta sama książka drugi raz - indeks częściowy na (user_id, isbn).
 await fetch(`${SB}/rest/v1/books`, { method:"POST", headers:H,
   body: JSON.stringify({ user_id: li.user.id, title: "Atomic Habits", status: "want",
     isbn: "9780735211292" }) });
@@ -444,7 +444,7 @@ const recipe = await (await fetch(`${SB}/rest/v1/recipes`, { method:"POST", head
   body: JSON.stringify({ user_id: li.user.id, name: "Owsianka testowa", icon: "🥣", servings: 2 }) })).json();
 check("utworzenie własnego dania", Array.isArray(recipe) && recipe[0]?.id);
 
-// Ta sama nazwa drugi raz nie ma prawa przejść — inaczej lista zapełnia się
+// Ta sama nazwa drugi raz nie ma prawa przejść - inaczej lista zapełnia się
 // bliźniakami, których nie da się od siebie odróżnić.
 const dupRecipe = await fetch(`${SB}/rest/v1/recipes`, { method:"POST", headers:H,
   body: JSON.stringify({ user_id: li.user.id, name: "Owsianka testowa" }) });
@@ -473,12 +473,12 @@ check("/dieta/dania pokazuje własne danie",
   dania.status === 200 && daniaText.includes("Owsianka testowa"),
   dania.status !== 200 ? `status ${dania.status}` : "");
 
-// 7k. Trener AI — bramka i limit
+// 7k. Trener AI - bramka i limit
 const coach = await fetch(APP + "/api/ai/coach", { method:"POST", headers:{ cookie, "Content-Type":"application/json" },
   body: JSON.stringify({ mode: "analyze" }) });
 const coachBody = await coach.json().catch(() => ({}));
 // Bez subskrypcji ma być 402; gdy klucz do modelu nie jest wpisany, 503 zapada
-// wcześniej — obie odpowiedzi znaczą „model NIE został uruchomiony".
+// wcześniej - obie odpowiedzi znaczą "model NIE został uruchomiony".
 check("trener bez subskrypcji nie rusza modelu",
   coach.status === 402 || coach.status === 503,
   `status ${coach.status}, ${coachBody.code ?? coachBody.error ?? ""}`);
@@ -487,9 +487,9 @@ const noCalls = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { head
 check("odrzucone zapytanie nie zużywa limitu",
   Array.isArray(noCalls) && noCalls.length === 0, JSON.stringify(noCalls));
 
-// Licznik musi być nietykalny — skasowanie albo wyzerowanie go zdejmowałoby
+// Licznik musi być nietykalny - skasowanie albo wyzerowanie go zdejmowałoby
 // dzienny limit. Najpierw tworzymy wiersz (przez tę samą funkcję, której używa
-// aplikacja), bo kasowanie nieistniejącego wiersza „udaje się" zawsze.
+// aplikacja), bo kasowanie nieistniejącego wiersza "udaje się" zawsze.
 await fetch(`${SB}/rest/v1/rpc/consume_ai_call`, { method:"POST", headers:H,
   body: JSON.stringify({ p_limit: 5 }) });
 
@@ -501,7 +501,7 @@ const counterRows = await (await fetch(`${SB}/rest/v1/ai_usage?select=calls`, { 
 check("licznika zapytań nie da się skasować ani wyzerować",
   Array.isArray(counterRows) && counterRows[0]?.calls === 1, JSON.stringify(counterRows));
 
-// Uprawnienia tabelowe w Supabase są szerokie z definicji — całą ochronę
+// Uprawnienia tabelowe w Supabase są szerokie z definicji - całą ochronę
 // niesie RLS. Tabela dodana bez niego jest otwarta dla niezalogowanych.
 const noRls = await (await fetch(`${SB}/rest/v1/rpc/tables_without_rls`, { method:"POST", headers:H, body:"{}" })).json();
 check("każda tabela ma włączone RLS", Array.isArray(noRls) && noRls.length === 0,
@@ -513,7 +513,7 @@ check("/trener bez subskrypcji pokazuje zaproszenie, nie błąd",
   trener.status === 200 && trenerText.includes("wersji płatnej"),
   trener.status !== 200 ? `status ${trener.status}` : "");
 
-// 7l. Tryb offline — serwowane pliki, bez których apka nie wstanie bez zasięgu
+// 7l. Tryb offline - serwowane pliki, bez których apka nie wstanie bez zasięgu
 // Bez ciasteczka celowo: przeglądarka pobiera service workera bez sesji,
 // a strona zastępcza pokazuje się właśnie wtedy, gdy sesji nie da się sprawdzić.
 // redirect:"manual", bo inaczej przekierowanie na logowanie udaje sukces.
@@ -531,14 +531,14 @@ const offlineText = offlinePage.status === 200 ? text(await offlinePage.text()) 
 check("strona zastępcza bez zasięgu działa bez logowania",
   offlinePage.status === 200 && offlineText.includes("Brak połączenia"), `status ${offlinePage.status}`);
 
-// Wysyłka powiadomień jest chroniona sekretem — bez niego ani rusz.
+// Wysyłka powiadomień jest chroniona sekretem - bez niego ani rusz.
 // redirect:"manual", bo 307 na /login udaje sukces: fetch podąża za nim,
 // POST trafia na stronę logowania i wraca 405 zamiast oczekiwanego 401.
 const pushNoSecret = await fetch(APP + "/api/push/send", { method: "POST", redirect: "manual" });
 check("wysyłka powiadomień odrzuca brak sekretu, a nie przekierowuje na logowanie",
   pushNoSecret.status === 401, `status ${pushNoSecret.status}`);
 
-// Webhook Stripe'a przychodzi bez ciasteczka i sam sprawdza podpis — musi
+// Webhook Stripe'a przychodzi bez ciasteczka i sam sprawdza podpis - musi
 // dojść do trasy, a nie na ekran logowania. Bez podpisu ma odpowiedzieć 400.
 const hook = await fetch(APP + "/api/stripe/webhook", { method: "POST", redirect: "manual", body: "{}" });
 check("webhook Stripe'a dociera do trasy, a nie na logowanie",
@@ -549,7 +549,7 @@ const pushBadSecret = await (await fetch(`${SB}/rest/v1/rpc/push_due`, { method:
 check("kolejka powiadomień milczy przy złym sekrecie",
   Array.isArray(pushBadSecret) && pushBadSecret.length === 0, JSON.stringify(pushBadSecret).slice(0, 80));
 
-// 7m. Wyszukiwarka produktów — realna ścieżka, nie tylko dostępność strony
+// 7m. Wyszukiwarka produktów - realna ścieżka, nie tylko dostępność strony
 const t0 = Date.now();
 const food = await (await fetch(APP + "/api/food/search?q=" + encodeURIComponent("ryż"), { headers: { cookie } })).json();
 const foodMs = Date.now() - t0;
@@ -571,7 +571,7 @@ check("podsumowanie zna mianownik nawyków", summ?.habit_days_due > 0,
 check("podsumowanie zna ból kontuzji", summ?.avg_pain === 4 && summ?.pain_by_injury?.[0]?.name === "Lewe kolano",
   `avg_pain=${summ?.avg_pain}`);
 
-// 7m2. Nałogi — licznik, który liczy w drugą stronę niż nawyki
+// 7m2. Nałogi - licznik, który liczy w drugą stronę niż nawyki
 const vice = await (await fetch(`${SB}/rest/v1/vices`, { method:"POST",
   headers:{...H, Prefer:"return=representation"},
   body: JSON.stringify({ user_id: li.user.id, name: "Papierosy", icon: "🚭",
@@ -594,13 +594,13 @@ check("wpadka i pokonana chęć zapisane osobno",
   viceEvents.filter(e => e.kind === "urge").length === 1,
   JSON.stringify(viceEvents.map(e => e.kind)));
 
-// Ta sama arytmetyka co w src/lib/vices.ts — passa startuje od ostatniej wpadki.
+// Ta sama arytmetyka co w src/lib/vices.ts - passa startuje od ostatniej wpadki.
 const lastLapse = Math.max(...viceEvents.filter(e => e.kind === "lapse")
   .map(e => new Date(e.occurred_at).getTime()));
 const viceDays = Math.floor((Date.now() - lastLapse) / 864e5);
 check("licznik liczy od wpadki, nie od rzucenia", viceDays === 3, `dni=${viceDays}`);
 
-// Cudzy nałóg jest nietykalny — RLS jest tu jedyną zaporą.
+// Cudzy nałóg jest nietykalny - RLS jest tu jedyną zaporą.
 const viceOthers = await (await fetch(`${SB}/rest/v1/vices?select=id`, { headers: H })).json();
 check("widać wyłącznie własne nałogi", viceOthers.length === 1, `wierszy: ${viceOthers.length}`);
 
@@ -658,7 +658,7 @@ if (Array.isArray(jakisOff) && jakisOff[0]) {
   check("nie da się popsuć kalorii we wspólnej bazie produktów", true, "brak produktów z OFF do próby");
 }
 
-// …ale dopisanie brakującego produktu nadal musi działać, inaczej zepsulibyśmy
+// ...ale dopisanie brakującego produktu nadal musi działać, inaczej zepsulibyśmy
 // dodawanie jedzenia z wyszukiwarki.
 const kodTestowy = `e2e-${Date.now()}`;
 const dopis = await fetch(`${SB}/rest/v1/rpc/cache_off_product`, {
@@ -679,7 +679,7 @@ const poPodmianie = podmiana.ok ? await podmiana.json() : null;
 check("powtórny zapis nie nadpisuje istniejącego produktu",
   Number(poPodmianie?.kcal_100g) === 100, `kcal=${poPodmianie?.kcal_100g}`);
 
-// RLS nie może przeliczać tożsamości dla każdego wiersza — to rosło razem
+// RLS nie może przeliczać tożsamości dla każdego wiersza - to rosło razem
 // z ilością danych i najbardziej bolało trenera, który czyta 2000 serii.
 const polityki = await (await fetch(`${SB}/rest/v1/rpc/policies_rechecking_uid`, {
   method: "POST", headers: H, body: "{}",
@@ -690,7 +690,7 @@ check("żadna reguła dostępu nie przelicza tożsamości co wiersz",
 // ---------------------------------------------------------------------------
 // Funkcje bazy widziane OCZAMI NIEZALOGOWANEGO.
 //
-// Sam klucz anon, bez tokenu sesji — czyli dokładnie to, co ma w ręku
+// Sam klucz anon, bez tokenu sesji - czyli dokładnie to, co ma w ręku
 // ktokolwiek z internetu, bo ten klucz jest publiczny z założenia.
 // Do migracji 0045 wszystkie te funkcje dawały odpowiedź: has_pro pytana
 // o CUDZY identyfikator zdradzała czyjąś subskrypcję, a tables_without_rls
@@ -724,7 +724,7 @@ for (const [nazwa, ciało] of [
 
 // Druga strona tej samej monety: sześć funkcji MUSI zostać otwartych, bo
 // serwer woła je kluczem anon i uwierzytelnia osobnym sekretem. Gdyby revoke
-// poszedł za szeroko, opłacona subskrypcja przestałaby się zapisywać —
+// poszedł za szeroko, opłacona subskrypcja przestałaby się zapisywać -
 // i nic w aplikacji by tego nie pokazało.
 const zlySekret = await anonRpc("push_due", { p_secret: "zly-sekret" });
 check("budzik powiadomień odpowiada niezalogowanemu, ale odrzuca zły sekret",
@@ -776,7 +776,7 @@ const zlyPlan = await fetch(APP + "/api/ai/plan/save", {
 check("zapis nieistniejącego planu kończy się uczciwym 404",
   zlyPlan.status === 404, `status ${zlyPlan.status}`);
 
-// 7n. Eksport danych — sprawdzany na końcu, gdy dzienniki są już wypełnione
+// 7n. Eksport danych - sprawdzany na końcu, gdy dzienniki są już wypełnione
 const eksport = await fetch(APP + "/api/dane/eksport", { headers: { cookie }, redirect: "manual" });
 const eksportBody = eksport.status === 200 ? await eksport.json() : null;
 check("eksport danych oddaje plik do pobrania",
@@ -797,7 +797,7 @@ check("bez sesji nie da się pobrać cudzych danych", eksportAnon.status !== 200
 
 console.log("\n  Kod kreskowy w diecie\n");
 
-// Suma kontrolna sprawdzana PRZED pytaniem do Open Food Facts — odczyt
+// Suma kontrolna sprawdzana PRZED pytaniem do Open Food Facts - odczyt
 // z wygniecionej folii bywa o jedną cyfrę obok.
 const zlyKod = await fetch(`${APP}/api/food/kod?kod=5900541000101`, { headers: { cookie } });
 check("kod z błędną sumą kontrolną odrzucony bez pytania OFF", zlyKod.status === 400,
@@ -807,7 +807,7 @@ const bezSesji = await fetch(`${APP}/api/food/kod?kod=3017620422003`, { redirect
 check("bez sesji kod nie działa jako otwarty pośrednik do OFF",
   bezSesji.status === 307 || bezSesji.status === 401, `status ${bezSesji.status}`);
 
-// Nutella — jeden z najlepiej opisanych produktów w Open Food Facts.
+// Nutella - jeden z najlepiej opisanych produktów w Open Food Facts.
 const nutella = await fetch(`${APP}/api/food/kod?kod=3017620422003`, { headers: { cookie } });
 const nutellaBody = await nutella.json().catch(() => ({}));
 const nazwaZKodu = nutellaBody?.food?.name ?? nutellaBody?.product?.name ?? "";
@@ -842,7 +842,7 @@ const wygladHtml = wygladStrona.status === 200 ? await wygladStrona.text() : "";
 check("nowe konto widzi najpierw ekran zgody, nie skan",
   wygladHtml.includes("16 lat"));
 
-// Bramka Pro. Konto testowe nie ma subskrypcji, więc skan ma się nie odbyć —
+// Bramka Pro. Konto testowe nie ma subskrypcji, więc skan ma się nie odbyć -
 // i to zanim jakiekolwiek zdjęcie gdziekolwiek poleci.
 const skanBezPro = await fetch(`${APP}/api/ai/wyglad/start`, { method: "POST", headers: { cookie } });
 const skanBody = await skanBezPro.json().catch(() => ({}));
@@ -850,7 +850,7 @@ check("darmowe konto nie uruchomi skanu na cudzy rachunek",
   skanBezPro.status === 402 && skanBody?.code === "needs_subscription",
   `status ${skanBezPro.status} ${skanBody?.code ?? ""}`);
 
-// Zgoda 16+ jest warunkiem zapisu w BAZIE, nie tylko ekranem — próbujemy ją ominąć.
+// Zgoda 16+ jest warunkiem zapisu w BAZIE, nie tylko ekranem - próbujemy ją ominąć.
 const skanBezZgody = await fetch(`${SB}/rest/v1/wyglad_skany`, {
   method: "POST", headers: { ...H, Prefer: "return=representation" },
   body: JSON.stringify({ user_id: li.user.id, ocena_ogolna: 99 }),
@@ -928,7 +928,7 @@ console.log("\n  Wyszukiwanie produktów po nazwie\n");
 /*
  * Skaner zapisuje produkt w `foods`, więc szukanie po słowach musi go potem
  * znajdować. Poprzednia wersja (`name ilike '%fraza%'`) przegrywała z polskimi
- * ogonkami i z kolejnością słów — te dwa przypadki są tu wprost.
+ * ogonkami i z kolejnością słów - te dwa przypadki są tu wprost.
  */
 const szukaj = async (fraza, limit = 25) =>
   (await fetch(`${SB}/rest/v1/rpc/szukaj_produktow`, {
@@ -938,7 +938,7 @@ const szukaj = async (fraza, limit = 25) =>
 
 const zOgonkiem = await szukaj("żurek");
 const bezOgonka = await szukaj("zurek");
-check("„zurek” bez ogonka znajduje to samo co „żurek”",
+check("\"zurek\" bez ogonka znajduje to samo co \"żurek\"",
   Array.isArray(bezOgonka) && Array.isArray(zOgonkiem) &&
     bezOgonka.length === zOgonkiem.length && bezOgonka.length > 0,
   `bez: ${bezOgonka?.length}, z: ${zOgonkiem?.length}`);
@@ -958,7 +958,7 @@ const pusta = await szukaj("", 5);
 check("pusta fraza zwraca ostatnio używane, nie pustkę",
   Array.isArray(pusta) && pusta.length > 0 && pusta.length <= 5, `wierszy: ${pusta?.length}`);
 
-// Produkt własny konta testowego — nie może wyciekać do innych kont, a więc
+// Produkt własny konta testowego - nie może wyciekać do innych kont, a więc
 // wyszukiwarka musi respektować RLS, nie omijać go.
 const wlasny = await fetch(`${SB}/rest/v1/foods`, {
   method: "POST", headers: { ...H, Prefer: "return=representation" },
@@ -983,7 +983,7 @@ check("niezalogowany nie przeszuka bazy produktów",
 console.log("\n  Posiłek z opisu\n");
 
 // Straznik z 0046. To jest to samo pytanie, ktore zadaje sprawdzenie
-// w migracji, tylko zadane NA PRODUKCJI i przy kazdym przebiegu testow —
+// w migracji, tylko zadane NA PRODUKCJI i przy kazdym przebiegu testow -
 // czyli takze wtedy, gdy ktos doda funkcje bez `revoke`.
 const otwarte = await (await fetch(`${SB}/rest/v1/rpc/funkcje_dla_anona`, {
   method: "POST", headers: H, body: "{}",
@@ -992,7 +992,7 @@ check("żadnej funkcji nie da się wywołać bez logowania",
   Array.isArray(otwarte) && otwarte.length === 0,
   Array.isArray(otwarte) && otwarte.length ? `otwarte: ${otwarte.join(", ")}` : JSON.stringify(otwarte));
 
-// Licznik dzienny musi byc poza zasiegiem konta — inaczej wyzerowanie go
+// Licznik dzienny musi byc poza zasiegiem konta - inaczej wyzerowanie go
 // znaczy brak licznika. Ta sama zasada co przy rejestrze kosztow z 0043.
 for (const [co, opcje] of [
   ["odczytać", { headers: H }],
@@ -1004,7 +1004,7 @@ for (const [co, opcje] of [
     r.status === 401 || r.status === 403 || r.status === 404, `HTTP ${r.status}`);
 }
 
-// Bramka platnosci. Konto testowe nie ma Pro, wiec ma dostac 402 — a nie
+// Bramka platnosci. Konto testowe nie ma Pro, wiec ma dostac 402 - a nie
 // policzony posilek na cudzy rachunek.
 const posilekBezPro = await fetch(APP + "/api/ai/posilek", {
   method: "POST",
@@ -1017,7 +1017,7 @@ check("opis posiłku bez subskrypcji jest odrzucany",
   `HTTP ${posilekBezPro.status} ${JSON.stringify(posilekBody).slice(0, 120)}`);
 
 // `redirect: "manual"` jest tu istotne. Bez tego fetch idzie za
-// przekierowaniem i POST-uje na /login, ktore nie ma obslugi POST — wychodzi
+// przekierowaniem i POST-uje na /login, ktore nie ma obslugi POST - wychodzi
 // 405 i test mowi o /login zamiast o trasie, ktora mial sprawdzic.
 const posilekBezSesji = await fetch(APP + "/api/ai/posilek", {
   method: "POST",
@@ -1033,11 +1033,11 @@ check("niezalogowany ląduje na logowaniu, a nie na trasie AI",
   posilekBezSesji.headers.get("location") || "brak nagłówka");
 
 // Kategoria kosztu musi byc znana bazie, inaczej trasa wywalilaby sie dopiero
-// przy pierwszym prawdziwym uzyciu — czyli u czlowieka, nie w testach.
+// przy pierwszym prawdziwym uzyciu - czyli u czlowieka, nie w testach.
 const rezJedzenie = await (await fetch(`${SB}/rest/v1/rpc/ai_koszt_rezerwuj`, {
   method: "POST", headers: H, body: JSON.stringify({ p_kategoria: "jedzenie" }),
 })).json();
-check("baza zna kategorię kosztu „jedzenie”", rezJedzenie?.ok === true,
+check("baza zna kategorię kosztu \"jedzenie\"", rezJedzenie?.ok === true,
   JSON.stringify(rezJedzenie).slice(0, 160));
 if (rezJedzenie?.id) {
   await fetch(`${SB}/rest/v1/rpc/ai_koszt_rozlicz`, {
@@ -1072,7 +1072,7 @@ check("nowe konto nie wydało jeszcze nic",
  * Rejestr kosztów to jedyna tabela, której konto nie może tknąć. Odczyt daje
  * identyfikatory trwających rezerwacji, zapis pozwala podrobić kwotę,
  * a kasowanie zeruje limit. Sprawdzamy wszystkie trzy drogi z pominięciem
- * aplikacji — limit, który da się obejść, nie jest limitem.
+ * aplikacji - limit, który da się obejść, nie jest limitem.
  */
 const rejestrOdczyt = await fetch(`${SB}/rest/v1/ai_wydatki?select=id`, { headers: H });
 check("rejestru kosztów nie da się odczytać z pominięciem aplikacji",
@@ -1091,7 +1091,7 @@ const rejestrKasowanie = await fetch(`${SB}/rest/v1/ai_wydatki?user_id=eq.${li.u
 check("nie da się skasować własnych wydatków, żeby wyzerować limit",
   rejestrKasowanie.status >= 400, `status ${rejestrKasowanie.status}`);
 
-// Rezerwacja i zwolnienie przez przewidziane funkcje — tą samą drogą,
+// Rezerwacja i zwolnienie przez przewidziane funkcje - tą samą drogą,
 // co trasa API. Po zwolnieniu budżet musi wrócić do stanu sprzed próby.
 const rezerwacja = await (await fetch(`${SB}/rest/v1/rpc/ai_koszt_rezerwuj`, {
   method: "POST", headers: H, body: JSON.stringify({ p_kategoria: "trener" }),
@@ -1126,7 +1126,7 @@ if (rezerwacja?.id) {
 }
 
 /*
- * Konto testowe nie ma Pro, więc ekran trenera kończy się na paywallu —
+ * Konto testowe nie ma Pro, więc ekran trenera kończy się na paywallu -
  * nagłówek z budżetem jest ZA nim i tutaj się nie pokaże. Sprawdzamy więc
  * to, co dla tego konta prawdziwe: że bramka płatności stoi przed modelem,
  * a stan budżetu (sprawdzony wyżej przez RPC) jest dla ekranu dostępny.
@@ -1138,7 +1138,7 @@ check("ekran trenera otwiera się po zalogowaniu", trenerEkran.status === 200,
 check("darmowe konto widzi bramkę płatności, nie trenera",
   trenerHtml.includes("wersji płatnej"), trenerHtml ? "brak informacji o płatności" : "pusty HTML");
 
-// 7o. Usunięcie konta własnymi siłami — prawo do bycia zapomnianym
+// 7o. Usunięcie konta własnymi siłami - prawo do bycia zapomnianym
 const selfDelete = await fetch(`${SB}/rest/v1/rpc/delete_my_account`, { method:"POST", headers:H, body:"{}" });
 check("konto da się usunąć bez proszenia kogokolwiek", selfDelete.ok, `status ${selfDelete.status}`);
 
@@ -1149,7 +1149,7 @@ check("po usunięciu konta znikają też jego dane",
 // 8. Sprzątanie
 // Konto testowe kasuje się SAMO, tą samą funkcją co prawdziwy użytkownik.
 // Dzięki temu test nie potrzebuje klucza serwisowego Supabase i można go
-// bezpiecznie uruchamiać z GitHub Actions — a przy okazji sprzątanie jest
+// bezpiecznie uruchamiać z GitHub Actions - a przy okazji sprzątanie jest
 // dowodem, że prawo do usunięcia konta faktycznie działa.
 const relog = await (await fetch(`${SB}/auth/v1/token?grant_type=password`, {
   method:"POST", headers:{ apikey: KEY, "Content-Type":"application/json" },

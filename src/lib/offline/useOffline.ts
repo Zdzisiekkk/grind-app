@@ -7,8 +7,8 @@ import { queueLength, subscribeToQueue } from "@/lib/offline/queue";
  * Stan połączenia.
  *
  * navigator.onLine to zewnętrzne źródło prawdy, więc czytamy je przez
- * useSyncExternalStore, a nie efektem i stanem. Na serwerze zakładamy „online",
- * bo taki jest pierwszy render w przeglądarce — inaczej baner mrugałby przy
+ * useSyncExternalStore, a nie efektem i stanem. Na serwerze zakładamy "online",
+ * bo taki jest pierwszy render w przeglądarce - inaczej baner mrugałby przy
  * każdym wejściu.
  */
 export function useOnline(): boolean {
@@ -30,7 +30,7 @@ export function useOnline(): boolean {
  * Ile zapisów czeka w kolejce.
  *
  * IndexedDB jest asynchroniczne, a useSyncExternalStore wymaga wartości
- * natychmiast — dlatego trzymamy ostatni odczyt w module i odświeżamy go po
+ * natychmiast - dlatego trzymamy ostatni odczyt w module i odświeżamy go po
  * każdym powiadomieniu z kolejki.
  */
 let cachedCount = 0;

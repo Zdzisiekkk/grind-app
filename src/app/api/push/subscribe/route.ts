@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
  * Zapisanie i wypisanie subskrypcji przeglądarki.
  *
  * Idzie przez trasę serwerową, a nie prosto z przeglądarki do bazy, tylko po
- * to, żeby przy okazji zapisać strefę czasową urządzenia — bez niej
+ * to, żeby przy okazji zapisać strefę czasową urządzenia - bez niej
  * przypomnienie o 22:00 przyszłoby w Polsce o północy.
  */
 export async function POST(request: NextRequest) {

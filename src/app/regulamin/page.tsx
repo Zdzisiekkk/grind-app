@@ -35,7 +35,7 @@ export default function TermsPage() {
       <Section title="Konto">
         <p>
           Do korzystania potrzebne jest konto. Podaj prawdziwy adres e-mail i nie udostępniaj
-          hasła. Konto jest osobiste. Możesz je usunąć w każdej chwili w profilu — usunięcie
+          hasła. Konto jest osobiste. Możesz je usunąć w każdej chwili w profilu - usunięcie
           jest natychmiastowe i nieodwracalne.
         </p>
       </Section>
@@ -44,7 +44,7 @@ export default function TermsPage() {
         <p>
           Trener AI jest funkcją płatną, rozliczaną w cyklu miesięcznym przez Stripe. Cena
           i ewentualny okres próbny są widoczne przed zakupem. Subskrypcję możesz wypowiedzieć
-          w dowolnym momencie w panelu płatności — dostęp trwa wtedy do końca opłaconego
+          w dowolnym momencie w panelu płatności - dostęp trwa wtedy do końca opłaconego
           okresu i nie odnawia się.
         </p>
         <p>
@@ -53,7 +53,7 @@ export default function TermsPage() {
         </p>
         <p>
           Kupując dostęp do treści cyfrowych i zaczynając z nich korzystać przed upływem
-          14 dni, rezygnujesz z prawa odstąpienia od umowy w tym zakresie — o czym informujemy
+          14 dni, rezygnujesz z prawa odstąpienia od umowy w tym zakresie - o czym informujemy
           przed płatnością.
         </p>
       </Section>
@@ -73,14 +73,14 @@ export default function TermsPage() {
         <p>
           Staramy się, żeby aplikacja działała bez przerw, ale nie gwarantujemy
           nieprzerwanej dostępności. Twoje dane możesz w każdej chwili pobrać na własny
-          dysk (Profil → „Pobierz swoje dane”) i zalecamy z tego korzystać.
+          dysk (Profil → Pobierz swoje dane) i zalecamy z tego korzystać.
         </p>
       </Section>
 
       <Section title="Zmiany regulaminu">
         <p>
           O istotnych zmianach poinformujemy w aplikacji i poprosimy o ponowną akceptację.
-          Jeśli się nie zgodzisz, możesz usunąć konto — a wcześniej pobrać swoje dane.
+          Jeśli się nie zgodzisz, możesz usunąć konto - a wcześniej pobrać swoje dane.
         </p>
       </Section>
 

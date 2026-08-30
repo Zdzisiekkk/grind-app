@@ -15,10 +15,10 @@ import { createClient } from "@/lib/supabase/client";
 import { longDate, sets as setsLabel, volume } from "@/lib/format";
 
 const STEP_KEY = "grind:weight-step";
-/** Sesja bez jawnego startu (np. wznowiona) — liczymy najwyżej 6 h treningu. */
+/** Sesja bez jawnego startu (np. wznowiona) - liczymy najwyżej 6 h treningu. */
 const MAX_SESSION_HOURS = 6;
 
-/** Odczyty zegara trzymamy poza renderem — to funkcje nieczyste. */
+/** Odczyty zegara trzymamy poza renderem - to funkcje nieczyste. */
 function restWindow(seconds: number) {
   return { endsAt: Date.now() + seconds * 1000, total: seconds };
 }
@@ -43,7 +43,7 @@ export function SessionScreen({
   userId: string;
   /** Kontuzje, o które pytamy po treningu (śledzone i niewyleczone). */
   injuries: Injury[];
-  /** Oceny już wpisane dzisiaj — klucz to id kontuzji. */
+  /** Oceny już wpisane dzisiaj - klucz to id kontuzji. */
   painToday: Record<string, number>;
 }) {
   const router = useRouter();
@@ -148,7 +148,7 @@ export function SessionScreen({
       return;
     }
 
-    // Przenumeruj pozostałe serie tego ćwiczenia, żeby nie było dziur (1, 3, 4…).
+    // Przenumeruj pozostałe serie tego ćwiczenia, żeby nie było dziur (1, 3, 4...).
     const siblings = logs
       .filter(
         (l) =>

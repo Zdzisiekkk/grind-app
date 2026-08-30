@@ -22,7 +22,7 @@ export default async function PlanPage() {
   const myPlans = all.filter((p) => p.user_id === user.id);
   const templates = all.filter((p) => p.user_id !== user.id && p.is_template);
 
-  // Liczba dni w każdym planie — dwa zapytania zamiast N.
+  // Liczba dni w każdym planie - dwa zapytania zamiast N.
   const dayCounts: Record<string, number> = {};
   if (all.length) {
     const { data: phases } = await supabase

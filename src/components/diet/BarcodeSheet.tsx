@@ -11,11 +11,11 @@ import type { OffProduct } from "@/lib/off";
  * Dodanie produktu przez kod kreskowy.
  *
  * Szybsza droga niż wpisywanie nazwy: w sklepie i w kuchni kod jest jedyną
- * rzeczą, która na pewno jest pod ręką, a „twaróg półtłusty" trzeba wpisać
+ * rzeczą, która na pewno jest pod ręką, a "twaróg półtłusty" trzeba wpisać
  * i jeszcze wybrać właściwy z dwudziestu podobnych.
  *
  * Ręczne wpisanie numeru zostaje zawsze widoczne. Aparat potrafi nie dostać
- * zgody, nie mieć tylnego obiektywu albo trafić na kod pod zgrzewem — i wtedy
+ * zgody, nie mieć tylnego obiektywu albo trafić na kod pod zgrzewem - i wtedy
  * trzynaście cyfr spod kreski jest szybsze niż walka ze sprzętem.
  */
 
@@ -73,7 +73,7 @@ export function BarcodeSheet({
         setSzuka(false);
       } catch {
         setSzuka(false);
-        setBlad("Brak połączenia. Wpisz produkt ręcznie — zostanie u Ciebie na stałe.");
+        setBlad("Brak połączenia. Wpisz produkt ręcznie - zostanie u Ciebie na stałe.");
       }
     },
     [onZnaleziono],
@@ -84,7 +84,7 @@ export function BarcodeSheet({
       <div className="space-y-3">
         {szuka ? (
           <div className="flex items-center justify-center gap-2 py-8 text-[13px] text-muted">
-            <Spinner /> sprawdzam kod…
+            <Spinner /> sprawdzam kod...
           </div>
         ) : (
           <CodeScanner
@@ -101,7 +101,7 @@ export function BarcodeSheet({
         {nieznanyKod && (
           <p className="text-[13px] text-muted">
             Odczytany numer: <span className="tabular font-semibold">{nieznanyKod}</span>. Dodaj
-            produkt w zakładce „Własny produkt” — zapamiętamy go.
+            produkt w zakładce Własny produkt - zapamiętamy go.
           </p>
         )}
 

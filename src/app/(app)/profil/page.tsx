@@ -79,7 +79,7 @@ export default async function ProfilPage() {
 
         <Card
           title="Nawodnienie"
-          subtitle="Cel dnia i wielkość porcji przy przycisku „+” w zakładce Dieta."
+          subtitle="Cel dnia i wielkość porcji przy przycisku plus w zakładce Dieta."
         >
           <div className="grid grid-cols-2 gap-2">
             <Field label="Cel dzienny (ml)">
@@ -117,13 +117,13 @@ export default async function ProfilPage() {
             </Field>
           </div>
           <p className="mt-1 text-[12px] text-faint">
-            Zostaw „co ile minut” puste, żeby wyłączyć przypomnienia o wodzie.
+            Zostaw pole Co ile minut puste, żeby wyłączyć przypomnienia o wodzie.
           </p>
         </Card>
 
         <Card
           title="Sen"
-          subtitle="Cel i docelowa pora snu — z nich liczy się długość i regularność w Sleep Score."
+          subtitle="Cel i docelowa pora snu - z nich liczy się długość i regularność w Sleep Score."
         >
           <div className="grid grid-cols-3 gap-2">
             <Field label="Cel (godziny)">
@@ -150,7 +150,7 @@ export default async function ProfilPage() {
             </Field>
           </div>
           <p className="mt-1 text-[12px] text-faint">
-            Docelową porę snu możesz zostawić pustą — wtedy punktem odniesienia
+            Docelową porę snu możesz zostawić pustą - wtedy punktem odniesienia
             regularności jest mediana Twoich ostatnich dwóch tygodni.
           </p>
         </Card>
@@ -164,7 +164,7 @@ export default async function ProfilPage() {
       >
         <BodyWeightChart data={weightData} />
         <p className="mt-2 text-[12px] text-faint">
-          Wagę dodajesz jednym tapnięciem z ekranu „Dziś”.
+          Wagę dodajesz jednym tapnięciem z ekranu Dziś.
         </p>
       </Card>
 

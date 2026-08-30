@@ -11,7 +11,7 @@ const intOrNull = (value: FormDataEntryValue | null) => {
   return value && Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 };
 
-/** Pole <input type="time"> oddaje „HH:MM" albo pusty string. */
+/** Pole <input type="time"> oddaje "HH:MM" albo pusty string. */
 const timeOrNull = (value: FormDataEntryValue | null) =>
   typeof value === "string" && /^\d{2}:\d{2}$/.test(value) ? value : null;
 
@@ -85,11 +85,11 @@ export async function signOut() {
  * Trwałe usunięcie konta.
  *
  * Kasowanie robi funkcja w bazie, bo do auth.users zwykły użytkownik nie ma
- * dostępu — ale kasuje wyłącznie auth.uid(), więc nie da się nią ruszyć
+ * dostępu - ale kasuje wyłącznie auth.uid(), więc nie da się nią ruszyć
  * cudzego konta. Kaskady zabierają dziennik, plany, notatki i subskrypcję.
  *
  * Uwaga: to NIE anuluje subskrypcji w Stripe. Płatności trzeba wypowiedzieć
- * osobno, w panelu — dlatego ekran mówi o tym wprost, zamiast zostawiać
+ * osobno, w panelu - dlatego ekran mówi o tym wprost, zamiast zostawiać
  * człowieka z kartą obciążaną za nieistniejące konto.
  */
 export async function deleteAccount(): Promise<void> {
@@ -100,11 +100,11 @@ export async function deleteAccount(): Promise<void> {
   if (!user) redirect("/login");
 
   /*
-   * Zdjęcia z modułu „Wygląd" najpierw, i to przez API magazynu.
+   * Zdjęcia z modułu "Wygląd" najpierw, i to przez API magazynu.
    *
-   * Kaskady w bazie zabierają wiersze, ale nie pliki — kubełek nie jest
+   * Kaskady w bazie zabierają wiersze, ale nie pliki - kubełek nie jest
    * tabelą. Supabase w dodatku broni `storage.objects` przed bezpośrednim
-   * DELETE („Direct deletion from storage tables is not allowed"), więc
+   * DELETE ("Direct deletion from storage tables is not allowed"), więc
    * jedyna droga prowadzi tędy. Robimy to PRZED skasowaniem konta, bo potem
    * nie ma już sesji, która miałaby prawo tknąć te pliki.
    */
@@ -130,7 +130,7 @@ export async function deleteAccount(): Promise<void> {
 /**
  * Wycofanie zgody na przetwarzanie danych o zdrowiu.
  *
- * Zgodę można cofnąć w każdej chwili — i cofnięcie musi coś realnie znaczyć,
+ * Zgodę można cofnąć w każdej chwili - i cofnięcie musi coś realnie znaczyć,
  * więc razem z nią znikają dane, których dotyczyła. Reszta aplikacji
  * (trening, plany, zadania) działa dalej.
  */

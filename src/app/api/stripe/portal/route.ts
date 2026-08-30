@@ -6,7 +6,7 @@ import { isStripeConfigured, siteUrl, stripe } from "@/lib/stripe/server";
  * Panel klienta Stripe: zmiana karty, faktury, rezygnacja.
  *
  * Świadomie NIE budujemy własnego ekranu do anulowania. Rezygnacja musi
- * działać bez zarzutu i być łatwa do znalezienia — panel Stripe'a robi to
+ * działać bez zarzutu i być łatwa do znalezienia - panel Stripe'a robi to
  * poprawnie i zdejmuje z nas obsługę faktur.
  */
 export async function POST() {

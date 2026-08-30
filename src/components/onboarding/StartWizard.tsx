@@ -59,7 +59,7 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
 
   // Poziom aktywności podpowiadamy z liczby treningów, dopóki nikt go nie
   // ruszył. Wyliczamy to w trakcie renderu, żeby nie synchronizować stanu
-  // efektem — inaczej wybór użytkownika mrugałby przy każdej zmianie dni.
+  // efektem - inaczej wybór użytkownika mrugałby przy każdej zmianie dni.
   const activity: ActivityLevel = activityTouched ?? suggestActivity(daysPerWeek);
 
   const matches = useMemo(
@@ -104,7 +104,7 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
       try {
         await finishOnboarding(input);
       } catch (e) {
-        // redirect() z akcji serwerowej rzuca celowo — to nie jest błąd.
+        // redirect() z akcji serwerowej rzuca celowo - to nie jest błąd.
         if (e instanceof Error && e.message.includes("NEXT_REDIRECT")) return;
         setError(e instanceof Error ? e.message : "Coś poszło nie tak.");
       }
@@ -256,7 +256,7 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
 
               <Field
                 label="Jak wygląda Twój dzień poza treningiem"
-                hint="Podpowiedź wzięliśmy z liczby treningów — popraw, jeśli pracujesz fizycznie albo siedzisz cały dzień."
+                hint="Podpowiedź wzięliśmy z liczby treningów - popraw, jeśli pracujesz fizycznie albo siedzisz cały dzień."
               >
                 <div className="flex flex-col gap-1.5">
                   {ACTIVITY_LEVELS.map((a) => (
@@ -285,8 +285,8 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
             <div className="flex flex-col gap-4">
               {matches.length === 0 ? (
                 <Alert tone="warn">
-                  Przy takim zestawie nie mam gotowego planu. Wejdziesz bez niego — plan wybierzesz
-                  albo ułożysz sam w zakładce „Plany”.
+                  Przy takim zestawie nie mam gotowego planu. Wejdziesz bez niego - plan wybierzesz
+                  albo ułożysz sam w zakładce Plany.
                 </Alert>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -323,7 +323,7 @@ export function StartWizard({ plans, email }: { plans: TemplatePlan[]; email: st
                     <Stat label="Tłuszcz" value={`${targets.fat} g`} />
                   </div>
                   <p className="mt-3 text-[12px] leading-relaxed text-faint">
-                    To wyliczenie ze wzoru, nie pomiar — każdy taki wzór myli się o jakieś 10 %.
+                    To wyliczenie ze wzoru, nie pomiar - każdy taki wzór myli się o jakieś 10 %.
                     Prawdziwą odpowiedź da waga po dwóch tygodniach i wtedy poprawimy cel.
                   </p>
                 </Card>
@@ -382,7 +382,7 @@ function Section({
   );
 }
 
-/** Duże kafle wyboru — jeden kciuk, żadnego celowania. */
+/** Duże kafle wyboru - jeden kciuk, żadnego celowania. */
 function Choices({
   options,
   value,

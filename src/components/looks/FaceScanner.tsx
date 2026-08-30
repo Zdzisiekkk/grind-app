@@ -11,12 +11,12 @@ import type { Ujecie } from "@/lib/database.types";
  *
  * Trzy rzeczy decydują o tym, czy porównanie po trzech miesiącach będzie coś
  * warte, a wszystkie trzy są w kadrze, nie w modelu: ten sam kąt, to samo
- * oświetlenie i ta sama odległość. Dlatego jest owal-prowadnica i „duch"
+ * oświetlenie i ta sama odległość. Dlatego jest owal-prowadnica i "duch"
  * poprzedniego zdjęcia pod spodem. Bez tego dwa skany różnią się głównie tym,
  * jak człowiek trzymał telefon.
  *
  * Kamera gaśnie w każdym wyjściu z tego komponentu. Zapalona po zamknięciu
- * arkusza jest błędem krytycznym — dioda obok obiektywu to jedyna rzecz,
+ * arkusza jest błędem krytycznym - dioda obok obiektywu to jedyna rzecz,
  * po której człowiek pozna, że aplikacja go nagrywa.
  *
  * Stanu nie zerujemy tutaj: ekran nadrzędny montuje ten komponent z kluczem
@@ -40,7 +40,7 @@ const OPIS: Record<Ujecie, { tytul: string; jak: string; wymagane: boolean }> = 
   },
   sylwetka: {
     tytul: "Sylwetka",
-    jak: "Cała postawa, ręce swobodnie. Stań naturalnie — nie prostuj się na siłę.",
+    jak: "Cała postawa, ręce swobodnie. Stań naturalnie - nie prostuj się na siłę.",
     wymagane: false,
   },
 };
@@ -57,7 +57,7 @@ type Etap = "podglad" | "wysylanie" | "analiza";
  * Przeskalowanie i kompresja w przeglądarce.
  *
  * Telefon robi zdjęcia po kilka megabajtów. Wysyłanie ich w oryginale to
- * transfer użytkownika i czas na łączu komórkowym — a do oceny skóry i tak
+ * transfer użytkownika i czas na łączu komórkowym - a do oceny skóry i tak
  * schodzimy do 1600 px.
  */
 async function doJpega(zrodlo: CanvasImageSource, w: number, h: number): Promise<Blob | null> {
@@ -82,7 +82,7 @@ export function FaceScanner({
   open: boolean;
   onClose: () => void;
   onGotowe: () => void;
-  /** Podpisane adresy poprzednich ujęć — nakładane na podgląd. */
+  /** Podpisane adresy poprzednich ujęć - nakładane na podgląd. */
   duchy: Partial<Record<Ujecie, string>>;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -101,7 +101,7 @@ export function FaceScanner({
 
   /*
    * Samo gaszenie sprzętu, bez dotykania stanu Reacta. Wołane też ze sprzątania
-   * efektu, czyli w momencie, w którym komponent już znika — ustawianie tam
+   * efektu, czyli w momencie, w którym komponent już znika - ustawianie tam
    * stanu byłoby pracą na rzecz czegoś, czego za chwilę nie ma.
    */
   const stopCamera = useCallback(() => {
@@ -117,7 +117,7 @@ export function FaceScanner({
       });
     } catch {
       setBlad(
-        "Brak dostępu do aparatu. Możesz wybrać zdjęcie z galerii — działa tak samo, tylko trudniej trafić w ten sam kadr.",
+        "Brak dostępu do aparatu. Możesz wybrać zdjęcie z galerii - działa tak samo, tylko trudniej trafić w ten sam kadr.",
       );
       return;
     }
@@ -151,7 +151,7 @@ export function FaceScanner({
     return stopCamera;
   }, [open, stopCamera]);
 
-  /** Sama migawka — bez odliczania, wołana z timera i z galerii. */
+  /** Sama migawka - bez odliczania, wołana z timera i z galerii. */
   const zapiszKlatke = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
@@ -167,7 +167,7 @@ export function FaceScanner({
   /*
    * Pięć sekund na ustawienie się.
    *
-   * Do tej pory zdjęcie robiło się w momencie kliknięcia — czyli zawsze
+   * Do tej pory zdjęcie robiło się w momencie kliknięcia - czyli zawsze
    * z ręką na ekranie i głową przekrzywioną w stronę przycisku. Przy skanie,
    * którego cała wartość polega na powtarzalności kadru, to psuło każde ujęcie.
    */
@@ -207,7 +207,7 @@ export function FaceScanner({
     stopCamera();
 
     try {
-      setStatus("Rozpoczynam skan…");
+      setStatus("Rozpoczynam skan...");
       const start = await fetch("/api/ai/wyglad/start", { method: "POST" });
       const startBody = await start.json();
       if (!start.ok) {
@@ -225,7 +225,7 @@ export function FaceScanner({
 
       const wpisy = Object.entries(zrobione) as Array<[Ujecie, Blob]>;
       for (const [u, blob] of wpisy) {
-        setStatus(`Wysyłam: ${OPIS[u].tytul.toLowerCase()}…`);
+        setStatus(`Wysyłam: ${OPIS[u].tytul.toLowerCase()}...`);
         const sciezka = `${user.id}/${skanId}/${u}.jpg`;
         const { error: upErr } = await supabase.storage
           .from("wyglad")
@@ -239,7 +239,7 @@ export function FaceScanner({
       }
 
       setEtap("analiza");
-      setStatus("Analizuję zdjęcia… to potrwa kilkanaście sekund.");
+      setStatus("Analizuję zdjęcia... to potrwa kilkanaście sekund.");
       const res = await fetch("/api/ai/wyglad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -267,7 +267,7 @@ export function FaceScanner({
     <Sheet
       open={open}
       onClose={pracuje ? () => {} : onClose}
-      title={`Skan — ${OPIS[ujecie].tytul}`}
+      title={`Skan - ${OPIS[ujecie].tytul}`}
       footer={
         !pracuje && (
           <div className="flex gap-2">
@@ -291,7 +291,7 @@ export function FaceScanner({
               aria-selected={i === krok}
               onClick={() => {
                 if (pracuje) return;
-                // Zmiana ujęcia przerywa odliczanie — inaczej migawka
+                // Zmiana ujęcia przerywa odliczanie - inaczej migawka
                 // strzeliłaby w kadr, którego nikt już nie ogląda.
                 setOdliczanie(null);
                 setKrok(i);
@@ -337,7 +337,7 @@ export function FaceScanner({
             Prowadnica dopasowana do ujęcia.
             Owal twarzy przy sylwetce był bez sensu: kadrujesz całą postać,
             a na ekranie masz koło na wysokości głowy. Zarys postaci mówi
-            wprost, ile miejsca zostawić nad głową i pod stopami — a to od tego
+            wprost, ile miejsca zostawić nad głową i pod stopami - a to od tego
             zależy, czy zdjęcie sprzed trzech miesięcy da się nałożyć na dzisiejsze.
           */}
           <svg
@@ -382,7 +382,7 @@ export function FaceScanner({
             )}
           </svg>
 
-          {/* Odliczanie — duża cyfra na środku, widoczna z odległości ręki. */}
+          {/* Odliczanie - duża cyfra na środku, widoczna z odległości ręki. */}
           {odliczanie !== null && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span
@@ -403,12 +403,12 @@ export function FaceScanner({
 
         <p className="text-[13px] text-muted" aria-live="polite">
           {odliczanie !== null
-            ? `Zdjęcie za ${odliczanie} s — ustaw się i opuść ręce.`
+            ? `Zdjęcie za ${odliczanie} s - ustaw się i opuść ręce.`
             : OPIS[ujecie].jak}
         </p>
         {duchy[ujecie] && (
           <p className="text-[12px] text-faint">
-            Pod spodem widać poprzednie zdjęcie — dopasuj kadr, żeby porównanie miało sens.
+            Pod spodem widać poprzednie zdjęcie - dopasuj kadr, żeby porównanie miało sens.
           </p>
         )}
 

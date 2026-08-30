@@ -1,14 +1,14 @@
 /**
- * Sleep score — ocena jednej nocy w skali 0–100.
+ * Sleep score - ocena jednej nocy w skali 0-100.
  *
  * Formuła mieszka tutaj, a nie w bazie, z trzech powodów:
  *  1. regularność wymaga porównania z poprzednimi nocami, więc i tak nie da
  *     się jej policzyć w kolumnie generowanej,
  *  2. wagi będą się jeszcze zmieniać, a strojenie nie powinno wymagać migracji,
- *  3. ten sam wynik potrzebny jest ekranowi snu i Health Score — jedno miejsce
+ *  3. ten sam wynik potrzebny jest ekranowi snu i Health Score - jedno miejsce
  *     prawdy jest ważniejsze niż policzenie tego po stronie serwera.
  *
- * Wynik NIGDY nie jest pokazywany jako sama liczba — zawsze z rozbiciem na
+ * Wynik NIGDY nie jest pokazywany jako sama liczba - zawsze z rozbiciem na
  * cztery składowe, żeby było wiadomo, co konkretnie podnieść.
  */
 
@@ -20,7 +20,7 @@ export const DEFAULT_SLEEP_GOAL_MIN = 480; // 8 h
  * Ile punktów może dać każda składowa.
  *
  * Cztery pierwsze sumują się do 100 i tak zostaje, gdy nie było drzemek.
- * Drzemki dokładają piątą, wyraźnie lżejszą — mają dawać sygnał, a nie
+ * Drzemki dokładają piątą, wyraźnie lżejszą - mają dawać sygnał, a nie
  * przewracać oceny nocy. Reszta wag skaluje się wtedy sama, tym samym
  * mechanizmem, który obsługuje brak regularności.
  */
@@ -32,7 +32,7 @@ export const SLEEP_WEIGHTS = {
   naps: 10,
 } as const;
 
-/** Jedna drzemka. `start` w minutach od północy — null, gdy nieznana. */
+/** Jedna drzemka. `start` w minutach od północy - null, gdy nieznana. */
 export type Nap = { minutes: number; start: number | null };
 
 export type SleepNight = {
@@ -56,7 +56,7 @@ export type SleepNight = {
 export type ScorePart = {
   key: "duration" | "feeling" | "continuity" | "regularity" | "naps";
   label: string;
-  /** 0–1; mnożone przez wagę składowej. */
+  /** 0-1; mnożone przez wagę składowej. */
   ratio: number;
   points: number;
   max: number;
@@ -64,10 +64,10 @@ export type ScorePart = {
 };
 
 export type SleepScore = {
-  /** 0–100. */
+  /** 0-100. */
   total: number;
   parts: ScorePart[];
-  /** Składowe, których nie dało się policzyć — wagi rozdzielone na resztę. */
+  /** Składowe, których nie dało się policzyć - wagi rozdzielone na resztę. */
   skipped: ScorePart["key"][];
 };
 
@@ -86,14 +86,14 @@ export function napsFromView(
   return (raw ?? []).map((n) => ({ minutes: n.minutes, start: timeToMin(n.start_time) }));
 }
 
-/** „23:30:00" → 1410. Zwraca null dla pustych wartości. */
+/** "23:30:00" → 1410. Zwraca null dla pustych wartości. */
 export function timeToMin(time: string | null | undefined): number | null {
   if (!time) return null;
   const m = /^(\d{1,2}):(\d{2})/.exec(time);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
 }
 
-/** 1410 → „23:30". Minuty spoza doby zawijają się. */
+/** 1410 → "23:30". Minuty spoza doby zawijają się. */
 export function minToTime(min: number): string {
   const m = ((Math.round(min) % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
@@ -102,23 +102,23 @@ export function minToTime(min: number): string {
 /**
  * Godzina zaśnięcia jako minuty od 18:00.
  * Dzięki temu 23:30 i 00:30 leżą obok siebie (330 i 390), a nie na
- * przeciwnych końcach doby — inaczej średnia z tych dwóch wypadłaby w południe.
+ * przeciwnych końcach doby - inaczej średnia z tych dwóch wypadłaby w południe.
  */
 export function bedtimeAxis(min: number): number {
   return (min - 18 * 60 + 1440) % 1440;
 }
 
-/** 465 minut → „7 h 45 min". */
+/** 465 minut → "7 h 45 min". */
 export function sleepDuration(min: number | null | undefined): string {
-  if (min == null) return "–";
+  if (min == null) return "-";
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
   return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`;
 }
 
-/** Skrót do kafelków: 465 → „7:45". */
+/** Skrót do kafelków: 465 → "7:45". */
 export function sleepClock(min: number | null | undefined): string {
-  if (min == null) return "–";
+  if (min == null) return "-";
   return `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}`;
 }
 
@@ -130,7 +130,7 @@ function clamp01(x: number): number {
 
 /**
  * Długość: pełnia punktów od pół godziny przed celem w górę.
- * Za krótko boli mocno (0 pkt przy 3 h poniżej celu), za długo tylko lekko —
+ * Za krótko boli mocno (0 pkt przy 3 h poniżej celu), za długo tylko lekko -
  * przespana godzina ekstra nie jest błędem, dopiero regularne 10 h to sygnał.
  */
 function durationRatio(sleepMin: number, goalMin: number): number {
@@ -142,8 +142,8 @@ function durationRatio(sleepMin: number, goalMin: number): number {
 }
 
 /**
- * Odczucia: ocena snu (1–5) plus energia po przebudzeniu.
- * Rozdzielone celowo — można przespać osiem godzin i wstać rozbitym.
+ * Odczucia: ocena snu (1-5) plus energia po przebudzeniu.
+ * Rozdzielone celowo - można przespać osiem godzin i wstać rozbitym.
  * Gdy energii nie podałeś, cała waga wraca do oceny snu.
  */
 function feelingRatio(quality: number, energy: number | null): number {
@@ -156,14 +156,14 @@ function feelingRatio(quality: number, energy: number | null): number {
 /**
  * Ciągłość: pobudki, czas nieprzespany w środku nocy i długie zasypianie.
  * Kara jest odejmowana od pełnej puli, więc trzy drobne rzeczy naraz zabolą
- * tyle samo co jedna duża — i o to chodzi, bo tak właśnie czuje się taka noc.
+ * tyle samo co jedna duża - i o to chodzi, bo tak właśnie czuje się taka noc.
  */
 /**
  * Jakość pojedynczej drzemki po jej długości.
  *
  * Do 30 minut drzemka kończy się przed snem głębokim: budzisz się od razu
  * sprawny, a wieczorem nadal chce ci się spać. Dłuższa wchodzi w sen głęboki
- * i płaci się za to dwa razy — otępieniem po przebudzeniu i mniejszym
+ * i płaci się za to dwa razy - otępieniem po przebudzeniu i mniejszym
  * ciśnieniem snu w nocy. Poniżej pięciu minut to nie jest drzemka, tylko
  * przymknięcie oczu; nie karzemy, ale i nie liczymy jako pełnowartościowej.
  */
@@ -178,7 +178,7 @@ function napLengthRatio(minutes: number): number {
 /**
  * Kara za późną porę.
  *
- * Drzemka po siedemnastej zabiera ciśnienie snu tuż przed nocą — to ta,
+ * Drzemka po siedemnastej zabiera ciśnienie snu tuż przed nocą - to ta,
  * po której leży się o północy z otwartymi oczami. Bez zapisanej godziny
  * nie zgadujemy: brak kary.
  */
@@ -190,15 +190,15 @@ function napTimeRatio(start: number | null): number {
 }
 
 /**
- * Składowa „Drzemki".
+ * Składowa "Drzemki".
  *
- * Liczona TYLKO wtedy, gdy w danym dniu była choć jedna — dzień bez drzemki
+ * Liczona TYLKO wtedy, gdy w danym dniu była choć jedna - dzień bez drzemki
  * nie jest ani lepszy, ani gorszy, więc waga rozdziela się na resztę.
  *
  * Dlaczego rozbicie w ogóle ma znaczenie: trzy drzemki po 20 minut i jedna
  * sześćdziesięciominutowa dają tę samą sumę, ale nie to samo. Pierwsze trzy
  * mieszczą się w oknie przed snem głębokim; ostatnia nie. Osobno liczy się
- * jednak także sama liczba — cztery drzemki dziennie to już nie regeneracja,
+ * jednak także sama liczba - cztery drzemki dziennie to już nie regeneracja,
  * tylko objaw długu sennego, i wynik ma o tym mówić.
  */
 function napsRatio(naps: Nap[]): number {
@@ -237,7 +237,7 @@ function regularityRatio(bedMin: number, referenceMin: number): number {
   return clamp01(1 - (diff - 30) / 90);
 }
 
-/** Mediana pory zaśnięcia z podanych nocy — punkt odniesienia dla regularności. */
+/** Mediana pory zaśnięcia z podanych nocy - punkt odniesienia dla regularności. */
 export function medianBedtime(nights: SleepNight[]): number | null {
   const values = nights
     .map((n) => timeToMin(n.bedtime))
@@ -299,7 +299,7 @@ export function scoreNight(
   /*
    * Drzemki wchodzą do oceny tylko wtedy, gdy jakakolwiek była. Dzień bez
    * drzemki nie jest z tego powodu lepszy ani gorszy, a doliczanie mu pełnych
-   * punktów „za brak" rozmyłoby całą składową.
+   * punktów "za brak" rozmyłoby całą składową.
    */
   const naps = night.naps ?? (night.nap_min > 0 ? [{ minutes: night.nap_min, start: null }] : []);
 
@@ -333,7 +333,7 @@ export function scoreNight(
     skipped.push("regularity");
   }
 
-  // Wagi składowych, których nie da się policzyć, rozdzielamy na resztę —
+  // Wagi składowych, których nie da się policzyć, rozdzielamy na resztę -
   // brak danych ma nie obniżać wyniku, tylko go zawężać.
   const available = parts.reduce((sum, p) => sum + p.max, 0);
   const scale = available > 0 ? 100 / available : 0;
@@ -349,7 +349,7 @@ export function scoreNight(
 
 /* -------------------------------- Etykiety --------------------------------- */
 
-/** Pasmo wyniku — kolor ze wspólnej palety statusów, zawsze z opisem słownym. */
+/** Pasmo wyniku - kolor ze wspólnej palety statusów, zawsze z opisem słownym. */
 export function sleepBand(score: number): { label: string; color: string; icon: string } {
   if (score >= 80) return { label: "świetna noc", color: STATUS.good, icon: "●" };
   if (score >= 65) return { label: "dobra noc", color: STATUS.warning, icon: "▲" };
@@ -358,10 +358,10 @@ export function sleepBand(score: number): { label: string; color: string; icon: 
 }
 
 export const SLEEP_LEGEND = [
-  { range: "80–100", ...sleepBand(85) },
-  { range: "65–79", ...sleepBand(70) },
-  { range: "50–64", ...sleepBand(55) },
-  { range: "0–49", ...sleepBand(20) },
+  { range: "80-100", ...sleepBand(85) },
+  { range: "65-79", ...sleepBand(70) },
+  { range: "50-64", ...sleepBand(55) },
+  { range: "0-49", ...sleepBand(20) },
 ];
 
 export const QUALITY_LABELS = [
@@ -393,7 +393,7 @@ export type FactorInsight = {
 /**
  * Które czynniki realnie psują (albo poprawiają) Twoje noce.
  *
- * To zwykłe porównanie średnich, nie dowód przyczynowości — dlatego widok
+ * To zwykłe porównanie średnich, nie dowód przyczynowości - dlatego widok
  * podaje liczbę nocy przy każdym wniosku i nie pokazuje niczego, co opiera
  * się na mniej niż trzech.
  */

@@ -8,8 +8,8 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Najpierw patrzymy do własnej bazy, dopiero potem do Open Food Facts.
  * Kod raz zeskanowany przez kogokolwiek leży już we wspólnym cache'u
- * (migracja 0029), więc drugi jogurt tej samej marki znajduje się bez sieci —
- * a to jest różnica między „działa w sklepie" a „działa w domu przy wifi".
+ * (migracja 0029), więc drugi jogurt tej samej marki znajduje się bez sieci -
+ * a to jest różnica między "działa w sklepie" a "działa w domu przy wifi".
  *
  * Suma kontrolna sprawdzana jest przed zapytaniem. Odczyt z wygniecionej folii
  * bywa o jedną cyfrę obok i szkoda na niego sekundy czekania.
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     );
   }
 
-  // Własne i wspólne produkty naraz — RLS przepuści cudze tylko wtedy,
+  // Własne i wspólne produkty naraz - RLS przepuści cudze tylko wtedy,
   // gdy user_id jest puste, czyli dla wpisów ze wspólnego cache'u.
   const { data: znane } = await supabase
     .from("foods")
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     if (!product) {
       return NextResponse.json(
         {
-          error: "Nie znamy tego produktu — wpisz go ręcznie, zostanie u Ciebie na stałe.",
+          error: "Nie znamy tego produktu - wpisz go ręcznie, zostanie u Ciebie na stałe.",
           code: "nieznany",
           kod,
         },

@@ -1,7 +1,7 @@
 /*
  * Sprawdza decyzje kolejki offline.
  *
- * To jedyna część trybu offline, którą da się przetestować bez przeglądarki —
+ * To jedyna część trybu offline, którą da się przetestować bez przeglądarki -
  * i akurat ta, w której pomyłka jest najdroższa: zakolejkowanie logowania albo
  * zgubienie identyfikatora serii.
  *
@@ -13,7 +13,7 @@ import { isQueueableWrite, tableFromUrl, withLocalIds, isUpsertPrefer, wantsRepr
 let fails = 0;
 const check = (label, cond, extra = "") => {
   if (!cond) fails++;
-  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
+  console.log(`  ${cond ? "✅" : "❌"} ${label}${extra ? " - " + extra : ""}`);
 };
 
 const SB = "https://x.supabase.co";
@@ -49,7 +49,7 @@ const manyRows = JSON.parse(many.body);
 check("tablica zostaje tablicą", Array.isArray(manyRows) && manyRows.length === 2);
 check("każdy wiersz ma własne id", manyRows[0].id !== manyRows[1].id);
 
-// Upsert NIE dostaje id: PostgREST wpisałby je do „do update set" i nadpisał
+// Upsert NIE dostaje id: PostgREST wpisałby je do "do update set" i nadpisał
 // klucz istniejącego wiersza.
 const up = withLocalIds(JSON.stringify({ user_id: "u", date: "2026-01-01", count: 2 }), true, id, at);
 check("upsert BEZ id", JSON.parse(up.body).id === undefined);

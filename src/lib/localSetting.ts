@@ -6,7 +6,7 @@ import { useCallback, useSyncExternalStore } from "react";
  * Ustawienie zapamiętane w localStorage.
  *
  * localStorage to zewnętrzne źródło prawdy, więc czytamy je przez
- * useSyncExternalStore zamiast synchronizować efektem — dzięki temu nie ma
+ * useSyncExternalStore zamiast synchronizować efektem - dzięki temu nie ma
  * kaskadowych renderów, a serwerowy render dostaje wartość domyślną (ta sama,
  * co pierwszy render w przeglądarce, więc hydracja się zgadza).
  */
@@ -47,7 +47,7 @@ export function useLocalNumber(
 }
 
 /**
- * To samo dla przełącznika wł./wył. — np. czy sekcja jest rozwinięta.
+ * To samo dla przełącznika wł./wył. - np. czy sekcja jest rozwinięta.
  *
  * Serwer i pierwszy render w przeglądarce dostają `fallback`, więc hydracja
  * się zgadza; zapamiętany wybór dochodzi w pierwszym przebiegu po niej.

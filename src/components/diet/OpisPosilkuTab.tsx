@@ -6,14 +6,14 @@ import { kcalSkladnika, type Skladnik } from "@/lib/ai/posilekSchema";
 import { num } from "@/lib/format";
 
 /**
- * „Opisz, co zjadłeś" — zakładka dla tego, czego nie ma w żadnej bazie.
+ * "Opisz, co zjadłeś" - zakładka dla tego, czego nie ma w żadnej bazie.
  *
- * Wyszukiwarka kończyła się komunikatem „Nie znaleziono produktu — dodaj go
+ * Wyszukiwarka kończyła się komunikatem "Nie znaleziono produktu - dodaj go
  * ręcznie". Przy schabowym u mamy albo wczorajszej zupie nie ma kodu
  * kreskowego i nie ma czego szukać, a przepisywanie makr z etykiety, której
  * nie ma, to moment, w którym ludzie przestają prowadzić dziennik.
  *
- * KROK PRZEGLĄDU JEST OBOWIĄZKOWY. Model szacuje — czasem trafnie, czasem
+ * KROK PRZEGLĄDU JEST OBOWIĄZKOWY. Model szacuje - czasem trafnie, czasem
  * przyjmie średnie jajko tam, gdzie były trzy małe. Wrzucanie tego prosto do
  * dziennika udawałoby pewność, której tu nie ma. Poprawka gramatury przelicza
  * kalorie na miejscu, bez kolejnego (płatnego) pytania do modelu.
@@ -21,7 +21,7 @@ import { num } from "@/lib/format";
 
 const PRZYKLAD = "np. dwa jajka sadzone na maśle, kromka chleba razowego i kubek kawy z mlekiem";
 
-/** Ile pozycji naraz — powyżej tego opis jest listą zakupów, nie posiłkiem. */
+/** Ile pozycji naraz - powyżej tego opis jest listą zakupów, nie posiłkiem. */
 const MAX_POZYCJI = 15;
 
 type Stan = "pisanie" | "liczenie" | "przeglad";
@@ -111,7 +111,7 @@ export function OpisPosilkuTab({
                 </div>
                 {/*
                   Pewność jest widoczna przy KAŻDEJ pozycji, nie schowana
-                  w jednym zdaniu na górze. „Niska" przy jednym składniku
+                  w jednym zdaniu na górze. "Niska" przy jednym składniku
                   z pięciu ma być widać dokładnie przy tym jednym.
                 */}
                 <Chip
@@ -172,7 +172,7 @@ export function OpisPosilkuTab({
             disabled={zapisywanie || skladniki.length === 0}
           >
             {zapisywanie
-              ? "Dodaję…"
+              ? "Dodaję..."
               : `Dodaj ${skladniki.length === 1 ? "pozycję" : `${skladniki.length} pozycje`}`}
           </Button>
         </div>
@@ -194,7 +194,7 @@ export function OpisPosilkuTab({
 
       <p className="px-1 text-[12px] text-muted">
         Napisz zwykłym zdaniem, ile i czego. Im dokładniej podasz ilości, tym bliżej prawdy będzie
-        wynik — a każdą liczbę i tak poprawisz przed dodaniem.
+        wynik - a każdą liczbę i tak poprawisz przed dodaniem.
       </p>
 
       {blad && <Alert tone="warn">{blad}</Alert>}
@@ -202,7 +202,7 @@ export function OpisPosilkuTab({
       <Button block onClick={policz} disabled={stan === "liczenie" || opis.trim().length < 3}>
         {stan === "liczenie" ? (
           <span className="inline-flex items-center gap-2">
-            <Spinner /> liczę…
+            <Spinner /> liczę...
           </span>
         ) : (
           "Policz wartości"

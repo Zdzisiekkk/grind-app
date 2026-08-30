@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
  *
  * Powstało z konkretnej potrzeby: migracja bazy i wdrożenie kodu to dwa
  * osobne zdarzenia, między którymi bywa kilka minut. Przy zmianach, gdzie
- * kolejność ma znaczenie — na przykład skasowanie kolumny, do której stary
- * kod jeszcze pisze — zgadywanie „chyba już poszło" kończy się awarią.
+ * kolejność ma znaczenie - na przykład skasowanie kolumny, do której stary
+ * kod jeszcze pisze - zgadywanie "chyba już poszło" kończy się awarią.
  *
  * Nic tajnego: sam skrót commita i moment zbudowania. Bez sesji, bo test
  * sprawdzający wdrożenie nie ma powodu się logować.

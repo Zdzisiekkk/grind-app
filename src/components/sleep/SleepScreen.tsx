@@ -38,7 +38,7 @@ import {
   timeToMin,
 } from "@/lib/sleep";
 
-/** Noc razem z policzonym wynikiem — liczymy raz, używamy w kilku miejscach. */
+/** Noc razem z policzonym wynikiem - liczymy raz, używamy w kilku miejscach. */
 export type ScoredNight = { night: SleepNight; score: SleepScore };
 
 const EMPTY = {
@@ -52,7 +52,7 @@ const EMPTY = {
   morning_energy: 3 as number | null,
   /*
    * Drzemki osobno, nie jedną sumą. Trzy po 20 minut i jedna godzinna dają
-   * tę samą liczbę minut, ale nie to samo dla organizmu — a skoro wchodzą
+   * tę samą liczbę minut, ale nie to samo dla organizmu - a skoro wchodzą
    * do wyniku nocy, muszą dać się rozróżnić.
    */
   naps: [] as Array<{ minutes: number; start: string | null }>,
@@ -87,9 +87,9 @@ export function SleepScreen({
   const [range, setRange] = useState<"7" | "30">("7");
 
   /**
-   * Punkt odniesienia regularności: godzina z profilu, a jeśli jej nie ma —
+   * Punkt odniesienia regularności: godzina z profilu, a jeśli jej nie ma -
    * mediana ostatnich czternastu nocy. Mediana zamiast średniej, bo jedna
-   * impreza nie ma prawa przesunąć „Twojej zwykłej pory".
+   * impreza nie ma prawa przesunąć "Twojej zwykłej pory".
    */
   const reference = useMemo(
     () => timeToMin(targetBedtime) ?? medianBedtime(nights.slice(0, 14)),
@@ -118,7 +118,7 @@ export function SleepScreen({
     : null;
 
   // Dług snu: ile godzin brakuje do celu w całym oknie. Nadmiar z jednej nocy
-  // nie spłaca braku z innej — niedospane godziny się nie zwracają.
+  // nie spłaca braku z innej - niedospane godziny się nie zwracają.
   const debtMin = window.reduce((s, x) => s + Math.max(0, goalMin - x.night.sleep_min), 0);
 
   // Rozrzut pory snu: różnica między najwcześniejszym a najpóźniejszym
@@ -170,7 +170,7 @@ export function SleepScreen({
             ...EMPTY,
             date: dateISO,
             // Podpowiadamy Twoje zwykłe godziny, żeby typowa noc była
-            // jednym tapnięciem w „Zapisz".
+            // jednym tapnięciem w "Zapisz".
             bedtime: reference != null ? minToTime(reference) : EMPTY.bedtime,
             wake_time: last?.night.wake_time.slice(0, 5) ?? EMPTY.wake_time,
           },
@@ -211,7 +211,7 @@ export function SleepScreen({
      *
      * Drzemek jest kilka, nie kilkaset, więc porównywanie ich po jednej
      * kosztowałoby więcej kodu niż daje. Ważniejsze, że po edycji w bazie
-     * zostaje dokładnie to, co widać na ekranie — bez sierot po skasowanym
+     * zostaje dokładnie to, co widać na ekranie - bez sierot po skasowanym
      * wierszu.
      */
     await supabase.from("sleep_naps").delete().eq("user_id", userId).eq("date", draft.date);
@@ -261,7 +261,7 @@ export function SleepScreen({
     }));
   }
 
-  // Podgląd wyniku w formularzu — liczony z tego, co masz wpisane w tej chwili.
+  // Podgląd wyniku w formularzu - liczony z tego, co masz wpisane w tej chwili.
   const preview = useMemo(() => previewScore(draft, goalMin, reference), [draft, goalMin, reference]);
 
   return (
@@ -323,7 +323,7 @@ export function SleepScreen({
           <EmptyState
             icon="🌙"
             title="Jeszcze nic o Twoim śnie"
-            description="Wpisz, o której się położyłeś i o której wstałeś. Reszta pól jest opcjonalna — wynik policzy się i tak."
+            description="Wpisz, o której się położyłeś i o której wstałeś. Reszta pól jest opcjonalna - wynik policzy się i tak."
             action={
               <Button variant="primary" onClick={() => openFor(today)}>
                 Zapisz pierwszą noc
@@ -347,12 +347,12 @@ export function SleepScreen({
           <div className="grid grid-cols-2 gap-2">
             <Stat
               label="Średni sen"
-              value={avgSleep != null ? sleepDuration(avgSleep) : "–"}
+              value={avgSleep != null ? sleepDuration(avgSleep) : "-"}
               sub={`${window.length} ${plural(window.length, "noc", "noce", "nocy")} z ${days}`}
             />
             <Stat
               label="Średni wynik"
-              value={avgScore ?? "–"}
+              value={avgScore ?? "-"}
               sub={avgScore != null ? sleepBand(avgScore).label : undefined}
               tone={avgScore != null && avgScore >= 80 ? "success" : undefined}
             />
@@ -364,7 +364,7 @@ export function SleepScreen({
             />
             <Stat
               label="Rozrzut pory snu"
-              value={spread != null ? sleepDuration(spread) : "–"}
+              value={spread != null ? sleepDuration(spread) : "-"}
               sub={
                 spread == null
                   ? "potrzeba dwóch nocy"
@@ -485,7 +485,7 @@ export function SleepScreen({
         }
       >
         <div className="flex flex-col gap-4">
-          {/* Podgląd wyniku aktualizuje się przy każdej zmianie — widać od razu,
+          {/* Podgląd wyniku aktualizuje się przy każdej zmianie - widać od razu,
               co dana odpowiedź robi z oceną. */}
           <div className="flex items-center gap-4 rounded-xl bg-surface-2 p-3">
             <SleepScoreRing score={preview.total} size={64} />
@@ -597,7 +597,7 @@ export function SleepScreen({
 
           {/*
             Każda drzemka osobno.
-            Godzina jest opcjonalna, bo nie każdy ją pamięta — a bez niej
+            Godzina jest opcjonalna, bo nie każdy ją pamięta - a bez niej
             drzemka i tak się liczy, tylko bez kary za późną porę.
           */}
           <Field
@@ -709,7 +709,7 @@ export function SleepScreen({
 
 /**
  * Rozbicie wyniku na składowe. Liczba punktów stoi obok paska, bo to ona
- * niesie informację — pasek tylko ją wzmacnia.
+ * niesie informację - pasek tylko ją wzmacnia.
  */
 export function ScoreBreakdown({ score, className }: { score: SleepScore; className?: string }) {
   // Wagi są przeskalowane do 100 pkt po odjęciu składowych bez danych,
@@ -738,7 +738,7 @@ export function ScoreBreakdown({ score, className }: { score: SleepScore; classN
       ))}
       {score.skipped.includes("regularity") && (
         <li className="text-[11px] text-faint">
-          Regularność doliczy się, gdy uzbiera się kilka nocy — albo gdy ustawisz
+          Regularność doliczy się, gdy uzbiera się kilka nocy - albo gdy ustawisz
           docelową porę snu w profilu.
         </li>
       )}
@@ -777,7 +777,7 @@ function TimePresets({
   );
 }
 
-/** Pięć buziek zamiast suwaka — jedno tapnięcie, bez celowania. */
+/** Pięć buziek zamiast suwaka - jedno tapnięcie, bez celowania. */
 function FacePicker({
   options,
   value,

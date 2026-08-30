@@ -1,11 +1,11 @@
 import type { PodocenaKlucz } from "@/lib/ai/wygladSchema";
 
 /**
- * Liczenie dla modułu „Wygląd”: konflikty składników, delty między skanami
+ * Liczenie dla modułu "Wygląd": konflikty składników, delty między skanami
  * i zestawienia z dziennikiem.
  *
  * Wszystko tutaj, nie w modelu. Konflikt retinoidu z kwasami to reguła, a nie
- * opinia — model, który raz na dziesięć razy o niej zapomni, jest gorszy niż
+ * opinia - model, który raz na dziesięć razy o niej zapomni, jest gorszy niż
  * dziesięć linijek kodu, które nie zapominają nigdy.
  */
 
@@ -14,7 +14,7 @@ import type { PodocenaKlucz } from "@/lib/ai/wygladSchema";
 export type SkladnikGrupa = "retinoid" | "aha_bha" | "witamina_c" | "nadtlenek_benzoilu" | "spf";
 
 /*
- * Nazwy handlowe i INCI sprowadzone do grup. Lista jest celowo krótka —
+ * Nazwy handlowe i INCI sprowadzone do grup. Lista jest celowo krótka -
  * obejmuje to, co faktycznie ze sobą koliduje, a nie cały słownik kosmetyczny.
  */
 const SYNONIMY: Array<[SkladnikGrupa, string[]]> = [
@@ -51,8 +51,8 @@ export type Konflikt = {
 /**
  * Konflikty w zestawie produktów.
  *
- * „Wieczór” i „dowolnie” traktujemy jako jedną porę, bo produkt bez wskazanej
- * pory najczęściej ląduje właśnie wieczorem — a ostrzeżenie, które się nie
+ * "Wieczór" i "dowolnie" traktujemy jako jedną porę, bo produkt bez wskazanej
+ * pory najczęściej ląduje właśnie wieczorem - a ostrzeżenie, które się nie
  * pojawi, jest warte tyle co żadne.
  */
 export function konflikty(produkty: Produkt[]): Konflikt[] {
@@ -90,21 +90,21 @@ export function konflikty(produkty: Produkt[]): Konflikt[] {
     waga: "ostrzezenie",
     tytul: "Retinoid i kwasy tego samego wieczoru",
     opis:
-      "Razem podrażniają skórę mocniej, niż każde z osobna daje efektu. Rozdziel je na różne dni — na przykład retinoid w poniedziałki, środy i piątki, kwasy we wtorki.",
+      "Razem podrażniają skórę mocniej, niż każde z osobna daje efektu. Rozdziel je na różne dni - na przykład retinoid w poniedziałki, środy i piątki, kwasy we wtorki.",
   });
 
   para(wieczor, "retinoid", "witamina_c", {
     waga: "uwaga",
     tytul: "Retinoid i witamina C razem",
     opis:
-      "Nie jest to niebezpieczne, ale bez sensu: obie substancje lubią inne warunki. Witamina C rano, retinoid wieczorem — wtedy obie pracują.",
+      "Nie jest to niebezpieczne, ale bez sensu: obie substancje lubią inne warunki. Witamina C rano, retinoid wieczorem - wtedy obie pracują.",
   });
 
   para(wieczor, "retinoid", "nadtlenek_benzoilu", {
     waga: "ostrzezenie",
     tytul: "Retinoid i nadtlenek benzoilu naraz",
     opis:
-      "Nadtlenek benzoilu rozkłada część retinoidów. Stosuj o różnych porach dnia albo w różne dni. (Adapalen jest tu wyjątkiem — jego można łączyć.)",
+      "Nadtlenek benzoilu rozkłada część retinoidów. Stosuj o różnych porach dnia albo w różne dni. (Adapalen jest tu wyjątkiem - jego można łączyć.)",
   });
 
   if (wszystkie.has("retinoid") && !rano.has("spf")) {
@@ -112,7 +112,7 @@ export function konflikty(produkty: Produkt[]): Konflikt[] {
       waga: "ostrzezenie",
       tytul: "Retinoid bez filtru rano",
       opis:
-        "Retinoid uwrażliwia skórę na słońce. Bez filtru robi więcej szkody niż pożytku — to nie jest opcja dodatkowa, tylko część kuracji.",
+        "Retinoid uwrażliwia skórę na słońce. Bez filtru robi więcej szkody niż pożytku - to nie jest opcja dodatkowa, tylko część kuracji.",
       produkty: wszystkie.get("retinoid") ?? [],
     });
   }
@@ -135,7 +135,7 @@ export type Delta = { klucz: PodocenaKlucz | "ogolna"; od: number; do: number; z
 /**
  * Zmiana między pierwszym a ostatnim skanem.
  *
- * Skany z dopiskiem „złe zdjęcie” pomijamy w liczeniu. Przepalona klatka
+ * Skany z dopiskiem "złe zdjęcie" pomijamy w liczeniu. Przepalona klatka
  * potrafi zbić ocenę skóry o kilkanaście punktów i pokazać spadek tam, gdzie
  * zmieniło się wyłącznie oświetlenie w łazience.
  */
@@ -167,7 +167,7 @@ export function delty(skany: Skan[]): Delta[] {
   return wynik.sort((a, b) => Math.abs(b.zmiana) - Math.abs(a.zmiana));
 }
 
-/** Różnica względem poprzedniego skanu — to jest liczba pokazywana na pierwszym planie. */
+/** Różnica względem poprzedniego skanu - to jest liczba pokazywana na pierwszym planie. */
 export function deltaOdPoprzedniego(skany: Skan[]): { zmiana: number; data: string } | null {
   const posortowane = [...skany].sort((a, b) => b.utworzono.localeCompare(a.utworzono));
   const [teraz, poprzedni] = posortowane;
@@ -181,7 +181,7 @@ export function deltaOdPoprzedniego(skany: Skan[]): { zmiana: number; data: stri
  * Ile procent dni z ostatnich 30 rutyna została odhaczona.
  *
  * Pokazywane obok wyniku, bo to ona najczęściej tłumaczy brak postępu.
- * Bez tej liczby „nic się nie zmieniło” i „nie robiłem tego” wyglądają
+ * Bez tej liczby "nic się nie zmieniło" i "nie robiłem tego" wyglądają
  * na ekranie identycznie.
  */
 export function adherencja(dniOdhaczone: string[], odDaty: string, doDaty: string): number {
@@ -239,10 +239,10 @@ function slowoOSile(r: number): string {
 }
 
 /**
- * Zestawienia skanów z dziennikiem — sen, alkohol, waga.
+ * Zestawienia skanów z dziennikiem - sen, alkohol, waga.
  *
  * Świadomie NIE nazywamy tego przyczyną. Przy pięciu skanach w roku każdy taki
- * związek może być przypadkiem, a moduł, który mówi „alkohol psuje ci skórę”
+ * związek może być przypadkiem, a moduł, który mówi "alkohol psuje ci skórę"
  * na podstawie czterech punktów, kłamie z pewną siebie miną.
  */
 export function zestawienia(input: {
