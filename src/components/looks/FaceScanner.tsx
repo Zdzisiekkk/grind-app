@@ -11,9 +11,13 @@ import type { Ujecie } from "@/lib/database.types";
  *
  * Trzy rzeczy decydują o tym, czy porównanie po trzech miesiącach będzie coś
  * warte, a wszystkie trzy są w kadrze, nie w modelu: ten sam kąt, to samo
- * oświetlenie i ta sama odległość. Dlatego jest owal-prowadnica i "duch"
- * poprzedniego zdjęcia pod spodem. Bez tego dwa skany różnią się głównie tym,
- * jak człowiek trzymał telefon.
+ * oświetlenie i ta sama odległość. Dlatego jest prowadnica kadru - bez niej
+ * dwa skany różnią się głównie tym, jak człowiek trzymał telefon.
+ *
+ * Poprzednie zdjęcie NIE prześwituje pod podglądem. Miało pomagać
+ * w dopasowaniu kadru, ale zasłaniało to, co się właśnie robi, i mieszało
+ * z odbiciem w kamerze. Porównanie ma swoje miejsce: suwak przed/po
+ * w raporcie, gdzie ogląda się je świadomie i po fakcie.
  *
  * Kamera gaśnie w każdym wyjściu z tego komponentu. Zapalona po zamknięciu
  * arkusza jest błędem krytycznym - dioda obok obiektywu to jedyna rzecz,
@@ -77,13 +81,10 @@ export function FaceScanner({
   open,
   onClose,
   onGotowe,
-  duchy,
 }: {
   open: boolean;
   onClose: () => void;
   onGotowe: () => void;
-  /** Podpisane adresy poprzednich ujęć - nakładane na podgląd. */
-  duchy: Partial<Record<Ujecie, string>>;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -319,21 +320,6 @@ export function FaceScanner({
           />
 
           {/*
-            Duch poprzedniego ujęcia. To on decyduje o tym, czy suwak przed/po
-            pokaże zmianę twarzy, czy zmianę kąta trzymania telefonu.
-          */}
-          {duchy[ujecie] && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={duchy[ujecie]}
-              alt=""
-              aria-hidden
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.28]"
-              style={{ transform: "scaleX(-1)" }}
-            />
-          )}
-
-          {/*
             Prowadnica dopasowana do ujęcia.
             Owal twarzy przy sylwetce był bez sensu: kadrujesz całą postać,
             a na ekranie masz koło na wysokości głowy. Zarys postaci mówi
@@ -406,11 +392,6 @@ export function FaceScanner({
             ? `Zdjęcie za ${odliczanie} s - ustaw się i opuść ręce.`
             : OPIS[ujecie].jak}
         </p>
-        {duchy[ujecie] && (
-          <p className="text-[12px] text-faint">
-            Pod spodem widać poprzednie zdjęcie - dopasuj kadr, żeby porównanie miało sens.
-          </p>
-        )}
 
         {blad && <Alert tone="danger">{blad}</Alert>}
 

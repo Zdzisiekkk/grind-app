@@ -6,6 +6,7 @@
  * pod warunkiem, że ten kod ktoś sprawdził.
  */
 import { konflikty, delty, deltaOdPoprzedniego, adherencja, zestawienia, grupaSkladnika } from "@/lib/looks";
+import { WygladAnalysisSchema, normalizujAnalize } from "@/lib/ai/wygladSchema";
 
 let ok = 0, bad = 0;
 const check = (n, c, d = "") => {
@@ -72,6 +73,110 @@ check("dłuższy sen i lepsza skóra dają dodatni związek", z[0]?.r > 0.9, JSO
 check("opis mówi o kierunku, nie o przyczynie", z[0]?.opis.includes("wyżej") && !z[0].opis.includes("powoduje"));
 check("dwa punkty to za mało na jakikolwiek wniosek",
   zestawienia({ skany: s4.slice(0, 2), senPrzedSkanem: [300, 400], czysteDniPrzedSkanem: [], wagaPrzySkanie: [] }).length === 0);
+
+
+/* ------------------------------------------------------------------
+ * Sprowadzanie odpowiedzi modelu do limitów
+ *
+ * Tu mieszkał błąd "Analiza się nie udała. Spróbuj ponownie.": limity ze
+ * schematu Zoda NIE trafiają do gramatyki modelu (zodOutputFormat przenosi je
+ * do opisu pola), za to messages.parse() waliduje nimi odpowiedź. Obserwacja
+ * dłuższa o dziewięć znaków wyrzucała całą, opłaconą już analizę.
+ *
+ * Reguła, której pilnują te testy: cokolwiek przyjdzie od modelu, po
+ * normalizacji ma spełniać kontrakt ekranu. Nic nie leci do kosza.
+ * ------------------------------------------------------------------ */
+
+console.log("\n  Odpowiedź modelu poza limitami\n");
+
+const dlugie = "Skóra w strefie T wykazuje wyraźne rozszerzenie porów oraz zaczerwienienie. ".repeat(6);
+
+const surowa = {
+  ocena_ogolna: 143,
+  podsumowanie: dlugie,
+  podoceny: [
+    { klucz: "skora", ocena: 62.6, obserwacja: dlugie },
+    { klucz: "Symetria", ocena: -12, obserwacja: "Lekka asymetria łuków brwiowych." },
+    { klucz: "skora", ocena: 40, obserwacja: "Powtórka tego samego obszaru." },
+    { klucz: "aura_energetyczna", ocena: 50, obserwacja: "Klucz spoza listy." },
+    { klucz: "postawa", ocena: 71, obserwacja: "Barki lekko do przodu." },
+  ],
+  mocne_strony: [dlugie, "Gęste włosy.", "Symetryczne oczy.", "Czwarta pozycja ponad limit."],
+  plan: [
+    { kategoria: "Pielęgnacja", tytul: "Wieczorny retinoid", dlaczego: dlugie,
+      jak: ["krok " .repeat(40), "b", "c", "d", "e", "f", "g", "h"],
+      czestotliwosc: "codziennie wieczorem", horyzont_tygodni: 999, priorytet: 7,
+      klucz: "Wieczór-Retinoid" },
+    { kategoria: "wymyslona_kategoria", tytul: "Sen", dlaczego: "Za krótki sen.",
+      jak: ["Kładź się o 23:00"], czestotliwosc: "codziennie", horyzont_tygodni: 0,
+      priorytet: 0, klucz: "sen_dluzszy" },
+    { kategoria: "dieta", tytul: "", dlaczego: "Pozycja bez tytułu.", jak: [],
+      czestotliwosc: "", horyzont_tygodni: 4, priorytet: 2, klucz: "bez_tytulu" },
+  ],
+  najwieksza_dzwignia: dlugie,
+  jakosc_zdjecia: { wystarczajaca: true, uwagi: dlugie },
+};
+
+const n = normalizujAnalize(surowa);
+const kontrakt = WygladAnalysisSchema.safeParse(n);
+
+check("odpowiedź poza limitami spełnia kontrakt po normalizacji", kontrakt.success,
+  kontrakt.success ? "" : JSON.stringify(kontrakt.error.issues[0]));
+
+check("obserwacja przycięta do 240 znaków",
+  n.podoceny[0].obserwacja.length <= 240 && n.podoceny[0].obserwacja.endsWith("…"),
+  `${n.podoceny[0].obserwacja.length} znaków`);
+check("przycinamy na granicy słowa, nie w połowie wyrazu",
+  !/\s…$/.test(n.podoceny[0].obserwacja) && n.podoceny[0].obserwacja.split(" ").pop().length > 1);
+check("ocena ponad skalę wraca do setki", n.ocena_ogolna === 100, String(n.ocena_ogolna));
+check("ocena ujemna wraca do zera", n.podoceny[1].ocena === 0, String(n.podoceny[1].ocena));
+check("ułamek oceny zaokrągla się do całości", n.podoceny[0].ocena === 63, String(n.podoceny[0].ocena));
+check("klucz z wielkiej litery rozpoznany jako znany obszar",
+  n.podoceny.some((p) => p.klucz === "symetria"));
+check("nieznany obszar wypada zamiast psuć raport",
+  !n.podoceny.some((p) => p.klucz === "aura_energetyczna"));
+check("ten sam obszar nie występuje dwa razy",
+  new Set(n.podoceny.map((p) => p.klucz)).size === n.podoceny.length,
+  n.podoceny.map((p) => p.klucz).join(", "));
+check("mocne strony przycięte do trzech", n.mocne_strony.length === 3, String(n.mocne_strony.length));
+
+check("polski klucz zalecenia sprowadzony do bezpiecznej postaci",
+  n.plan[0].klucz === "wieczor_retinoid", n.plan[0].klucz);
+check("nieznana kategoria ląduje w nawykach",
+  n.plan[1].kategoria === "nawyki", n.plan[1].kategoria);
+check("horyzont ponad rok docięty do 52 tygodni", n.plan[0].horyzont_tygodni === 52);
+check("priorytet spoza skali docięty do 3", n.plan[0].priorytet === 3);
+check("zero w priorytecie podniesione do 1", n.plan[1].priorytet === 1);
+check("kroków najwyżej sześć", n.plan[0].jak.length === 6, String(n.plan[0].jak.length));
+check("każdy krok mieści się w 160 znakach", n.plan[0].jak.every((k) => k.length <= 160));
+check("zalecenie bez tytułu wypada", !n.plan.some((z) => z.tytul === ""), String(n.plan.length));
+
+// Skan z jedną obserwacją nie jest raportem - trasa ma go odrzucić, nie zapisać.
+const chudy = normalizujAnalize({ ...surowa, podoceny: [surowa.podoceny[0]], plan: [] });
+check("z pustego planu nie robi się plan", chudy.plan.length === 0);
+check("chudy raport zostaje chudy, a nie zmyślony", chudy.podoceny.length === 1);
+
+// Odpowiedź w limitach ma przechodzić bez tknięcia - normalizacja nie może
+// psuć tego, co model zrobił dobrze.
+const dobra = {
+  ocena_ogolna: 71,
+  podsumowanie: "Skóra w porządku, sen do poprawy.",
+  podoceny: [
+    { klucz: "skora", ocena: 70, obserwacja: "Równy koloryt." },
+    { klucz: "oczy", ocena: 60, obserwacja: "Lekkie cienie podoczodołowe." },
+    { klucz: "postawa", ocena: 75, obserwacja: "Barki w linii." },
+  ],
+  mocne_strony: ["Gęste włosy."],
+  plan: [{ kategoria: "sen", tytul: "Stała pora snu", dlaczego: "Cienie pod oczami.",
+    jak: ["Kładź się o 23:00"], czestotliwosc: "codziennie", horyzont_tygodni: 6,
+    priorytet: 1, klucz: "stala_pora_snu" }],
+  najwieksza_dzwignia: "Sen o stałej porze.",
+  jakosc_zdjecia: { wystarczajaca: true, uwagi: "Kadr w porządku." },
+};
+const bezZmian = normalizujAnalize(dobra);
+check("poprawna odpowiedź przechodzi bez zmian",
+  JSON.stringify(bezZmian) === JSON.stringify(dobra),
+  JSON.stringify(bezZmian).slice(0, 120));
 
 console.log(`\n  zielonych: ${ok}${bad ? `, CZERWONYCH: ${bad}` : " - WSZYSTKO PRZESZŁO"}\n`);
 process.exit(bad ? 1 : 0);

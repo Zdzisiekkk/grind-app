@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { WygladAnalysisSchema } from "@/lib/ai/wygladSchema";
+import { WygladWireSchema, normalizujAnalize } from "@/lib/ai/wygladSchema";
 import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
@@ -52,7 +52,23 @@ const UJECIE_OPIS: Record<string, string> = {
 
 function modelError(error: unknown): NextResponse {
   const message = error instanceof Error ? error.message : "Nieznany błąd.";
-  console.error("Skan wyglądu:", message);
+
+  /*
+   * Nazwa klasy błędu w logu, nie sam komunikat.
+   *
+   * Przez ten log przewijał się miesiąc "Analiza się nie udała": za każdym
+   * razem winna była walidacja odpowiedzi, ale w logu stała tylko treść
+   * wyjątku, więc wyglądało to jak losowa awaria modelu. Klasa błędu
+   * rozstrzyga to jednym słowem.
+   */
+  console.error(`Skan wyglądu [${error?.constructor?.name ?? "?"}]:`, message);
+
+  if (error instanceof Anthropic.APIConnectionTimeoutError) {
+    return NextResponse.json(
+      { error: "Model nie odpowiedział na czas. Spróbuj jeszcze raz." },
+      { status: 504 },
+    );
+  }
 
   if (error instanceof Anthropic.AuthenticationError) {
     return NextResponse.json({ error: "Klucz do modelu jest nieprawidłowy." }, { status: 502 });
@@ -205,7 +221,15 @@ export async function POST(request: Request) {
 
   let analiza;
   try {
-    const client = new Anthropic({ maxRetries: 1 });
+    /*
+     * Bez ponowień - nie ma na nie budżetu czasu.
+     *
+     * Funkcja żyje 120 s (maxDuration), a jedno wywołanie ma 110 s limitu.
+     * Ponowienie po timeoucie nigdy się nie zmieści: platforma ubije funkcję
+     * w połowie i przeglądarka dostanie błąd sieci zamiast naszego komunikatu.
+     * Przeciążenie modelu i tak wraca do użytkownika osobnym zdaniem.
+     */
+    const client = new Anthropic({ maxRetries: 0 });
     const response = await client.messages.parse(
       {
         model: MODEL,
@@ -222,7 +246,7 @@ export async function POST(request: Request) {
          */
         max_tokens: 16000,
         thinking: { type: "adaptive" },
-        output_config: { effort: "medium", format: zodOutputFormat(WygladAnalysisSchema) },
+        output_config: { effort: "medium", format: zodOutputFormat(WygladWireSchema) },
         system: SYSTEM,
         messages: [{ role: "user", content: tresc }],
       },
@@ -245,16 +269,42 @@ export async function POST(request: Request) {
       );
     }
 
-    analiza = response.parsed_output;
-    if (!analiza) {
+    if (!response.parsed_output) {
       return NextResponse.json(
         { error: "Model nie zwrócił oceny w oczekiwanym formacie." },
         { status: 502 },
       );
     }
+
+    /*
+     * Przycięcie do limitów robimy tutaj, a nie schematem.
+     *
+     * Ograniczenia Zoda nie trafiają do gramatyki modelu - `zodOutputFormat`
+     * przenosi je do opisu pola. Waliduje je za to `messages.parse()`, więc
+     * obserwacja dłuższa o jeden znak wywracała CAŁĄ analizę, już po zapłaceniu
+     * za wywołanie. Teraz odpowiedź jest sprowadzana do limitów zamiast
+     * odrzucana. Szczegóły w komentarzu przy `normalizujAnalize`.
+     */
+    analiza = normalizujAnalize(response.parsed_output);
   } catch (error) {
     await zwolnij(supabase, limit.id);
     return modelError(error);
+  }
+
+  /*
+   * Po normalizacji może zostać mniej pozycji, niż obiecuje ekran (nieznany
+   * klucz podoceny albo zalecenie bez tytułu wypada). Raport z jedną oceną
+   * i bez planu nie jest wart zapisania jako skan - lepiej powiedzieć wprost,
+   * że trzeba powtórzyć.
+   */
+  if (analiza.podoceny.length < 3 || analiza.plan.length < 1) {
+    console.error(
+      `Skan wyglądu: po normalizacji za mało treści (podoceny: ${analiza.podoceny.length}, plan: ${analiza.plan.length})`,
+    );
+    return NextResponse.json(
+      { error: "Model nie zwrócił pełnej oceny. Spróbuj jeszcze raz." },
+      { status: 502 },
+    );
   }
 
   /* -------------------------------- Zapis ---------------------------------- */

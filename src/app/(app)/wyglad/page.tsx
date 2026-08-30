@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import type { WygladAnalysis } from "@/lib/ai/wygladSchema";
 import type {
-  Ujecie,
   WygladLimit,
   WygladProdukt,
   WygladProtokol,
@@ -66,20 +65,6 @@ export default async function WygladPage() {
 
   const skany = (skanyRaw ?? []) as WygladSkan[];
   const wszystkieZdjecia = (zdjecia ?? []) as WygladZdjecie[];
-
-  /*
-   * Duchy: ostatnie zdjęcie każdego ujęcia, nakładane w skanerze na podgląd.
-   * Bez nich dwa skany różnią się głównie kątem trzymania telefonu.
-   */
-  const duchy: Partial<Record<Ujecie, string>> = {};
-  for (const ujecie of ["front", "profil", "sylwetka"] as Ujecie[]) {
-    const ostatnie = wszystkieZdjecia.find((z) => z.ujecie === ujecie);
-    if (!ostatnie) continue;
-    const { data } = await supabase.storage
-      .from("wyglad")
-      .createSignedUrl(ostatnie.storage_path, WAZNOSC_LINKU);
-    if (data?.signedUrl) duchy[ujecie] = data.signedUrl;
-  }
 
   /* Suwak przed/po - zawsze to samo ujęcie, inaczej porównanie nic nie znaczy. */
   const frontowe = wszystkieZdjecia.filter((z) => z.ujecie === "front");
@@ -151,7 +136,6 @@ export default async function WygladPage() {
     protokoly: (protokoly ?? []) as WygladProtokol[],
     produkty: (produkty ?? []) as WygladProdukt[],
     limit: (limit as WygladLimit | null) ?? null,
-    duchy,
     najstarszeZdjecie,
     najnowszeZdjecie,
     senPrzedSkanem,

@@ -28,7 +28,6 @@ import type { Skan } from "@/lib/looks";
 import { humanDate, todayISO } from "@/lib/format";
 import { STATUS } from "@/lib/viz";
 import type {
-  Ujecie,
   WygladLimit,
   WygladProdukt,
   WygladProtokol,
@@ -56,7 +55,6 @@ export type LooksDane = {
   protokoly: WygladProtokol[];
   produkty: WygladProdukt[];
   limit: WygladLimit | null;
-  duchy: Partial<Record<Ujecie, string>>;
   najstarszeZdjecie: ZdjecieDoPorownania | null;
   najnowszeZdjecie: ZdjecieDoPorownania | null;
   senPrzedSkanem: Array<number | null>;
@@ -429,7 +427,6 @@ export function LooksScreen(dane: LooksDane) {
           setToast("Skan gotowy.");
           router.refresh();
         }}
-        duchy={dane.duchy}
       />
 
       {toast && <Toast key={toast}>{toast}</Toast>}

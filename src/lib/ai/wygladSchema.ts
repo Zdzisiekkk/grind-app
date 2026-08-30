@@ -104,9 +104,19 @@ export const WygladAnalysisSchema = z.object({
     .string()
     .max(500)
     .describe("3-4 zdania. Rzeczowo, bez komplementów i bez straszenia."),
-  podoceny: z.array(PodocenaSchema).min(3).max(9),
+  /*
+   * Minimum jest tu jedynką, choć ekran chce trzech pozycji.
+   *
+   * Normalizacja potrafi odrzucić wadliwą pozycję (nieznany obszar, zalecenie
+   * bez tytułu) i wtedy zostaje mniej, niż model obiecał. Prawdziwe minimum
+   * pilnuje trasa /api/ai/wyglad: raport z mniej niż trzema podocenami albo
+   * bez żadnego zalecenia nie zostaje zapisany, tylko wraca jako prośba
+   * o powtórzenie. Schemat, który tego nie odzwierciedla, kłamie o danych,
+   * które faktycznie przez niego przechodzą.
+   */
+  podoceny: z.array(PodocenaSchema).min(1).max(9),
   mocne_strony: z.array(z.string().max(120)).max(3),
-  plan: z.array(ZalecenieSchema).min(3).max(6).describe("Uszeregowane po priorytecie."),
+  plan: z.array(ZalecenieSchema).min(1).max(6).describe("Uszeregowane po priorytecie."),
   najwieksza_dzwignia: z.string().max(160).describe("JEDNA rzecz na najbliższe 30 dni."),
   jakosc_zdjecia: z.object({
     wystarczajaca: z.boolean(),
@@ -120,3 +130,150 @@ export const WygladAnalysisSchema = z.object({
 export type WygladAnalysis = z.infer<typeof WygladAnalysisSchema>;
 export type Zalecenie = WygladAnalysis["plan"][number];
 export type Podocena = WygladAnalysis["podoceny"][number];
+
+/* ============================================================
+ * Schemat wysyłany do modelu i sprowadzanie odpowiedzi do limitów
+ * ============================================================
+ *
+ * Tu leżała przyczyna błędu "Analiza się nie udała. Spróbuj ponownie."
+ *
+ * `zodOutputFormat` NIE przenosi ograniczeń Zoda do gramatyki, którą model
+ * jest wiązany. `z.enum(...)`, `.max(240)`, `.min(3)` i `.regex(...)` lądują
+ * w OPISIE pola jako tekst w rodzaju "{maxLength: 240}" - czyli jako prośba,
+ * nie jako reguła. Model ją zwykle spełnia, ale nie zawsze: przy prawdziwym
+ * zdjęciu obserwacje są bogatsze i 240 znaków łatwo przekroczyć.
+ *
+ * Za to `messages.parse()` waliduje odpowiedź PEŁNYM schematem i rzuca
+ * wyjątkiem, gdy obserwacja ma 241 znaków. Efekt: opłacone wywołanie modelu
+ * lądowało w koszu, a użytkownik widział "spróbuj ponownie" - i próbował,
+ * z tym samym skutkiem.
+ *
+ * Rozwiązanie: model odpowiada na schemat bez twardych limitów (opisy dalej
+ * mówią, jak ma być), a limity egzekwujemy sami - przycinając. Przycięte
+ * zdanie jest o niebo lepsze niż brak analizy za te same pieniądze.
+ */
+
+/** Wersja pola bez limitu - limit zostaje w opisie, bo tylko tam działa. */
+const luznyTekst = (opis?: string) => (opis ? z.string().describe(opis) : z.string());
+
+const PodocenaWire = z.object({
+  klucz: z
+    .string()
+    .describe(`Jeden z: ${PODOCENA_KLUCZE.join(", ")}. Dokładnie ten napis, bez odmiany.`),
+  ocena: z.number().describe("Liczba całkowita 0-100."),
+  obserwacja: luznyTekst("Co konkretnie widać. Opisowo, bez ogólników. Do 240 znaków."),
+});
+
+const ZalecenieWire = z.object({
+  kategoria: z.string().describe(`Jedna z: ${KATEGORIE.join(", ")}. Dokładnie ten napis.`),
+  tytul: luznyTekst("Do 80 znaków."),
+  dlaczego: luznyTekst("Powiąż z obserwacją ze skanu albo liczbą z FAKTÓW. Do 400 znaków."),
+  jak: z.array(z.string()).describe("Do 6 kroków, każdy do 160 znaków. Konkret, nie 'zadbaj o'."),
+  czestotliwosc: luznyTekst("np. 'codziennie wieczorem', '3× w tygodniu'. Do 60 znaków."),
+  horyzont_tygodni: z.number().describe("Liczba całkowita 1-52. Realny czas do efektu."),
+  priorytet: z.number().describe("Liczba całkowita 1-3, gdzie 1 = największy wpływ."),
+  klucz: luznyTekst(
+    "Stały identyfikator: małe litery, cyfry i podkreślenia, np. 'wieczor_retinoid'. Ten sam przy kolejnych skanach.",
+  ),
+});
+
+/** To dostaje model. Kształt ten sam, twardych limitów brak. */
+export const WygladWireSchema = z.object({
+  ocena_ogolna: z.number().describe("Liczba całkowita 0-100."),
+  podsumowanie: luznyTekst("3-4 zdania, do 500 znaków. Rzeczowo."),
+  podoceny: z.array(PodocenaWire).describe("Od 3 do 9 pozycji."),
+  mocne_strony: z.array(z.string()).describe("Do 3 pozycji, każda do 120 znaków."),
+  plan: z.array(ZalecenieWire).describe("Od 3 do 6 zaleceń, uszeregowanych po priorytecie."),
+  najwieksza_dzwignia: luznyTekst("JEDNA rzecz na najbliższe 30 dni. Do 160 znaków."),
+  jakosc_zdjecia: z.object({
+    wystarczajaca: z.boolean(),
+    uwagi: luznyTekst("np. 'zdjęcie prześwietlone, oceny skóry są niepewne'. Do 200 znaków."),
+  }),
+});
+
+export type WygladWire = z.infer<typeof WygladWireSchema>;
+
+/** Ucięcie na granicy słowa - zdanie urwane w połowie wyrazu wygląda na błąd. */
+function przytnij(tekst: string, limit: number): string {
+  const czysty = tekst.trim();
+  if (czysty.length <= limit) return czysty;
+  const ciety = czysty.slice(0, limit - 1);
+  const spacja = ciety.lastIndexOf(" ");
+  return (spacja > limit * 0.6 ? ciety.slice(0, spacja) : ciety).trimEnd() + "…";
+}
+
+function liczba(wartosc: number, min: number, max: number): number {
+  if (!Number.isFinite(wartosc)) return min;
+  return Math.min(max, Math.max(min, Math.round(wartosc)));
+}
+
+/**
+ * Klucz rutyny na kształt, w którym da się go porównać między skanami:
+ * małe litery, polskie znaki bez ogonków, spacje i myślniki na podkreślenia.
+ */
+function klucz(surowy: string, zapasowy: string): string {
+  const znormalizowany = surowy
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ł/gi, "l")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+  return znormalizowany || zapasowy;
+}
+
+/**
+ * Odpowiedź modelu sprowadzona do tego, co obiecuje `WygladAnalysisSchema`.
+ *
+ * Wszystko, co da się uratować, jest ratowane: tekst przycinany, liczby
+ * dociskane do zakresu, nieznane klucze podocen odrzucane, nieznana kategoria
+ * lądująca w "nawyki". Nic tu nie rzuca wyjątkiem - bo cena wyjątku to
+ * wyrzucone, opłacone wywołanie modelu.
+ */
+export function normalizujAnalize(surowa: WygladWire): WygladAnalysis {
+  const podoceny = (surowa.podoceny ?? [])
+    .map((p) => ({
+      klucz: klucz(p.klucz ?? "", "") as PodocenaKlucz,
+      ocena: liczba(p.ocena, 0, 100),
+      obserwacja: przytnij(p.obserwacja ?? "", 240),
+    }))
+    .filter((p) => (PODOCENA_KLUCZE as readonly string[]).includes(p.klucz))
+    // Dwie oceny tego samego obszaru rozjechałyby wykres postępu.
+    .filter((p, i, lista) => lista.findIndex((x) => x.klucz === p.klucz) === i)
+    .slice(0, 9);
+
+  const plan = (surowa.plan ?? [])
+    .map((z, i) => {
+      const kategoria = klucz(z.kategoria ?? "", "");
+      return {
+        kategoria: ((KATEGORIE as readonly string[]).includes(kategoria)
+          ? kategoria
+          : "nawyki") as Kategoria,
+        tytul: przytnij(z.tytul ?? "", 80),
+        dlaczego: przytnij(z.dlaczego ?? "", 400),
+        jak: (z.jak ?? []).map((k) => przytnij(k, 160)).slice(0, 6),
+        czestotliwosc: przytnij(z.czestotliwosc ?? "", 60),
+        horyzont_tygodni: liczba(z.horyzont_tygodni, 1, 52),
+        priorytet: liczba(z.priorytet, 1, 3),
+        klucz: klucz(z.klucz ?? "", klucz(z.tytul ?? "", `zalecenie_${i + 1}`)),
+      };
+    })
+    .filter((z) => z.tytul.length > 0)
+    // Ten sam klucz dwa razy zepsułby upsert rutyn (jeden wiersz na klucz).
+    .filter((z, i, lista) => lista.findIndex((x) => x.klucz === z.klucz) === i)
+    .slice(0, 6);
+
+  return {
+    ocena_ogolna: liczba(surowa.ocena_ogolna, 0, 100),
+    podsumowanie: przytnij(surowa.podsumowanie ?? "", 500),
+    podoceny,
+    mocne_strony: (surowa.mocne_strony ?? []).map((m) => przytnij(m, 120)).slice(0, 3),
+    plan,
+    najwieksza_dzwignia: przytnij(surowa.najwieksza_dzwignia ?? "", 160),
+    jakosc_zdjecia: {
+      wystarczajaca: Boolean(surowa.jakosc_zdjecia?.wystarczajaca),
+      uwagi: przytnij(surowa.jakosc_zdjecia?.uwagi ?? "", 200),
+    },
+  };
+}
