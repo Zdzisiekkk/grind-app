@@ -1,15 +1,26 @@
 import { VicesScreen, type ViceWithEvents } from "@/components/vices/VicesScreen";
 import { createClient } from "@/lib/supabase/server";
+import { todayISO } from "@/lib/format";
+import { dataZAdresu } from "@/lib/wstecz";
 import type { Vice, ViceEvent } from "@/lib/database.types";
 
 export const metadata = { title: "Nałogi" };
 
-export default async function NalogiPage() {
+export default async function NalogiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ d?: string }>;
+}) {
+  const { d } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  const today = todayISO();
+  // Wpadkę zapisuje się na chłodno, często dopiero następnego dnia.
+  const date = dataZAdresu(d, today);
 
   const [{ data: vices }, { data: events }] = await Promise.all([
     supabase
@@ -38,5 +49,5 @@ export default async function NalogiPage() {
     events: byVice.get(vice.id) ?? [],
   }));
 
-  return <VicesScreen userId={user.id} vices={withEvents} />;
+  return <VicesScreen userId={user.id} vices={withEvents} date={date} today={today} />;
 }

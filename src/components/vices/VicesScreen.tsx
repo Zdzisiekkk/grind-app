@@ -15,9 +15,9 @@ import {
   Textarea,
   Toast,
 } from "@/components/ui";
-import { DataWpisu } from "@/components/DataWpisu";
+import { DateNav } from "@/components/DateNav";
 import { createClient } from "@/lib/supabase/client";
-import { todayISO } from "@/lib/format";
+import { humanDate } from "@/lib/format";
 import { znacznikDnia } from "@/lib/wstecz";
 import { clsx } from "@/lib/clsx";
 import {
@@ -55,9 +55,14 @@ const EMPTY = {
 export function VicesScreen({
   userId,
   vices,
+  date,
+  today,
 }: {
   userId: string;
   vices: ViceWithEvents[];
+  /** Dzień, na który trafi zapisana wpadka. */
+  date: string;
+  today: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -69,7 +74,6 @@ export function VicesScreen({
   const [crisis, setCrisis] = useState<ViceWithEvents | null>(null);
   const [lapseTrigger, setLapseTrigger] = useState("");
   const [lapseNote, setLapseNote] = useState("");
-  const [lapseDate, setLapseDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; seq: number } | null>(null);
@@ -158,7 +162,7 @@ export function VicesScreen({
       // Wpadkę zwykle zapisuje się później, czasem następnego dnia. Data
       // z arkusza decyduje o tym, od kiedy licznik czystych dni rusza od nowa,
       // więc wczorajsza wpadka wpisana dziś nie kasuje dzisiejszego dnia.
-      occurred_at: znacznikDnia(lapseDate),
+      occurred_at: znacznikDnia(date, today),
       trigger: lapseTrigger.trim() || null,
       note: lapseNote.trim() || null,
     });
@@ -172,7 +176,6 @@ export function VicesScreen({
     setCrisis(null);
     setLapseTrigger("");
     setLapseNote("");
-    setLapseDate(todayISO());
     showToast("Zapisane. Licznik startuje od nowa.");
     router.refresh();
   }
@@ -195,6 +198,10 @@ export function VicesScreen({
           + Dodaj
         </Button>
       </header>
+
+      {/* Przełącznik dnia dotyczy wpadek. Przycisk "mam ochotę" zostaje przy
+          teraz - to zapis chwili, a chwili nie da się przeżyć wstecz. */}
+      {vices.length > 0 && <DateNav date={date} basePath="/nawyki/nalogi" ograniczWstecz />}
 
       {error && <Alert>{error}</Alert>}
 
@@ -308,7 +315,7 @@ export function VicesScreen({
       <Sheet
         open={lapsing !== null}
         onClose={() => setLapsing(null)}
-        title="Wpadka"
+        title={date === today ? "Wpadka" : `Wpadka · ${humanDate(date)}`}
         footer={
           <Button variant="danger" size="lg" block loading={saving} onClick={logLapse}>
             Zapisz i zacznij od nowa
@@ -320,8 +327,6 @@ export function VicesScreen({
             Zapisanie wpadki to nie kara. Bez niej licznik kłamie, a wzorzec - to, co ją
             wywołuje - nigdy nie wyjdzie na jaw.
           </Alert>
-
-          <DataWpisu label="Kiedy" value={lapseDate} onChange={setLapseDate} />
 
           <Field label="Co to wywołało" hint="Krótko i tak samo za każdym razem, np. stres, alkohol, nuda.">
             <Input

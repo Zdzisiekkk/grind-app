@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert, Button, Card, Chip, EmptyState, Field, Input, Select, Sheet, Textarea } from "@/components/ui";
 import { PainPicker } from "@/components/injuries/PainPicker";
-import { DataWpisu } from "@/components/DataWpisu";
+import { DateNav } from "@/components/DateNav";
 import {
   BODY_PARTS,
   INJURY_SIDES,
@@ -15,12 +15,14 @@ import {
   painDescriptor,
 } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
-import { shortDate } from "@/lib/format";
+import { humanDate, shortDate } from "@/lib/format";
 import type { Injury, InjurySide, InjuryStatus } from "@/lib/database.types";
 
 export type InjuryWithPain = Injury & {
   lastLevel: number | null;
   lastDate: string | null;
+  /** Ocena z oglądanego dnia - null, gdy tego dnia nic nie wpisano. */
+  dayLevel: number | null;
   entries: number;
 };
 
@@ -37,10 +39,13 @@ const EMPTY = {
 export function InjuriesScreen({
   userId,
   injuries,
+  date,
   today,
 }: {
   userId: string;
   injuries: InjuryWithPain[];
+  /** Dzień, którego dotyczy ocena bólu. */
+  date: string;
   today: string;
 }) {
   const router = useRouter();
@@ -50,7 +55,6 @@ export function InjuriesScreen({
   const [editing, setEditing] = useState<InjuryWithPain | null>(null);
   const [draft, setDraft] = useState(EMPTY);
   const [rating, setRating] = useState<InjuryWithPain | null>(null);
-  const [painDate, setPainDate] = useState(today);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +138,11 @@ export function InjuriesScreen({
         </Button>
       </header>
 
+      {/* Przełącznik dnia: ból zwykle ocenia się później niż się go czuje. */}
+      {injuries.some((i) => i.track_pain) && (
+        <DateNav date={date} basePath="/kontuzje" ograniczWstecz />
+      )}
+
       {error && <Alert>{error}</Alert>}
 
       {injuries.length === 0 ? (
@@ -157,13 +166,8 @@ export function InjuriesScreen({
                 <InjuryCard
                   key={injury.id}
                   injury={injury}
-                  onRate={() => {
-                    // Arkusz zawsze otwiera się na dzisiaj: cofnięcie daty ma
-                    // być świadomym ruchem, a nie pozostałością po poprzedniej
-                    // ocenie.
-                    setPainDate(today);
-                    setRating(injury);
-                  }}
+                  jestDzis={date === today}
+                  onRate={() => setRating(injury)}
                   onEdit={() => openEdit(injury)}
                   onDelete={() => remove(injury)}
                 />
@@ -296,33 +300,28 @@ export function InjuriesScreen({
       <Sheet
         open={rating !== null}
         onClose={() => setRating(null)}
-        title={rating ? `Ocena bólu - ${rating.name}` : ""}
+        // Dzień w tytule, bo arkusz zasłania przełącznik i łatwo zapomnieć,
+        // że ekran stoi na wczoraj.
+        title={
+          rating
+            ? `Ocena bólu - ${rating.name}${date === today ? "" : ` · ${humanDate(date)}`}`
+            : ""
+        }
       >
         {rating && (
-          <div className="flex flex-col gap-4">
-            {/* Ból ocenia się wieczorem albo następnego dnia, gdy już wiadomo,
-                jak kolano zniosło trening. Data w arkuszu, bo cały ekran to
-                lista kontuzji, a nie dziennik jednego dnia. */}
-            <DataWpisu label="Dzień" value={painDate} onChange={setPainDate} />
-
-            <PainPicker
-              // Zmiana dnia to inna ocena: bez klucza suwak zostałby na
-              // wartości wpisanej dla poprzedniej daty.
-              key={painDate}
-              userId={userId}
-              date={painDate}
-              injuries={[rating]}
-              initial={
-                rating.lastDate === painDate && rating.lastLevel !== null
-                  ? { [rating.id]: rating.lastLevel }
-                  : undefined
-              }
-              onSaved={() => {
-                setRating(null);
-                router.refresh();
-              }}
-            />
-          </div>
+          <PainPicker
+            // Zmiana dnia to inna ocena: bez klucza suwak zostałby na wartości
+            // wpisanej dla poprzedniej daty.
+            key={date}
+            userId={userId}
+            date={date}
+            injuries={[rating]}
+            initial={rating.dayLevel !== null ? { [rating.id]: rating.dayLevel } : undefined}
+            onSaved={() => {
+              setRating(null);
+              router.refresh();
+            }}
+          />
         )}
       </Sheet>
     </div>
@@ -332,12 +331,15 @@ export function InjuriesScreen({
 function InjuryCard({
   injury,
   compact,
+  jestDzis,
   onRate,
   onEdit,
   onDelete,
 }: {
   injury: InjuryWithPain;
   compact?: boolean;
+  /** Czy ekran stoi na dzisiaj - zmienia tylko sposób mówienia o ocenie. */
+  jestDzis?: boolean;
   onRate?: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -345,7 +347,9 @@ function InjuryCard({
   const part = bodyPart(injury.body_part);
   const side = injurySideLabel(injury.side);
   const status = INJURY_STATUSES.find((s) => s.value === injury.status);
-  const pain = injury.lastLevel !== null ? painDescriptor(injury.lastLevel) : null;
+  // Ocena z oglądanego dnia ma pierwszeństwo: po to jest przełącznik dnia.
+  const poziom = injury.dayLevel ?? injury.lastLevel;
+  const pain = poziom !== null ? painDescriptor(poziom) : null;
 
   return (
     <Card padded={false}>
@@ -364,11 +368,13 @@ function InjuryCard({
           <p className="mt-1 text-[13px] text-muted">
             {pain ? (
               <>
-                Ostatnio{" "}
+                {injury.dayLevel !== null ? (jestDzis ? "Dziś" : "Tego dnia") : "Ostatnio"}{" "}
                 <span className="font-semibold" style={{ color: pain.color }}>
-                  {injury.lastLevel}/10 · {pain.label}
+                  {poziom}/10 · {pain.label}
                 </span>
-                {injury.lastDate && <> · {shortDate(injury.lastDate)}</>}
+                {injury.dayLevel === null && injury.lastDate && (
+                  <> · {shortDate(injury.lastDate)}</>
+                )}
               </>
             ) : (
               "Brak ocen - dodaj pierwszą po treningu."

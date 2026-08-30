@@ -16,6 +16,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { NumberStepper } from "@/components/training/NumberStepper";
+import { DateNav } from "@/components/DateNav";
 import { SleepScoreRing } from "@/components/sleep/SleepScoreRing";
 import { SleepChart, SleepScoreChart } from "@/components/charts/LazyCharts";
 import { BEDTIME_PRESETS, SLEEP_FACTORS, WAKE_PRESETS, sleepFactor } from "@/lib/constants";
@@ -66,6 +67,7 @@ type Draft = typeof EMPTY;
 export function SleepScreen({
   userId,
   nights,
+  date,
   today,
   goalMin,
   targetBedtime,
@@ -73,6 +75,8 @@ export function SleepScreen({
   userId: string;
   /** Od najnowszej. */
   nights: SleepNight[];
+  /** Oglądany dzień - dla niego otwiera się formularz i jego noc jest na górze. */
+  date: string;
   today: string;
   goalMin: number;
   targetBedtime: string | null;
@@ -108,8 +112,14 @@ export function SleepScreen({
     return scored.filter((s) => s.night.date >= from);
   }, [scored, today, days]);
 
-  const last = scored[0] ?? null;
-  const lastIsToday = last?.night.date === today;
+  // Na górze ekranu stoi noc z oglądanego dnia. Gdy tego dnia nic nie ma,
+  // pokazujemy ostatnią zapisaną - żeby ekran nie robił się pusty tylko
+  // dlatego, że ktoś cofnął się o dzień do tyłu.
+  const wybrana = scored.find((s) => s.night.date === date) ?? null;
+  const last = wybrana ?? scored[0] ?? null;
+  const jestDzis = date === today;
+  /** Czy na górze stoi noc z oglądanego dnia, czy tylko ostatnia zapisana. */
+  const nocTegoDnia = last?.night.date === date;
 
   const avgScore = window.length
     ? Math.round(window.reduce((s, x) => s + x.score.total, 0) / window.length)
@@ -275,17 +285,27 @@ export function SleepScreen({
             {reference != null && ` · zwykle kładziesz się ${minToTime(reference)}`}
           </p>
         </div>
-        <Button variant="primary" onClick={() => openFor(today)}>
-          {lastIsToday ? "Popraw" : "+ Noc"}
+        <Button variant="primary" onClick={() => openFor(date)}>
+          {nocTegoDnia ? "Popraw" : "+ Noc"}
         </Button>
       </header>
+
+      {/* Przełącznik dnia: noc z wtorku na środę wpisuje się w środę rano,
+          a jak się nie zdąży - w czwartek, cofnąwszy się o dzień. */}
+      <DateNav date={date} basePath="/sen" ograniczWstecz />
 
       {error && <Alert>{error}</Alert>}
 
       {/* --- Ostatnia noc --- */}
       {last ? (
         <Card
-          title={lastIsToday ? "Dzisiejsza noc" : `Ostatnia noc · ${humanDate(last.night.date)}`}
+          title={
+            nocTegoDnia
+              ? jestDzis
+                ? "Dzisiejsza noc"
+                : `Noc · ${humanDate(last.night.date)}`
+              : `Ostatnia zapisana noc · ${humanDate(last.night.date)}`
+          }
           action={
             <button
               type="button"
@@ -326,7 +346,7 @@ export function SleepScreen({
             title="Jeszcze nic o Twoim śnie"
             description="Wpisz, o której się położyłeś i o której wstałeś. Reszta pól jest opcjonalna - wynik policzy się i tak."
             action={
-              <Button variant="primary" onClick={() => openFor(today)}>
+              <Button variant="primary" onClick={() => openFor(date)}>
                 Zapisz pierwszą noc
               </Button>
             }

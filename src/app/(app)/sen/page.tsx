@@ -1,6 +1,7 @@
 import { SleepScreen } from "@/components/sleep/SleepScreen";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
+import { dataZAdresu } from "@/lib/wstecz";
 import { DEFAULT_SLEEP_GOAL_MIN, napsFromView, type SleepNight } from "@/lib/sleep";
 
 export const metadata = { title: "Sen" };
@@ -8,7 +9,12 @@ export const metadata = { title: "Sen" };
 /** Pół roku wstecz - tyle wystarczy na trendy i wnioski o czynnikach. */
 const HISTORY_DAYS = 180;
 
-export default async function SleepPage() {
+export default async function SleepPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ d?: string }>;
+}) {
+  const { d } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,6 +22,8 @@ export default async function SleepPage() {
   if (!user) return null;
 
   const today = todayISO();
+  // Noc zapisuje się rano, ale nie każdy ranek na to pozwala.
+  const date = dataZAdresu(d, today);
 
   const [{ data: rows }, { data: profile }] = await Promise.all([
     supabase
@@ -52,6 +60,7 @@ export default async function SleepPage() {
     <SleepScreen
       userId={user.id}
       nights={nights}
+      date={date}
       today={today}
       goalMin={profile?.sleep_goal_min ?? DEFAULT_SLEEP_GOAL_MIN}
       targetBedtime={profile?.sleep_target_bedtime ?? null}
