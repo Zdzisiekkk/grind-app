@@ -110,7 +110,15 @@ export async function POST(request: Request) {
     .single();
 
   try {
-    const client = new Anthropic({ maxRetries: 1 });
+    /*
+     * Bez ponowień - nie ma na nie budżetu czasu.
+     *
+     * Funkcja żyje 300 s, a jedno wywołanie ma 280 s limitu.
+     * Druga próba po timeoucie nigdy się nie zmieści: platforma ubije funkcję
+     * w połowie, a przeglądarka dostanie surowy błąd zamiast naszego
+     * komunikatu. Przeciążenie modelu i tak wraca osobnym zdaniem.
+     */
+    const client = new Anthropic({ maxRetries: 0 });
 
     const response = await client.messages.parse(
       {
