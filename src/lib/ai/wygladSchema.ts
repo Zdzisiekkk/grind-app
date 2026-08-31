@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bezDuplikatow, liczba, przytnij, slug, zListy } from "@/lib/ai/limity";
 
 /**
  * Kształt odpowiedzi modelu przy analizie wyglądu.
@@ -193,36 +194,6 @@ export const WygladWireSchema = z.object({
 
 export type WygladWire = z.infer<typeof WygladWireSchema>;
 
-/** Ucięcie na granicy słowa - zdanie urwane w połowie wyrazu wygląda na błąd. */
-function przytnij(tekst: string, limit: number): string {
-  const czysty = tekst.trim();
-  if (czysty.length <= limit) return czysty;
-  const ciety = czysty.slice(0, limit - 1);
-  const spacja = ciety.lastIndexOf(" ");
-  return (spacja > limit * 0.6 ? ciety.slice(0, spacja) : ciety).trimEnd() + "…";
-}
-
-function liczba(wartosc: number, min: number, max: number): number {
-  if (!Number.isFinite(wartosc)) return min;
-  return Math.min(max, Math.max(min, Math.round(wartosc)));
-}
-
-/**
- * Klucz rutyny na kształt, w którym da się go porównać między skanami:
- * małe litery, polskie znaki bez ogonków, spacje i myślniki na podkreślenia.
- */
-function klucz(surowy: string, zapasowy: string): string {
-  const znormalizowany = surowy
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ł/gi, "l")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 40);
-  return znormalizowany || zapasowy;
-}
-
 /**
  * Odpowiedź modelu sprowadzona do tego, co obiecuje `WygladAnalysisSchema`.
  *
@@ -234,42 +205,39 @@ function klucz(surowy: string, zapasowy: string): string {
 export function normalizujAnalize(surowa: WygladWire): WygladAnalysis {
   const podoceny = (surowa.podoceny ?? [])
     .map((p) => ({
-      klucz: klucz(p.klucz ?? "", "") as PodocenaKlucz,
+      klucz: slug(p.klucz ?? "") as PodocenaKlucz,
       ocena: liczba(p.ocena, 0, 100),
       obserwacja: przytnij(p.obserwacja ?? "", 240),
     }))
-    .filter((p) => (PODOCENA_KLUCZE as readonly string[]).includes(p.klucz))
-    // Dwie oceny tego samego obszaru rozjechałyby wykres postępu.
-    .filter((p, i, lista) => lista.findIndex((x) => x.klucz === p.klucz) === i)
-    .slice(0, 9);
+    .filter((p) => (PODOCENA_KLUCZE as readonly string[]).includes(p.klucz));
+
+  // Dwie oceny tego samego obszaru rozjechałyby wykres postępu.
+  const podocenyBezPowtorek = bezDuplikatow(podoceny, (p) => p.klucz).slice(0, 9);
 
   const plan = (surowa.plan ?? [])
     .map((z, i) => {
-      const kategoria = klucz(z.kategoria ?? "", "");
       return {
-        kategoria: ((KATEGORIE as readonly string[]).includes(kategoria)
-          ? kategoria
-          : "nawyki") as Kategoria,
+        kategoria: zListy<Kategoria>(z.kategoria ?? "", KATEGORIE, "nawyki"),
         tytul: przytnij(z.tytul ?? "", 80),
         dlaczego: przytnij(z.dlaczego ?? "", 400),
         jak: (z.jak ?? []).map((k) => przytnij(k, 160)).slice(0, 6),
         czestotliwosc: przytnij(z.czestotliwosc ?? "", 60),
         horyzont_tygodni: liczba(z.horyzont_tygodni, 1, 52),
         priorytet: liczba(z.priorytet, 1, 3),
-        klucz: klucz(z.klucz ?? "", klucz(z.tytul ?? "", `zalecenie_${i + 1}`)),
+        klucz: slug(z.klucz ?? "", slug(z.tytul ?? "", `zalecenie_${i + 1}`)),
       };
     })
-    .filter((z) => z.tytul.length > 0)
-    // Ten sam klucz dwa razy zepsułby upsert rutyn (jeden wiersz na klucz).
-    .filter((z, i, lista) => lista.findIndex((x) => x.klucz === z.klucz) === i)
-    .slice(0, 6);
+    .filter((z) => z.tytul.length > 0);
+
+  // Ten sam klucz dwa razy zepsułby upsert rutyn (jeden wiersz na klucz).
+  const planBezPowtorek = bezDuplikatow(plan, (z) => z.klucz).slice(0, 6);
 
   return {
     ocena_ogolna: liczba(surowa.ocena_ogolna, 0, 100),
     podsumowanie: przytnij(surowa.podsumowanie ?? "", 500),
-    podoceny,
+    podoceny: podocenyBezPowtorek,
     mocne_strony: (surowa.mocne_strony ?? []).map((m) => przytnij(m, 120)).slice(0, 3),
-    plan,
+    plan: planBezPowtorek,
     najwieksza_dzwignia: przytnij(surowa.najwieksza_dzwignia ?? "", 160),
     jakosc_zdjecia: {
       wystarczajaca: Boolean(surowa.jakosc_zdjecia?.wystarczajaca),

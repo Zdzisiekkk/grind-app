@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { przytnij, ulamek, zListy } from "@/lib/ai/limity";
 
 /**
  * Kształt odpowiedzi na opis posiłku.
@@ -51,6 +52,77 @@ export const OpisPosilkuSchema = z.object({
 
 export type Skladnik = z.infer<typeof SkladnikSchema>;
 export type OpisPosilku = z.infer<typeof OpisPosilkuSchema>;
+
+/* ------------------------------------------------------------------
+ * Schemat dla modelu i sprowadzanie odpowiedzi do limitów
+ *
+ * Powód w src/lib/ai/limity.ts. Kolejność ma tu znaczenie: najpierw
+ * dociskamy wartości do zakresów, DOPIERO POTEM działa filtr spójności.
+ * Odwrotnie sprawdzalibyśmy fizykę na liczbach, o których już wiadomo,
+ * że są poza skalą.
+ * ------------------------------------------------------------------ */
+
+export const PEWNOSCI = ["wysoka", "srednia", "niska"] as const;
+export type Pewnosc = (typeof PEWNOSCI)[number];
+
+const SkladnikWire = z.object({
+  nazwa: z.string().describe('Nazwa składnika po polsku, np. "jajko sadzone".'),
+  gramatura: z
+    .number()
+    .describe("Waga w gramach po przygotowaniu, 1-5000 - tyle, ile realnie zjedzono."),
+  kcal_100g: z.number().describe("Kalorie na 100 g, 0-900."),
+  bialko_100g: z.number().describe("Białko w gramach na 100 g, 0-100."),
+  wegle_100g: z.number().describe("Węglowodany w gramach na 100 g, 0-100."),
+  tluszcz_100g: z.number().describe("Tłuszcz w gramach na 100 g, 0-100."),
+  pewnosc: z
+    .string()
+    .describe(
+      "Dokładnie jeden z: wysoka (produkt jednoznaczny i zważony), srednia (typowa porcja bez wagi), niska (potrawa złożona albo opis nieprecyzyjny).",
+    ),
+});
+
+export const OpisPosilkuWireSchema = z.object({
+  rozpoznane: z
+    .boolean()
+    .describe("false, jeśli opis nie jest o jedzeniu albo nie da się z niego nic wywnioskować."),
+  uwaga: z
+    .string()
+    .describe(
+      'Jedno krótkie zdanie po polsku o przyjętych założeniach, np. "Liczyłem średnie jajko 55 g". Przy rozpoznane=false - dlaczego się nie da.',
+    ),
+  skladniki: z.array(SkladnikWire).describe("Najwyżej 15 pozycji."),
+});
+
+export type OpisPosilkuWire = z.infer<typeof OpisPosilkuWireSchema>;
+
+/**
+ * Opis posiłku sprowadzony do zakresów, w których liczy dziennik.
+ *
+ * Makroskładniki dociskamy do 100 g na 100 g produktu, bo więcej się w nim
+ * fizycznie nie zmieści - a filtr spójności i tak sprawdzi to jeszcze raz,
+ * już na czystych liczbach.
+ */
+export function normalizujPosilek(surowy: OpisPosilkuWire): OpisPosilku {
+  const skladniki = (surowy.skladniki ?? [])
+    .map((s) => ({
+      nazwa: przytnij(s.nazwa ?? "", 80),
+      gramatura: ulamek(s.gramatura, 1, 5000),
+      kcal_100g: ulamek(s.kcal_100g, 0, 900),
+      bialko_100g: ulamek(s.bialko_100g, 0, 100),
+      wegle_100g: ulamek(s.wegle_100g, 0, 100),
+      tluszcz_100g: ulamek(s.tluszcz_100g, 0, 100),
+      pewnosc: zListy<Pewnosc>(s.pewnosc ?? "", PEWNOSCI, "niska"),
+    }))
+    .filter((s) => s.nazwa.length > 0)
+    .slice(0, 15);
+
+  return {
+    rozpoznane: Boolean(surowy.rozpoznane),
+    uwaga: przytnij(surowy.uwaga ?? "", 200),
+    skladniki,
+  };
+}
+
 
 /** Kalorie jednej pozycji po uwzględnieniu gramatury. */
 export function kcalSkladnika(s: Pick<Skladnik, "kcal_100g" | "gramatura">): number {

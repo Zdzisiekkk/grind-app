@@ -6,7 +6,7 @@
  * dnia i przekłamuje go po cichu - człowiek nie ma jak tego zauważyć, bo
  * liczba wygląda normalnie. Dlatego spójność sprawdza kod, nie prompt.
  */
-import { kcalSkladnika, makraSieZgadzaja, OpisPosilkuSchema, SkladnikSchema } from "@/lib/ai/posilekSchema";
+import { kcalSkladnika, makraSieZgadzaja, normalizujPosilek, OpisPosilkuSchema, SkladnikSchema } from "@/lib/ai/posilekSchema";
 
 let ok = 0, bad = 0;
 const check = (n, c, d = "") => {
@@ -95,6 +95,64 @@ check("odmowa rozpoznania to poprawna odpowiedź",
   OpisPosilkuSchema.safeParse({ rozpoznane: false, uwaga: "To nie jest opis jedzenia.", skladniki: [] }).success);
 check("lista dłuższa niż 15 pozycji odrzucona",
   !OpisPosilkuSchema.safeParse({ rozpoznane: true, uwaga: "", skladniki: Array(16).fill(dobry) }).success);
+
+
+/* ------------------------------------------------------------------
+ * Odpowiedź modelu poza zakresami
+ *
+ * Limity ze schematu Zoda nie wiążą modelu - zodOutputFormat przenosi je do
+ * opisu pola. Waliduje nimi za to messages.parse(), więc jedna wartość poza
+ * skalą wyrzucała CAŁY opis posiłku. Teraz jest dociskana.
+ * ------------------------------------------------------------------ */
+
+console.log("\n  Sprowadzanie odpowiedzi do zakresów\n");
+
+const poza = normalizujPosilek({
+  rozpoznane: true,
+  uwaga: "u".repeat(400),
+  skladniki: [
+    { nazwa: "olej", gramatura: 9000, kcal_100g: 1200, bialko_100g: -3,
+      wegle_100g: 0, tluszcz_100g: 130, pewnosc: "Wysoka" },
+    { nazwa: "", gramatura: 100, kcal_100g: 100, bialko_100g: 5,
+      wegle_100g: 5, tluszcz_100g: 5, pewnosc: "srednia" },
+    { nazwa: "ryż", gramatura: 0.2, kcal_100g: 130, bialko_100g: 2.7,
+      wegle_100g: 28, tluszcz_100g: 0.3, pewnosc: "wymyślona" },
+  ],
+});
+
+check("gramatura ponad skalę docięta do 5000 g", poza.skladniki[0].gramatura === 5000,
+  String(poza.skladniki[0].gramatura));
+check("kalorie ponad 900 na 100 g docięte", poza.skladniki[0].kcal_100g === 900,
+  String(poza.skladniki[0].kcal_100g));
+check("ujemne białko wraca do zera", poza.skladniki[0].bialko_100g === 0);
+check("ponad 100 g tłuszczu w 100 g produktu docięte", poza.skladniki[0].tluszcz_100g === 100);
+check("pewność z wielkiej litery rozpoznana", poza.skladniki[0].pewnosc === "wysoka");
+check("wymyślona pewność ląduje na najniższej", poza.skladniki[1].pewnosc === "niska",
+  poza.skladniki[1].pewnosc);
+check("gramatura poniżej grama podniesiona do 1", poza.skladniki[1].gramatura === 1);
+check("składnik bez nazwy wypada", poza.skladniki.length === 2, String(poza.skladniki.length));
+check("uwaga przycięta do 200 znaków", poza.uwaga.length <= 200, String(poza.uwaga.length));
+check("po normalizacji całość spełnia stary kontrakt",
+  OpisPosilkuSchema.safeParse(poza).success);
+
+// Ryż po dociśnięciu ma kalorie zgodne z makrami - filtr ma go przepuścić,
+// a olej z dociętymi wartościami (900 kcal, 100 g tłuszczu) też się broni.
+check("filtr spójności działa na już dociśniętych liczbach",
+  makraSieZgadzaja(poza.skladniki[1]) === true && makraSieZgadzaja(poza.skladniki[0]) === true);
+
+const bezZmian = {
+  rozpoznane: true,
+  uwaga: "Liczyłem średnie jajko 55 g.",
+  skladniki: [{ nazwa: "jajko sadzone", gramatura: 110, kcal_100g: 196, bialko_100g: 13.6,
+    wegle_100g: 0.8, tluszcz_100g: 15.3, pewnosc: "wysoka" }],
+};
+check("poprawna odpowiedź przechodzi bez zmian",
+  JSON.stringify(normalizujPosilek(bezZmian)) === JSON.stringify(bezZmian));
+
+check("szesnasta pozycja odpada, piętnaście zostaje",
+  normalizujPosilek({ rozpoznane: true, uwaga: "x", skladniki: Array.from({ length: 20 }, (_, i) => ({
+    nazwa: `poz ${i}`, gramatura: 100, kcal_100g: 100, bialko_100g: 5,
+    wegle_100g: 10, tluszcz_100g: 3, pewnosc: "srednia" })) }).skladniki.length === 15);
 
 console.log(`\n  zielone: ${ok}   czerwone: ${bad}\n`);
 if (bad) { console.log("  SĄ BŁĘDY\n"); process.exit(1); }

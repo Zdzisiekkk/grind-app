@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { AiPlanSchema, EXPERIENCE_LABEL, PlanRequestSchema } from "@/lib/ai/planSchema";
+import {
+  AiPlanWireSchema,
+  EXPERIENCE_LABEL,
+  PlanRequestSchema,
+  normalizujPlan,
+} from "@/lib/ai/planSchema";
 import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 
@@ -137,7 +142,7 @@ export async function POST(request: Request) {
             ].join("\n"),
           },
         ],
-        output_config: { format: zodOutputFormat(AiPlanSchema) },
+        output_config: { format: zodOutputFormat(AiPlanWireSchema) },
       },
       { timeout: 280_000 },
     );
@@ -148,8 +153,15 @@ export async function POST(request: Request) {
       throw new Error("Model odmówił wykonania tego zadania.");
     }
 
-    const draft = response.parsed_output;
-    if (!draft) throw new Error("Model nie zwrócił planu w oczekiwanym formacie.");
+    if (!response.parsed_output) throw new Error("Model nie zwrócił planu w oczekiwanym formacie.");
+
+    // Limity ze schematu nie wiążą modelu (patrz src/lib/ai/limity.ts), więc
+    // dociskamy je tutaj. Dzień bez ćwiczeń albo faza bez dni wypada - taki
+    // plan i tak nie dałby się wykonać, a w bazie zostawiłby puste gałęzie.
+    const draft = normalizujPlan(response.parsed_output);
+    if (draft.phases.length === 0) {
+      throw new Error("Model nie zwrócił żadnego wykonalnego dnia treningowego.");
+    }
 
     if (logRow) {
       await supabase

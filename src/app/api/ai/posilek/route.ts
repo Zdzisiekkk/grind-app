@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { OpisPosilkuSchema, makraSieZgadzaja } from "@/lib/ai/posilekSchema";
+import {
+  OpisPosilkuWireSchema,
+  makraSieZgadzaja,
+  normalizujPosilek,
+} from "@/lib/ai/posilekSchema";
 import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
 
@@ -159,7 +163,7 @@ export async function POST(request: Request) {
             content: `Policz wartości odżywcze dla tego posiłku:\n\n${opis}`,
           },
         ],
-        output_config: { format: zodOutputFormat(OpisPosilkuSchema) },
+        output_config: { format: zodOutputFormat(OpisPosilkuWireSchema) },
       },
       { timeout: 55_000 },
     );
@@ -173,7 +177,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const wynik = response.parsed_output;
+    // Limity ze schematu nie wiążą modelu (patrz src/lib/ai/limity.ts), więc
+    // dociskamy je tutaj - zanim filtr spójności zacznie sprawdzać fizykę.
+    const wynik = response.parsed_output ? normalizujPosilek(response.parsed_output) : null;
     if (!wynik) {
       return NextResponse.json(
         { error: "Nie udało się odczytać odpowiedzi. Spróbuj jeszcze raz." },

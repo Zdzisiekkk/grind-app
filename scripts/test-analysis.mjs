@@ -9,6 +9,8 @@
  */
 import { analyseDietVsWeight, findStrengthStalls, weeklyWeightTrend }
   from "../src/lib/ai/analysis.ts";
+import { CoachAnalysisSchema, normalizujTrenera } from "../src/lib/ai/coachSchema.ts";
+import { AiPlanSchema, normalizujPlan } from "../src/lib/ai/planSchema.ts";
 
 let fails = 0;
 const check = (label, cond, extra = "") => {
@@ -113,6 +115,87 @@ const swiezyRekord = [
   set(25, "Wiosłowanie", 60, 8), set(12, "Wiosłowanie", 60, 8), set(5, "Wiosłowanie", 70, 8),
 ];
 check("świeży rekord nie jest stagnacją", findStrengthStalls(swiezyRekord, day(0)).length === 0);
+
+
+/* ------------------------------------------------------------------
+ * Odpowiedzi modelu poza limitami: trener i plan
+ *
+ * Limity ze schematu Zoda nie wiążą modelu (zodOutputFormat przenosi je do
+ * opisu pola), ale messages.parse() nimi waliduje. Jedno zdanie dłuższe
+ * o dziesięć znaków wyrzucało całą opłaconą odpowiedź. Teraz jest przycinane.
+ * ------------------------------------------------------------------ */
+
+console.log("\n  Trener poza limitami\n");
+
+const dlugie = "Waga stoi od trzech tygodni przy deficycie liczonym z aplikacji. ".repeat(15);
+
+const trener = normalizujTrenera({
+  summary: dlugie,
+  proposals: [
+    { kind: "Diet_kcal", title: "Zejdź o 200 kcal", rationale: dlugie, daily_kcal: 2350.6 },
+    { kind: "diet_kcal", title: "Zmiana celu bez liczby", rationale: "Brak wartości.", daily_kcal: null },
+    { kind: "wymyslony_rodzaj", title: "Dodaj serię", rationale: "Stagnacja w wyciskaniu.", daily_kcal: 9000 },
+    { kind: "note", title: "", rationale: "Propozycja bez nagłówka.", daily_kcal: null },
+    { kind: "note", title: "Piąta propozycja", rationale: "Ponad limit trzech.", daily_kcal: null },
+  ],
+});
+
+check("odpowiedź trenera spełnia kontrakt po normalizacji",
+  CoachAnalysisSchema.safeParse(trener).success,
+  JSON.stringify(CoachAnalysisSchema.safeParse(trener).error?.issues?.[0] ?? ""));
+check("podsumowanie przycięte do 400 znaków", trener.summary.length <= 400, String(trener.summary.length));
+check("uzasadnienie przycięte do 600 znaków", trener.proposals[0].rationale.length <= 600);
+check("rodzaj z wielkiej litery rozpoznany", trener.proposals[0].kind === "diet_kcal");
+check("ułamek kalorii zaokrąglony", trener.proposals[0].daily_kcal === 2351,
+  String(trener.proposals[0].daily_kcal));
+check("zmiana kalorii bez liczby przestaje być zmianą kalorii",
+  trener.proposals[1].kind === "note" && trener.proposals[1].daily_kcal === null,
+  trener.proposals[1].kind);
+check("nieznany rodzaj ląduje w notatce", trener.proposals[2].kind === "note");
+check("liczba kalorii przy radzie treningowej nie przecieka",
+  trener.proposals[2].daily_kcal === null);
+check("propozycja bez nagłówka wypada, limit trzech trzyma",
+  trener.proposals.length === 3, String(trener.proposals.length));
+
+console.log("\n  Plan poza limitami\n");
+
+const cwiczenie = (nazwa) => ({
+  slug: "bench_press", name: nazwa, target_sets: 99, target_reps: "6-8",
+  target_note: "", technique_notes: "Łopatki ściągnięte.", rest_seconds: 9000,
+});
+
+const plan = normalizujPlan({
+  name: "Plan testowy",
+  description: "Opis.",
+  goal: "Cel.",
+  coach_notes: "Uwagi.",
+  phases: [
+    { name: "Faza 1", description: "", frequency: "3x/tydzień", days: [
+      { name: "Dzień A", short_label: "AAAAAAA", description: "Góra ciała.",
+        day_type: "GYM", tracks_pain: true, exercises: [cwiczenie("Wyciskanie")] },
+      { name: "Dzień bez ćwiczeń", short_label: "B", description: "",
+        day_type: "gym", tracks_pain: false, exercises: [] },
+      { name: "Dzień C", short_label: "C", description: "",
+        day_type: "wymyslony_typ", tracks_pain: false,
+        exercises: [cwiczenie("Przysiad"), cwiczenie("")] },
+    ] },
+    { name: "Faza bez dni", description: "", frequency: "", days: [] },
+  ],
+});
+
+check("plan spełnia kontrakt po normalizacji", AiPlanSchema.safeParse(plan).success,
+  JSON.stringify(AiPlanSchema.safeParse(plan).error?.issues?.[0] ?? ""));
+check("serie ponad skalę docięte do 12", plan.phases[0].days[0].exercises[0].target_sets === 12);
+check("przerwa ponad 600 s docięta", plan.phases[0].days[0].exercises[0].rest_seconds === 600);
+check("skrót dnia mieści się w czterech znakach, bez wielokropka",
+  plan.phases[0].days[0].short_label === "AAAA", plan.phases[0].days[0].short_label);
+check("typ dnia z wielkich liter rozpoznany", plan.phases[0].days[0].day_type === "gym");
+check("nieznany typ dnia ląduje w 'other'", plan.phases[0].days[1].day_type === "other",
+  plan.phases[0].days[1].day_type);
+check("dzień bez ćwiczeń wypada", plan.phases[0].days.length === 2,
+  plan.phases[0].days.map((d) => d.name).join(", "));
+check("ćwiczenie bez nazwy wypada", plan.phases[0].days[1].exercises.length === 1);
+check("faza bez dni wypada", plan.phases.length === 1, String(plan.phases.length));
 
 console.log(fails === 0 ? "\n  WSZYSTKO PRZESZŁO\n" : `\n  BŁĘDÓW: ${fails}\n`);
 process.exit(fails ? 1 : 0);

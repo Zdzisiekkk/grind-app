@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { CoachAnalysisSchema } from "@/lib/ai/coachSchema";
+import { CoachAnalysisWireSchema, normalizujTrenera } from "@/lib/ai/coachSchema";
 import { analyseDietVsWeight, findStrengthStalls, type SetRow } from "@/lib/ai/analysis";
 import { rezerwuj, rozlicz, zwolnij } from "@/lib/ai/budzet";
 import { createClient } from "@/lib/supabase/server";
@@ -303,7 +303,7 @@ export async function POST(request: Request) {
         model: MODEL,
         max_tokens: 4000,
         thinking: { type: "adaptive" },
-        output_config: { effort: "medium", format: zodOutputFormat(CoachAnalysisSchema) },
+        output_config: { effort: "medium", format: zodOutputFormat(CoachAnalysisWireSchema) },
         system: SYSTEM,
         messages: [
           {
@@ -321,7 +321,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Model odmówił wykonania analizy." }, { status: 422 });
     }
 
-    const analysis = response.parsed_output;
+    // Limity ze schematu nie wiążą modelu, więc egzekwujemy je tutaj
+    // (patrz src/lib/ai/limity.ts) zamiast odrzucać całą odpowiedź.
+    const analysis = response.parsed_output ? normalizujTrenera(response.parsed_output) : null;
     if (!analysis) {
       return NextResponse.json(
         { error: "Model nie zwrócił analizy w oczekiwanym formacie." },
