@@ -13,7 +13,8 @@ import type { CatalogExercise, Injury, WorkoutLog } from "@/lib/database.types";
 import { DEFAULT_REST_SECONDS, DEFAULT_WEIGHT_STEP } from "@/lib/constants";
 import { useLocalNumber } from "@/lib/localSetting";
 import { createClient } from "@/lib/supabase/client";
-import { addDaysISO, longDate, sets as setsLabel, volume } from "@/lib/format";
+import { addDaysISO, longDate, plural, sets as setsLabel, volume } from "@/lib/format";
+import { deleteSession } from "@/app/(app)/trening/actions";
 
 const STEP_KEY = "grind:weight-step";
 /** Sesja bez jawnego startu (np. wznowiona) - liczymy najwyżej 6 h treningu. */
@@ -334,6 +335,30 @@ export function SessionScreen({
           <Button variant="primary" size="lg" block loading={finishing} onClick={finishSession}>
             Zakończ trening
           </Button>
+
+          {/*
+            Porzucenie treningu bez zapisu.
+            Sesja potrafi wstać przez przypadek - jedno tapnięcie w "Zacznij"
+            na liście planu - a wtedy w historii zostaje pusty trening, który
+            zaniża każdą średnią i psuje wykres objętości. Kasujemy razem
+            z seriami (kaskada w bazie), więc pytamy wprost, ile przepadnie.
+          */}
+          <form
+            action={deleteSession}
+            onSubmit={(e) => {
+              const ile = logs.length;
+              const pytanie =
+                ile === 0
+                  ? "Porzucić ten trening? Nic nie zostało jeszcze zapisane."
+                  : `Porzucić ten trening? Przepadnie ${ile} ${plural(ile, "zapisana seria", "zapisane serie", "zapisanych serii")} i nie da się tego cofnąć.`;
+              if (!confirm(pytanie)) e.preventDefault();
+            }}
+          >
+            <input type="hidden" name="sessionId" value={session.id} />
+            <Button type="submit" variant="ghost" block>
+              Porzuć bez zapisywania
+            </Button>
+          </form>
         </>
       )}
 

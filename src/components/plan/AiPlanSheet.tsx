@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Chip, Field, NumberField, SegmentedControl, Select, Sheet, Spinner, Textarea } from "@/components/ui";
 import { EQUIPMENT_OPTIONS } from "@/lib/ai/planOptions";
 // Same typy - `import type` znika przy kompilacji, więc zod nie jedzie do przeglądarki.
 import type { AiPlan, PlanRequest } from "@/lib/ai/planSchema";
 import { DAY_TYPE_LABEL } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+import { humanDate } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
+import type { PlanAiLimit } from "@/lib/database.types";
 
 export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -26,6 +29,25 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
   const [requestId, setRequestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [limit, setLimit] = useState<PlanAiLimit | null>(null);
+
+  /*
+   * Odstęp między planami czytamy przy otwarciu arkusza, a nie po wysłaniu
+   * formularza. Napisanie "następny plan za 12 dni" dopiero po wypełnieniu
+   * pól byłoby marnowaniem czyjegoś czasu - a formularz ma tu siedem pól.
+   */
+  useEffect(() => {
+    if (!open) return;
+    let aktualne = true;
+    createClient()
+      .rpc("plan_ai_limit", {})
+      .then(({ data }) => {
+        if (aktualne && data) setLimit(data);
+      });
+    return () => {
+      aktualne = false;
+    };
+  }, [open]);
 
   const upd = (patch: Partial<PlanRequest>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -206,9 +228,17 @@ export function AiPlanSheet({ open, onClose }: { open: boolean; onClose: () => v
 
           {error && <Alert>{error}</Alert>}
 
-          <Button type="submit" variant="primary" size="lg" block>
-            Ułóż plan
-          </Button>
+          {limit && !limit.mozna ? (
+            <Alert tone="info">
+              Plan układamy raz na {limit.odstep_dni} dni - progresja siłowa potrzebuje
+              powtarzania tych samych ruchów przez kilka tygodni. Następny możliwy{" "}
+              {humanDate(limit.nastepny_od.slice(0, 10))} ({limit.nastepny_od.slice(0, 10)}).
+            </Alert>
+          ) : (
+            <Button type="submit" variant="primary" size="lg" block>
+              Ułóż plan
+            </Button>
+          )}
         </form>
       )}
 

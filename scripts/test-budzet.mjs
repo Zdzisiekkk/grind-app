@@ -168,5 +168,70 @@ r = await rezerwuj(B, 'plan');
 check('podniesiony próg działa od razu', r.ok === true, JSON.stringify(r));
 check('stan pokazuje nowy limit', Number((await stan(B)).limit_pln) === 40);
 
+
+/* ------------------------------------------------------------------
+ * Odstęp między planami od AI (migracja 0048)
+ *
+ * Limit, którego da się nie zauważyć, to nie limit: reguła siedzi w bazie,
+ * więc ekran nie jest jedyną drogą do jej ominięcia. Sprawdzamy obie strony:
+ * że blokuje po udanym planie i że NIE blokuje po nieudanym - bo nieudane
+ * wywołanie modelu nie może zabierać półtora miesiąca za coś, czego nie było.
+ * ------------------------------------------------------------------ */
+
+console.log('\n  Odstęp między planami\n');
+
+const limitPlanu = async (uid) => (await as(uid, 'select public.plan_ai_limit() as l')).rows[0].l;
+
+const wejscie = `'{"goal":"siła","days_per_week":4,"experience":"intermediate","session_minutes":60,"equipment":[],"limitations":""}'::jsonb`;
+const zgloszenie = (uid, status) => as(uid,
+  `insert into public.ai_plan_requests (user_id, input, model, status)
+   values ('${uid}', ${wejscie}, 'claude-opus-5', '${status}') returning id`);
+
+let stanPlanu = await limitPlanu(A);
+check('bez historii wolno ułożyć plan', stanPlanu.mozna === true, JSON.stringify(stanPlanu));
+check('odstęp to 45 dni', stanPlanu.odstep_dni === 45, String(stanPlanu.odstep_dni));
+check('bez planu nie ma na co czekać', stanPlanu.ostatni_plan === null);
+
+let wynikPlanu = await zgloszenie(A, 'ok');
+check('pierwszy plan przechodzi', wynikPlanu.ok === true, wynikPlanu.err);
+
+stanPlanu = await limitPlanu(A);
+check('po udanym planie kolejny jest zablokowany', stanPlanu.mozna === false, JSON.stringify(stanPlanu));
+check('powód mówi wprost o odstępie', stanPlanu.powod === 'odstep', String(stanPlanu.powod));
+check('ekran wie, od kiedy wolno następny', typeof stanPlanu.nastepny_od === 'string' && stanPlanu.nastepny_od > new Date().toISOString());
+
+wynikPlanu = await zgloszenie(A, 'ok');
+check('baza odrzuca drugi plan w oknie odstępu', wynikPlanu.ok === false, wynikPlanu.ok ? 'ZAPISAŁO SIĘ' : '');
+
+check('limit dotyczy konta, nie całej aplikacji', (await limitPlanu(B)).mozna === true);
+
+// Nieudane wywołanie modelu nie może kosztować półtora miesiąca.
+wynikPlanu = await zgloszenie(B, 'error');
+check('nieudane zgłoszenie przechodzi', wynikPlanu.ok === true, wynikPlanu.err);
+check('nieudane zgłoszenie nie blokuje kolejnego planu',
+  (await limitPlanu(B)).mozna === true, JSON.stringify(await limitPlanu(B)));
+
+// Przesuwamy stary plan poza okno - limit ma puścić sam z siebie.
+await db.query(
+  `update public.ai_plan_requests set created_at = now() - interval '46 days' where user_id = $1`, [A]);
+stanPlanu = await limitPlanu(A);
+check('po 46 dniach wolno układać od nowa', stanPlanu.mozna === true, JSON.stringify(stanPlanu));
+check('plan sprzed 46 dni nadal jest widoczny jako ostatni', stanPlanu.ostatni_plan !== null);
+
+// Próg leży w app_settings, żeby zmiana nie wymagała wdrożenia.
+await db.query(`update public.app_settings set value = jsonb_build_object('odstep_dni', 90) where key = 'plan_ai'`);
+check('zmiana progu w app_settings działa od razu',
+  (await limitPlanu(A)).odstep_dni === 90 && (await limitPlanu(A)).mozna === false);
+await db.query(`update public.app_settings set value = jsonb_build_object('odstep_dni', 45) where key = 'plan_ai'`);
+
+// Funkcje limitu nie mogą odpowiadać niezalogowanym (pułapka z 0045).
+const anonLimit = await db.query(`select count(*)::int n from pg_proc p
+  join pg_namespace ns on ns.oid = p.pronamespace
+ where ns.nspname = 'public' and p.proname in ('plan_ai_limit','plan_ai_moze_generowac')
+   and (has_function_privilege('anon', p.oid, 'execute')
+        or has_function_privilege('public', p.oid, 'execute'))`);
+check('funkcje limitu milczą wobec niezalogowanych', anonLimit.rows[0].n === 0,
+  `otwartych: ${anonLimit.rows[0].n}`);
+
 console.log(`\n  ${ok} przeszło, ${bad} nie przeszło\n`);
 process.exit(bad ? 1 : 0);

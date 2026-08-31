@@ -777,6 +777,16 @@ export type WygladProdukt = {
   created_at: string;
 };
 
+/** Stan limitu układania planów - zwracany przez `plan_ai_limit()` (migracja 0048). */
+export type PlanAiLimit = {
+  odstep_dni: number;
+  /** Ostatnie udane zgłoszenie albo null, gdy planu jeszcze nie było. */
+  ostatni_plan: string | null;
+  nastepny_od: string;
+  mozna: boolean;
+  powod: "odstep" | null;
+};
+
 /** Stan limitów skanowania - zwracany przez `wyglad_limit()`. */
 export type WygladLimit = {
   odstep_dni: number;
@@ -913,6 +923,8 @@ export type Database = {
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
       wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
+      /** Czy wolno ułożyć kolejny plan i od kiedy - odstęp z app_settings. */
+      plan_ai_limit: { Args: Record<string, never>; Returns: PlanAiLimit };
       /**
        * Produkty pasujące do frazy - po słowach, bez ogonków, także po marce.
        * SECURITY INVOKER, więc RLS nadal zasłania cudze produkty własne.

@@ -62,6 +62,25 @@ export async function POST(request: Request) {
     );
   }
 
+  /*
+   * Odstęp między planami (migracja 0048) sprawdzamy PRZED licznikiem
+   * i rezerwacją budżetu. Kolejność jest tu istotna: reguła zapisu w bazie
+   * odrzuciłaby zgłoszenie dopiero przy wstawianiu wiersza, czyli po zużyciu
+   * dziennego wywołania i po zarezerwowaniu pieniędzy - a plan i tak by nie
+   * powstał. Odmowa ma nic nie kosztować.
+   */
+  const { data: limitPlanu } = await supabase.rpc("plan_ai_limit", {});
+  if (limitPlanu && limitPlanu.mozna === false) {
+    return NextResponse.json(
+      {
+        error: `Plan układamy raz na ${limitPlanu.odstep_dni} dni. Następny od ${new Date(limitPlanu.nastepny_od).toLocaleDateString("pl-PL")}.`,
+        code: "odstep_planow",
+        nastepnyOd: limitPlanu.nastepny_od,
+      },
+      { status: 429 },
+    );
+  }
+
   // Ten sam dzienny licznik, co u trenera - jedno konto nie wyczerpie budżetu
   // w kwadrans, nawet mając subskrypcję.
   const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
@@ -103,11 +122,27 @@ export async function POST(request: Request) {
     )
     .join("\n");
 
-  const { data: logRow } = await supabase
+  const { data: logRow, error: logError } = await supabase
     .from("ai_plan_requests")
     .insert({ user_id: user.id, input, model: MODEL, status: "pending" })
     .select("id")
     .single();
+
+  /*
+   * Bez tego sprawdzenia nieudany zapis zgłoszenia kończył się najgorszym
+   * z możliwych wyników: model liczył plan za realne pieniądze, a zapisać go
+   * i tak nie było gdzie (trasa /save czyta plan właśnie z tego wiersza).
+   * Najczęstsza przyczyna: reguła odstępu z migracji 0048, gdy dwa żądania
+   * wyścigną się o ten sam moment.
+   */
+  if (logError || !logRow) {
+    await zwolnij(supabase, limit.id);
+    console.error("Plan AI (zapis zgłoszenia):", logError?.message ?? "brak wiersza");
+    return NextResponse.json(
+      { error: "Nie udało się rozpocząć układania planu. Spróbuj ponownie." },
+      { status: 500 },
+    );
+  }
 
   try {
     /*
