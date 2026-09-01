@@ -2,9 +2,11 @@
  * Uruchamia migracje na zdalnym projekcie Supabase przez Management API
  * (ten sam endpoint, którego używa SQL Editor w panelu).
  *
- *   SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=... node scripts/run-migrations.mjs
+ *   npm run db:push            # wszystkie migracje (tylko na czystej bazie)
+ *   OD=0048 npm run db:push    # tylko od podanego numeru w górę
  *
- * Migracje są idempotentne, więc ponowne uruchomienie niczego nie psuje.
+ * Token bierze z .env.local. Na bazie, która ma już wykonane migracje,
+ * ZAWSZE podawaj OD - patrz komentarz przy filtrowaniu plików niżej.
  */
 import { readdir, readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
@@ -53,8 +55,30 @@ if (!token || !ref) {
 
 console.log(`Projekt: ${ref}\n`);
 
+/*
+ * Zakres migracji do wykonania: OD=0048 npm run db:push
+ *
+ * Migracje tego projektu SĄ odtwarzalne od zera (tak sprawdza je validate:sql
+ * w PGlite), ale NIE są odtwarzalne na bazie już zmigrowanej. Migracja 0010
+ * tworzy widok snu z kolumną nap_min, a 0040 przeniosła drzemki do osobnej
+ * tabeli i tę kolumnę zabrała - powtórzone 0010 pyta więc o coś, czego już
+ * nie ma. To nie jest usterka: migracja opisuje stan świata z dnia, w którym
+ * powstała, i taka ma zostać.
+ *
+ * Dlatego na działającej bazie uruchamiamy tylko nowe pliki.
+ */
+const od = process.env.OD;
 const dir = join(process.cwd(), "supabase", "migrations");
-const files = (await readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
+let files = (await readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
+if (od) {
+  const przed = files.length;
+  files = files.filter((f) => f.slice(0, 4) >= od);
+  console.log(`Zakres: od ${od} - ${files.length} z ${przed} plików.\n`);
+  if (files.length === 0) {
+    console.error(`Żaden plik nie pasuje do OD=${od}.`);
+    process.exit(1);
+  }
+}
 
 for (const file of files) {
   const query = await readFile(join(dir, file), "utf8");
