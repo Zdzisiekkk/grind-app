@@ -10,9 +10,11 @@ import {
   EmptyState,
   Field,
   Input,
+  SegmentedControl,
   Sheet,
   Stat,
 } from "@/components/ui";
+import { KatalogPrzepisow } from "@/components/diet/KatalogPrzepisow";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { createClient } from "@/lib/supabase/client";
 import { portionGrams } from "@/lib/recipes";
@@ -20,25 +22,39 @@ import { num } from "@/lib/format";
 import type { Food, RecipeItem, RecipeTotals } from "@/lib/database.types";
 
 /**
- * Zarządzanie własnymi daniami.
+ * Dania i przepisy: moje w jednej zakładce, katalog w drugiej.
  *
- * Większość przepisów powstaje w dzienniku ("zapisz jako danie"), bo tam
- * składniki są już zważone. Ten ekran jest do poprawek i do ułożenia czegoś
- * od zera - dlatego wygląda jak lista do edycji, a nie jak kreator.
+ * Dwie zakładki, a nie dwie listy pod sobą, bo odpowiadają na inne pytania.
+ * "Moje" to rzeczy, które gotujesz co tydzień i chcesz wpisać jednym
+ * tapnięciem - lista do edycji. "Katalog" to sto przepisów do przejrzenia,
+ * gdy nie wiesz, co ugotować - lista do czytania, z wyszukiwarką.
+ *
+ * Domyślnie otwiera się ta, która ma sens: kto nie ma jeszcze ani jednego
+ * własnego dania, ten szuka pomysłu, a nie edytuje pustą listę.
  */
 export function RecipesScreen({
   userId,
   recipes,
   items,
+  katalog,
+  celKcal,
+  otworz,
 }: {
   userId: string;
   recipes: RecipeTotals[];
   /** Składniki wszystkich przepisów, pogrupowane po stronie serwera. */
   items: Record<string, RecipeItem[]>;
+  katalog: RecipeTotals[];
+  celKcal: number | null;
+  /** Przepis z katalogu do otwarcia od razu - wejście z "przepisu dnia". */
+  otworz?: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
 
+  const [zakladka, setZakladka] = useState<"moje" | "katalog">(
+    otworz || recipes.length === 0 ? "katalog" : "moje",
+  );
   const [open, setOpen] = useState<RecipeTotals | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
@@ -72,28 +88,46 @@ export function RecipesScreen({
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold leading-tight">Moje dania</h1>
+          <h1 className="text-2xl font-bold leading-tight">Dania i przepisy</h1>
           <p className="text-[13px] text-muted">
-            Rzeczy, które gotujesz regularnie - dodawane jednym tapnięciem.
+            Twoje dania jednym tapnięciem i katalog na dni bez pomysłu.
           </p>
         </div>
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          + Danie
-        </Button>
+        {zakladka === "moje" && (
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            + Danie
+          </Button>
+        )}
       </header>
+
+      <SegmentedControl
+        value={zakladka}
+        onChange={setZakladka}
+        options={[
+          { value: "moje", label: `Moje (${recipes.length})` },
+          { value: "katalog", label: `Katalog (${katalog.length})` },
+        ]}
+      />
 
       {error && <Alert>{error}</Alert>}
 
-      {recipes.length === 0 ? (
+      {zakladka === "katalog" ? (
+        <KatalogPrzepisow katalog={katalog} celKcal={celKcal} otworz={otworz} />
+      ) : recipes.length === 0 ? (
         <Card>
           <EmptyState
             icon="🍲"
             title="Nie masz jeszcze własnych dań"
-            description="Najprościej: wpisz posiłek w dzienniku, a potem kliknij przy nim Zapisz jako danie. Składniki są już wtedy zważone."
+            description="Najprościej: wpisz posiłek w dzienniku, a potem kliknij przy nim Zapisz jako danie. Składniki są już wtedy zważone. Możesz też skopiować gotowy przepis z katalogu."
             action={
-              <Button variant="primary" onClick={() => setCreating(true)}>
-                Ułóż od zera
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="primary" onClick={() => setCreating(true)}>
+                  Ułóż od zera
+                </Button>
+                <Button variant="secondary" onClick={() => setZakladka("katalog")}>
+                  Zajrzyj do katalogu
+                </Button>
+              </div>
             }
           />
         </Card>

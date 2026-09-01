@@ -66,6 +66,7 @@ export function AddFoodSheet({
   const [error, setError] = useState<string | null>(null);
   const [dishes, setDishes] = useState<Food[]>([]);
   const [recipes, setRecipes] = useState<RecipeTotals[]>([]);
+  const [katalog, setKatalog] = useState<RecipeTotals[]>([]);
   const [skanerOtwarty, setSkanerOtwarty] = useState(false);
 
   /*
@@ -93,7 +94,13 @@ export function AddFoodSheet({
     };
   }, [open, supabase]);
 
-  // Własne dania - te wracają codziennie, więc idą na samą górę zakładki.
+  /*
+   * Własne dania i przepisy z katalogu jednym zapytaniem.
+   *
+   * Od migracji 0049 widok zwraca jedno i drugie (katalog ma user_id NULL),
+   * więc rozdzielamy je tutaj. Dwa zapytania po to samo byłyby dwoma
+   * podróżami do bazy przy każdym otwarciu arkusza.
+   */
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -103,7 +110,11 @@ export function AddFoodSheet({
         .select("*")
         .gt("items", 0)
         .order("name");
-      if (!cancelled) setRecipes((data ?? []) as RecipeTotals[]);
+      if (!cancelled) {
+        const wszystkie = (data ?? []) as RecipeTotals[];
+        setRecipes(wszystkie.filter((r) => r.user_id != null));
+        setKatalog(wszystkie.filter((r) => r.user_id == null));
+      }
     })();
     return () => {
       cancelled = true;
@@ -214,6 +225,7 @@ export function AddFoodSheet({
             <DishList
               dishes={dishes}
               recipes={recipes}
+              katalog={katalog}
               query={query}
               onQuery={setQuery}
               onPick={(food) => setPicked({ kind: "food", food })}
@@ -571,12 +583,14 @@ function CustomFoodForm({
 function DishList({
   dishes,
   recipes,
+  katalog,
   query,
   onQuery,
   onPick,
 }: {
   dishes: Food[];
   recipes: RecipeTotals[];
+  katalog: RecipeTotals[];
   query: string;
   onQuery: (value: string) => void;
   onPick: (food: Food) => void;
@@ -586,6 +600,17 @@ function DishList({
   const mine = phrase
     ? recipes.filter((r) => r.name.toLowerCase().includes(phrase))
     : recipes;
+  /*
+   * Katalog pokazujemy dopiero po wpisaniu frazy.
+   *
+   * Bez tego prawie sto przepisów przykryłoby własne dania i listę
+   * popularnych - a zakładka jest do szybkiego wpisania obiadu, nie do
+   * przeglądania książki kucharskiej. Kto szuka konkretnego przepisu, ten
+   * i tak wpisze jego nazwę.
+   */
+  const zKatalogu = phrase
+    ? katalog.filter((r) => r.name.toLowerCase().includes(phrase)).slice(0, 12)
+    : [];
 
   return (
     <div className="flex flex-col gap-3">
@@ -641,13 +666,58 @@ function DishList({
         </div>
       )}
 
-      {mine.length > 0 && dishes.length > 0 && (
+      {zKatalogu.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
+            Z katalogu przepisów
+          </h3>
+          <ul className="flex flex-col divide-y divide-border">
+            {zKatalogu.map((recipe) => {
+              const portion = portionGrams(recipe);
+              return (
+                <li key={recipe.recipe_id}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onPick({
+                        ...(recipeAsFood(recipe) as unknown as Food),
+                        serving_size_g: portion,
+                        serving_label: "porcja",
+                      } as Food)
+                    }
+                    className="flex w-full items-center gap-3 py-2.5 text-left active:bg-surface-2"
+                  >
+                    <span aria-hidden className="text-lg">
+                      {recipe.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-medium leading-tight">
+                        {recipe.name}
+                      </span>
+                      <span className="tabular block text-[12px] text-muted">
+                        {Math.round(Number(recipe.kcal_100g))} kcal / 100 g
+                        {portion ? ` · porcja ${portion} g` : ""}
+                        {recipe.makra_orientacyjne ? " · orientacyjnie" : ""}
+                      </span>
+                    </span>
+                    <span className="text-faint" aria-hidden>
+                      ›
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {(mine.length > 0 || zKatalogu.length > 0) && dishes.length > 0 && (
         <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wide text-faint">
           Popularne dania
         </h3>
       )}
 
-      {shown.length === 0 && mine.length === 0 ? (
+      {shown.length === 0 && mine.length === 0 && zKatalogu.length === 0 ? (
         <EmptyState
           icon="🍲"
           title="Nie ma takiego dania"

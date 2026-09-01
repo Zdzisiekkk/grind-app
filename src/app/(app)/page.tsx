@@ -26,7 +26,8 @@ import {
   type SleepNight,
 } from "@/lib/sleep";
 import { addDaysISO, duration, humanDate, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
-import type { Habit, Injury, PeriodSummary } from "@/lib/database.types";
+import { POZIOM_LABEL, czas, porcja, udzialWCelu } from "@/lib/przepisy";
+import type { Habit, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
 
 export const metadata = { title: "Dziś" };
 
@@ -57,6 +58,7 @@ export default async function DashboardPage() {
     { data: coachProposals },
     { data: activePlan },
     { data: ostatniSkan },
+    { data: przepisyDnia },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -134,7 +136,10 @@ export default async function DashboardPage() {
       .not("ocena_ogolna", "is", null)
       .order("utworzono", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle(),
+    // Przepis dnia. Funkcja zwraca gotowy wiersz widoku, więc kafelek kosztuje
+    // jedno zapytanie, a nie dwa - patrz migracja 0049.
+    supabase.rpc("przepis_dnia"),
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -155,6 +160,15 @@ export default async function DashboardPage() {
   const waterGoal = profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML;
   const waterPct = waterGoal > 0 ? Math.min(100, Math.round((waterMl / waterGoal) * 100)) : 0;
   const greeting = profile?.display_name ? `Cześć, ${profile.display_name}` : "Cześć";
+
+  /*
+   * Przepis dnia. Funkcja zwraca zbiór, więc bierzemy pierwszy wiersz -
+   * pusty znaczy, że katalogu jeszcze nie ma w bazie (migracja 0051)
+   * i kafelek po prostu się nie pokazuje.
+   */
+  const przepisDnia = ((przepisyDnia ?? []) as RecipeTotals[])[0] ?? null;
+  const porcjaDnia = przepisDnia ? porcja(przepisDnia) : null;
+  const udzialDnia = przepisDnia ? udzialWCelu(przepisDnia, profile?.daily_kcal ?? null) : null;
 
   /* ------------------------------- Sen i forma ------------------------------ */
 
@@ -348,6 +362,42 @@ export default async function DashboardPage() {
           }}
         />
       </Card>
+
+      {/* --- Przepis dnia --- */}
+      {przepisDnia && (
+        <Card
+          title="Przepis dnia"
+          subtitle={[czas(przepisDnia.czas_min), przepisDnia.poziom && POZIOM_LABEL[przepisDnia.poziom]]
+            .filter(Boolean)
+            .join(" · ")}
+          action={
+            <Link href="/dieta/dania" className="text-[13px] font-medium text-accent">
+              Katalog
+            </Link>
+          }
+        >
+          <Link
+            href={`/dieta/dania?przepis=${przepisDnia.recipe_id}`}
+            className="flex items-center gap-3"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-2xl">
+              {przepisDnia.icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold leading-tight">
+                {przepisDnia.name}
+              </span>
+              <span className="tabular block text-[12px] text-muted">
+                {num(porcjaDnia!.kcal, 0)} kcal w porcji · {num(porcjaDnia!.bialko, 0)} g białka
+                {udzialDnia != null ? ` · ${Math.round(udzialDnia * 100)}% dziennego celu` : ""}
+              </span>
+            </span>
+            <span className="text-faint" aria-hidden>
+              ›
+            </span>
+          </Link>
+        </Card>
+      )}
 
       {/* --- Sen --- */}
       <Card
