@@ -26,7 +26,9 @@
     "test:posilek": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-posilek.mjs",
     "test:produkty": "node --no-warnings scripts/test-produkty.mjs",
     "test:daty": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-daty.mjs",
-    "test:wstecz": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-wstecz.mjs"
+    "test:wstecz": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-wstecz.mjs",
+    "test:przepisy": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-przepisy.mjs",
+    "import:przepisy": "node scripts/import-przepisy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

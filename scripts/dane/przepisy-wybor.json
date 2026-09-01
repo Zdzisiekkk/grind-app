@@ -1,0 +1,502 @@
+[
+ {
+  "tytul": "Książka kucharska/Ajntopf",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Amerykańskie naleśniki",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Boczek pieczony",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Brownies",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Caldo verde",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Cepeliny",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Chleb turecki",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Chutney pomidorowy",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Chłodnik ogórkowy",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Ciapkapusta",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Ciasto drożdżowe",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Ciasto marchewkowe",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Cielęcina w sosie",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Crema catalana",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Crêpes",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Deser budyniowy",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Dopalacz mózgu",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Francuska zupa cebulowa",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Gołąbki z kaszą i mięsem",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Gęś nadziewana kaszą z grzybami",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Harira",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Haupia",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Jajka na jarzynce",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Jajka w koszyczkach",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Janssons frestelse",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Kaczka po włosku",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Kapusta z fasolą i kaszą jaglaną",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Kapusta z grzybami",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Kapuśniak",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Kapuśniak czeski",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Karmazyn pieczony",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Kartofle zapiekane ze śledziem",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Kasza gryczana z fetą",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Knedle ze śliwkami",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Kolorowa sałatka warzywna",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Kotlety z kaszy gryczanej i ziemniaków",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Krokiety z mięsem",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Kurczak bazyliowy",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Lasagne ze szpinakiem",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Lotus cheesecake",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Maczki drożdżowe",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Migdałowy pischinger",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Modro kapusta",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Morelowy przysmak",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Musaka z bakłażanów",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Naleśniki z czereśniami",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Naleśniki ze szpinakiem i serem feta",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Naleśnikowy tort warzywny",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Paszteciki z grzybami",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Pańska skórka",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Pejzanka",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Pizza carbonara",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Potrawka z kaczek z kapustą",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Przystawka z łososia i awokado",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Pulpety florenckie",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Ravioli",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Ryba po podhalańsku",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Ryż po chińsku",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Sakiewki z rybą i ryżem",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Sałata zielona w kremie szynkowym",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Sałatka italiana",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Sałatka z ryżem i owocami",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Ser brie z bułką paryską",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Siemieniotka",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Snikers",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Sos ogórkowy",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Spaghetti con sugo alla diavola",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Spaghetti z brokułami w sosie serowym",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Spaghetti z szynką",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Sum duszony z pomidorami",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Szaszłyki smakosza",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Szaszłyki z mielonej wołowiny",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Szpajza",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Szpinak zapiekany",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Tiramisu",
+  "grupa": "slodkie",
+  "ikona": "🍰"
+ },
+ {
+  "tytul": "Książka kucharska/Tort Bajgus",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Tort śmietanowy",
+  "grupa": "inne",
+  "ikona": "🍽️"
+ },
+ {
+  "tytul": "Książka kucharska/Twaróg z awokado",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Udka z kurczaka z pieczarkami",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Warzywa z piekarnika",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Warzywne miseczki",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Wiejska zupa z fasolą",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Wieprzowe szaszłyki",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Wytrawny serowiec",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Wątróbka po żydowsku z drobiu",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Zapiekanka pikantna",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Zapiekanka z cielęciny i warzyw",
+  "grupa": "mieso",
+  "ikona": "🍖"
+ },
+ {
+  "tytul": "Książka kucharska/Zapiekanka z marchwi",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Zapiekanka z pieczonym mięsem",
+  "grupa": "maka",
+  "ikona": "🍝"
+ },
+ {
+  "tytul": "Książka kucharska/Zapiekanka z rybą wędzoną",
+  "grupa": "ryby",
+  "ikona": "🐟"
+ },
+ {
+  "tytul": "Książka kucharska/Zawijasy z Sudowy",
+  "grupa": "jajka",
+  "ikona": "🥚"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa Dal (Dhal)",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa jagodowa",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa jarzynowa",
+  "grupa": "warzywa",
+  "ikona": "🥗"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa kremowa z dyni",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa serowa zapiekana",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa wiśniowa",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa z jabłek lub gruszek",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa ze szparagów",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ },
+ {
+  "tytul": "Książka kucharska/Zupa śliwkowa",
+  "grupa": "zupy",
+  "ikona": "🍲"
+ }
+]

@@ -76,8 +76,25 @@ await db.exec(`
     (null, 'off', '5900000000006', 'Sos do makaronu z serkiem wiejskim', null, 120);
 `);
 w = await szukaj(A, 'serek');
+/*
+ * Sprawdzamy REGUŁĘ, a nie konkretny wiersz.
+ *
+ * Wcześniej stało tu `w[0] === 'Serek wiejski light'` i trzymało się tylko
+ * dlatego, że w bazie testowej był jeden produkt na "serek". Po dosypaniu
+ * surowców (migracja 0050) pierwszy jest inny serek - i słusznie, bo reguła
+ * mówi tylko tyle, że nazwa ZACZYNAJĄCA SIĘ od frazy bije nazwę, która ma
+ * ją gdzieś w środku.
+ */
 check('nazwa zaczynająca się od frazy jest pierwsza',
-  w[0] === 'Serek wiejski light', JSON.stringify(w));
+  w[0].toLowerCase().startsWith('serek'), JSON.stringify(w));
+/*
+ * Przy okazji widać granicę wyszukiwarki: dopasowanie idzie po POCZĄTKU
+ * słowa, więc "serek" nie znajduje "serkiem". Odmiana polska tu nie działa
+ * i nigdy nie działała - lepiej, żeby test o tym mówił wprost, niż żeby
+ * ktoś kiedyś uznał brak tego wiersza za usterkę.
+ */
+check('odmieniona forma nie jest dopasowywana',
+  !w.includes('Sos do makaronu z serkiem wiejskim'), JSON.stringify(w));
 
 console.log('\n  Pusta fraza\n');
 w = await szukaj(A, '');

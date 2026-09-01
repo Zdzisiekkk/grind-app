@@ -362,7 +362,8 @@ export type Recipe = {
 
 export type RecipeItem = {
   id: string;
-  user_id: string;
+  /** Null = składnik przepisu z katalogu. */
+  user_id: string | null;
   recipe_id: string;
   food_id: string | null;
   name: string;
@@ -379,7 +380,8 @@ export type RecipeItem = {
 /** Przepis policzony jako produkt - te same pola, co zwykłe jedzenie. */
 export type RecipeTotals = {
   recipe_id: string;
-  user_id: string;
+  /** Null = przepis z katalogu, wspólny dla wszystkich (migracja 0049). */
+  user_id: string | null;
   name: string;
   icon: string;
   servings: number;
@@ -393,6 +395,28 @@ export type RecipeTotals = {
   protein_100g: number;
   carbs_100g: number;
   fat_100g: number;
+  source: "user" | "katalog";
+  opis: string | null;
+  czas_min: number | null;
+  poziom: "latwy" | "sredni" | "trudny" | null;
+  tagi: string[];
+  /** Makra policzone z miar domowych ("2 łyżki oleju"), a nie z wagi. */
+  makra_orientacyjne: boolean;
+  license: string | null;
+  license_author: string | null;
+  license_url: string | null;
+  kroki: number;
+};
+
+/** Krok wykonania. `minuty` tylko tam, gdzie krok polega na czekaniu. */
+export type RecipeStep = {
+  id: string;
+  user_id: string | null;
+  recipe_id: string;
+  order_index: number;
+  tekst: string;
+  minuty: number | null;
+  created_at: string;
 };
 
 export type BookStatus = "want" | "reading" | "read" | "abandoned";
@@ -866,6 +890,7 @@ export type Database = {
         RecipeItem,
         "user_id" | "recipe_id" | "name" | "grams" | "kcal_100g"
       >;
+      recipe_steps: Tbl<RecipeStep, "recipe_id" | "tekst">;
       vices: Tbl<Vice, "user_id" | "name">;
       vice_events: Tbl<ViceEvent, "user_id" | "vice_id" | "kind">;
       books: Tbl<Book, "user_id" | "title">;
@@ -925,6 +950,13 @@ export type Database = {
       wyglad_limit: { Args: Record<string, never>; Returns: WygladLimit };
       /** Czy wolno ułożyć kolejny plan i od kiedy - odstęp z app_settings. */
       plan_ai_limit: { Args: Record<string, never>; Returns: PlanAiLimit };
+      /**
+       * Przepis dnia dobrany do dziennego celu kalorycznego.
+       * Stały przez dobę, inny u każdego - patrz migracja 0049.
+       */
+      przepis_dnia: { Args: Record<string, never>; Returns: RecipeTotals[] };
+      /** Kopiuje przepis z katalogu do własnych dań; zwraca id kopii. */
+      skopiuj_przepis: { Args: { p_recipe_id: string }; Returns: string };
       /**
        * Produkty pasujące do frazy - po słowach, bez ogonków, także po marce.
        * SECURITY INVOKER, więc RLS nadal zasłania cudze produkty własne.

@@ -46,3 +46,6 @@ next-env.d.ts
 # supabase / vercel CLI
 supabase/.temp/
 .vercel
+
+# pamięć podręczna importu przepisów - do pobrania na nowo skryptem
+scripts/dane/.wikibooks-cache.json

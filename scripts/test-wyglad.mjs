@@ -88,10 +88,19 @@ await db.exec(`update public.wyglad_skany set utworzono = now() - interval '8 da
 r = await as(A, `select public.wyglad_limit() as l`);
 check('po ośmiu dniach znowu można', r.ok && r.rows[0].l.mozna === true, JSON.stringify(r.rows?.[0]?.l));
 
-// Miesięczny limit osobno: odstęp na zero, żeby sprawdzać jedną rzecz naraz.
+/*
+ * Miesięczny limit osobno: odstęp na zero, żeby sprawdzać jedną rzecz naraz.
+ *
+ * Najpierw kasujemy skany A. Wcześniej liczyliśmy od jedynki, zakładając,
+ * że cofnięty o osiem dni skan nadal wpada w bieżący miesiąc - a to zależy
+ * od dnia, w którym akurat uruchamia się test. Pierwszego dnia miesiąca
+ * cofnięcie przenosi go do poprzedniego, limit liczy o jeden mniej i test
+ * przestaje przechodzić bez żadnej zmiany w kodzie.
+ */
 await db.exec(`update public.app_settings set value = jsonb_set(value, '{odstep_dni}', '0') where key = 'wyglad'`);
-let doszlo = 1;
-for (let i = 0; i < 6; i++) {
+await db.exec(`delete from public.wyglad_skany where user_id = '${A}'`);
+let doszlo = 0;
+for (let i = 0; i < 7; i++) {
   const res = await as(A, `insert into public.wyglad_skany (user_id) values ('${A}') returning id`);
   if (res.ok) doszlo++; else break;
 }

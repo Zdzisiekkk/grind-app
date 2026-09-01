@@ -44,6 +44,7 @@ jobs:
           npm run test:posilek
           npm run test:produkty
           npm run test:wstecz
+          npm run test:przepisy
       - name: Budowanie
         run: npm run build
         env:
