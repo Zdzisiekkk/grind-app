@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button, Card, Chip } from "@/components/ui";
@@ -50,7 +51,17 @@ export function DietScreen({
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-3">
-        <h1 className="text-2xl font-bold">Dieta</h1>
+        {/*
+          Wejście do dań i przepisów siedzi przy tytule Diety, a nie w zakładce
+          "Więcej". Przepisu szuka się wtedy, gdy patrzy się na dziennik
+          i zastanawia, co dziś zjeść - a nie wtedy, gdy przegląda się ustawienia.
+        */}
+        <div className="flex items-baseline justify-between gap-3">
+          <h1 className="text-2xl font-bold">Dieta</h1>
+          <Link href="/dieta/dania" className="shrink-0 text-[13px] font-medium text-accent">
+            Dania i przepisy
+          </Link>
+        </div>
         <DateNav date={date} basePath="/dieta" />
       </header>
 

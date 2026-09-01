@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -86,6 +87,15 @@ export function RecipesScreen({
 
   return (
     <div className="flex flex-col gap-4">
+      {/*
+        Powrót do dziennika. Ekran jest teraz podstroną Diety, a nie pozycją
+        w "Więcej" - bez tego odnośnika jedynym wyjściem byłby przycisk wstecz
+        przeglądarki, którego w aplikacji na telefonie po prostu nie widać.
+      */}
+      <Link href="/dieta" className="text-[13px] font-medium text-muted">
+        ← Dieta
+      </Link>
+
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold leading-tight">Dania i przepisy</h1>

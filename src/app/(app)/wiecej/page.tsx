@@ -10,7 +10,6 @@ const LINKS = [
   { href: "/trener", icon: "✨", label: "Trener AI", desc: "Analizy, propozycje, rozmowa" },
   { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },
   { href: "/plan", icon: "📋", label: "Plany treningowe", desc: "Twórz, edytuj, kopiuj szablony, poproś AI" },
-  { href: "/dieta/dania", icon: "🍲", label: "Dania i przepisy", desc: "Twoje dania i katalog na dni bez pomysłu" },
   { href: "/cwiczenia", icon: "📚", label: "Katalog ćwiczeń", desc: "Technika, ilustracje, Twoja historia" },
   { href: "/aktywnosci", icon: "🏃", label: "Aktywności", desc: "Bieganie, rower, sparingi MMA" },
   { href: "/kontuzje", icon: "🩹", label: "Kontuzje", desc: "Kolano, bark, plecy - ból w skali 0-10" },
