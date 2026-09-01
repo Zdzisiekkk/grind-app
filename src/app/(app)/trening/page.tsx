@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { startSession } from "./actions";
 import { DAY_TYPE_ICON, DAY_TYPE_LABEL } from "@/lib/constants";
 import { humanDate, sets as setsLabel, todayISO, volume } from "@/lib/format";
+import { Zaplecze } from "@/components/training/Zaplecze";
 import type { Phase, WorkoutDay } from "@/lib/database.types";
 
 export const metadata = { title: "Trening" };
@@ -167,6 +168,8 @@ export default async function TreningPage() {
           + Trening bez planu
         </Button>
       </form>
+
+      <Zaplecze />
 
       <Card title="Ostatnie treningi" padded={false}>
         {sessions.length === 0 ? (

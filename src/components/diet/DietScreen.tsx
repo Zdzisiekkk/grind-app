@@ -51,23 +51,39 @@ export function DietScreen({
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-3">
-        {/*
-          Wejście do dań i przepisów siedzi przy tytule Diety, a nie w zakładce
-          "Więcej". Przepisu szuka się wtedy, gdy patrzy się na dziennik
-          i zastanawia, co dziś zjeść - a nie wtedy, gdy przegląda się ustawienia.
-        */}
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-bold">Dieta</h1>
-          <Link href="/dieta/dania" className="shrink-0 text-[13px] font-medium text-accent">
-            Dania i przepisy
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold">Dieta</h1>
         <DateNav date={date} basePath="/dieta" />
       </header>
 
       <Card>
         <MacroSummary totals={totals} goals={goals} />
       </Card>
+
+      {/*
+        Kafelek, a nie odnośnik w nagłówku.
+        
+        Wejście do przepisów siedzi zaraz pod makrami, bo tam pada pytanie,
+        na które przepisy odpowiadają: widzę, ile jeszcze mogę zjeść - to co
+        w takim razie ugotować. Drobny odnośnik przy tytule dawało się
+        przeoczyć, a to jedyne wejście do katalogu z tej zakładki.
+      */}
+      <Link
+        href="/dieta/dania"
+        className="flex items-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-3 py-3.5 shadow-[var(--shadow)] active:scale-[0.99]"
+      >
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-xl">
+          🍲
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-semibold leading-tight">Dania i przepisy</span>
+          <span className="mt-0.5 block text-[12px] text-muted">
+            Twoje dania i katalog przepisów z krokami
+          </span>
+        </span>
+        <span className="text-accent" aria-hidden>
+          ›
+        </span>
+      </Link>
 
       <WaterTracker
         userId={userId}
