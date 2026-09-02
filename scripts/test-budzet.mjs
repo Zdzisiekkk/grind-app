@@ -189,7 +189,8 @@ const zgloszenie = (uid, status) => as(uid,
 
 let stanPlanu = await limitPlanu(A);
 check('bez historii wolno ułożyć plan', stanPlanu.mozna === true, JSON.stringify(stanPlanu));
-check('odstęp to 45 dni', stanPlanu.odstep_dni === 45, String(stanPlanu.odstep_dni));
+// Od 0056 odstęp zależy od planu: bez subskrypcji (i na Starterze) 30 dni, na Pro 7.
+check('odstęp bez planu Pro to 30 dni', stanPlanu.odstep_dni === 30, String(stanPlanu.odstep_dni));
 check('bez planu nie ma na co czekać', stanPlanu.ostatni_plan === null);
 
 let wynikPlanu = await zgloszenie(A, 'ok');
@@ -222,7 +223,7 @@ check('plan sprzed 46 dni nadal jest widoczny jako ostatni', stanPlanu.ostatni_p
 await db.query(`update public.app_settings set value = jsonb_build_object('odstep_dni', 90) where key = 'plan_ai'`);
 check('zmiana progu w app_settings działa od razu',
   (await limitPlanu(A)).odstep_dni === 90 && (await limitPlanu(A)).mozna === false);
-await db.query(`update public.app_settings set value = jsonb_build_object('odstep_dni', 45) where key = 'plan_ai'`);
+await db.query(`update public.app_settings set value = jsonb_build_object('odstep_dni', 30, 'odstep_dni_pro', 7) where key = 'plan_ai'`);
 
 // Funkcje limitu nie mogą odpowiadać niezalogowanym (pułapka z 0045).
 const anonLimit = await db.query(`select count(*)::int n from pg_proc p

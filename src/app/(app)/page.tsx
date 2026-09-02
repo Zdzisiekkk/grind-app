@@ -29,6 +29,7 @@ import { addDaysISO, duration, humanDate, longDate, num, todayISO, volume as fmt
 import { POZIOM_LABEL, czas, porcja, udzialWCelu } from "@/lib/przepisy";
 import { HISTORY_DAYS } from "@/lib/nawyki";
 import { ogolnaPassa } from "@/lib/passa";
+import { postepDoNastepnego, poziomZXp, progPoziomu, tytulPoziomu } from "@/lib/xp";
 import { dayWord } from "@/lib/vices";
 import type { Habit, HabitLog, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
 
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
     { data: przepisyDnia },
     { data: habitLogsHistoria },
     { data: posilkiHistoria },
+    { data: xpWiersze },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -156,6 +158,8 @@ export default async function DashboardPage() {
       .select("date")
       .eq("user_id", user.id)
       .gte("date", addDaysISO(today, -HISTORY_DAYS)),
+    // XP nalicza baza wyzwalaczami (0057) - tu tylko suma do levelu.
+    supabase.from("xp_zdarzenia").select("xp").eq("user_id", user.id),
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -180,6 +184,9 @@ export default async function DashboardPage() {
   }
   const dietaZalogowana = new Set((posilkiHistoria ?? []).map((m) => m.date));
   const passa = ogolnaPassa((habits ?? []) as Habit[], byHabitHistoria, dietaZalogowana, today);
+
+  const xp = (xpWiersze ?? []).reduce((sum, w) => sum + w.xp, 0);
+  const poziom = poziomZXp(xp);
 
   const waterMl = (waterToday ?? []).reduce((sum, w) => sum + w.ml, 0);
   const waterGoal = profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML;
@@ -258,6 +265,27 @@ export default async function DashboardPage() {
           <p className="mt-1 text-[13px] font-medium text-accent">
             🔥 {passa} {dayWord(passa)} z rzędu - nawyki i dziennik diety w komplecie
           </p>
+        )}
+        {xp > 0 && (
+          <div className="mt-1.5">
+            <p className="text-[13px] font-medium">
+              ⭐ Poziom {poziom} · {tytulPoziomu(poziom)}
+              <span className="text-faint"> · {xp} / {progPoziomu(poziom + 1)} XP</span>
+            </p>
+            <div
+              className="mt-1 h-1.5 w-full max-w-[240px] overflow-hidden rounded-full bg-surface-2"
+              role="progressbar"
+              aria-label="Postęp do następnego poziomu"
+              aria-valuenow={Math.round(postepDoNastepnego(xp) * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full bg-accent"
+                style={{ width: `${Math.round(postepDoNastepnego(xp) * 100)}%` }}
+              />
+            </div>
+          </div>
         )}
       </header>
 

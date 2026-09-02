@@ -30,6 +30,7 @@
     "test:przepisy": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-przepisy.mjs",
     "test:passa": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-passa.mjs",
     "test:plany": "node --no-warnings scripts/test-plany.mjs",
+    "test:xp": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-xp.mjs",
     "import:przepisy": "node scripts/import-przepisy.mjs"
   },
   "dependencies": {

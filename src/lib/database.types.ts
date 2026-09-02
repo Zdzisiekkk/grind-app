@@ -522,6 +522,25 @@ export type AppSetting = {
   updated_at: string;
 };
 
+/** Dostęp przyznany nie za pieniądze - nagrody XP, rekompensaty (0056). */
+export type BonusPlan = {
+  id: number;
+  user_id: string;
+  plan: PlatnyPlan;
+  do_kiedy: string;
+  zrodlo: string;
+  created_at: string;
+};
+
+/** XP naliczone przez bazę - jeden wiersz na (osoba, dzień, źródło) (0057). */
+export type XpZdarzenie = {
+  user_id: string;
+  dzien: string;
+  zrodlo: string;
+  xp: number;
+  wystapien: number;
+};
+
 export type InjuryStatus = "active" | "monitoring" | "healed";
 export type InjurySide = "left" | "right" | "both" | "none";
 
@@ -884,6 +903,8 @@ export type Database = {
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
       subscriptions: Tbl<Subscription, "user_id">;
+      bonus_plan: Tbl<BonusPlan, "user_id" | "plan" | "do_kiedy" | "zrodlo">;
+      xp_zdarzenia: Tbl<XpZdarzenie, "user_id" | "dzien" | "zrodlo">;
       coach_proposals: Tbl<CoachProposal, "user_id" | "kind" | "title" | "rationale">;
       coach_messages: Tbl<CoachMessage, "user_id" | "role" | "content">;
       ai_usage: Tbl<AiUsage, "user_id">;
@@ -950,6 +971,8 @@ export type Database = {
       has_pro: { Args: { p_user?: string }; Returns: boolean };
       /** 0 = darmowy, 1 = Starter, 2 = Pro (albo administrator). */
       plan_poziom: { Args: { p_user?: string }; Returns: number };
+      /** Level z sumy XP - ta sama krzywa co w src/lib/xp.ts (0057). */
+      xp_poziom: { Args: { p_xp: number }; Returns: number };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */

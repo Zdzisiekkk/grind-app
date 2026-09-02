@@ -47,6 +47,7 @@ jobs:
           npm run test:przepisy
           npm run test:passa
           npm run test:plany
+          npm run test:xp
       - name: Budowanie
         run: npm run build
         env:

@@ -89,6 +89,19 @@ r = await as(A, `insert into public.wyglad_rutyna_log (user_id, rutyna_id) value
 check('A odhacza swoją', r.ok, r.err);
 
 console.log('\n  Limity skanowania\n');
+
+/*
+ * Od 0056 miesięczny limit skanów zależy od planu: Starter 1, Pro 5.
+ * Bez subskrypcji funkcja liczy jak dla Startera - sprawdzamy to i zaraz
+ * dajemy A plan Pro, żeby reszta sekcji testowała pełne limity.
+ */
+r = await as(A, `select public.wyglad_limit() as l`);
+check('bez planu Pro limit miesiąca to 1', r.ok && r.rows[0].l.limit_miesiaca === 1, JSON.stringify(r.rows?.[0]?.l));
+await db.exec(`insert into public.subscriptions (user_id, status, plan, current_period_end)
+               values ('${A}', 'active', 'pro', now() + interval '30 days')`);
+r = await as(A, `select public.wyglad_limit() as l`);
+check('na planie Pro limit miesiąca to 5', r.ok && r.rows[0].l.limit_miesiaca === 5, JSON.stringify(r.rows?.[0]?.l));
+
 r = await as(A, `select public.wyglad_limit() as l`);
 check('po pierwszym skanie kolejny jest zablokowany', r.ok && r.rows[0].l.mozna === false && r.rows[0].l.powod === 'odstep', JSON.stringify(r.rows?.[0]?.l));
 r = await as(A, `insert into public.wyglad_skany (user_id, ocena_ogolna) values ('${A}', 71)`);
