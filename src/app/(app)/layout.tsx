@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { OfflineGate } from "@/components/offline/OfflineGate";
-import { Reminders, type SleepReminder, type WaterReminder } from "@/components/reminders/Reminders";
+import {
+  Reminders,
+  type NutritionToday,
+  type SleepReminder,
+  type WaterReminder,
+} from "@/components/reminders/Reminders";
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -20,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const today = todayISO();
 
-  const [{ data: habits }, { data: habitLogs }, { data: profile }, { data: water }] =
+  const [{ data: habits }, { data: habitLogs }, { data: profile }, { data: water }, { data: nutrition }] =
     await Promise.all([
       supabase
         .from("habits")
@@ -32,11 +37,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase
         .from("profiles")
         .select(
-          "daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min, onboarded_at",
+          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min, onboarded_at",
         )
         .eq("id", user.id)
         .maybeSingle(),
       supabase.from("water_logs").select("ml").eq("user_id", user.id).eq("date", today),
+      // Stan dnia w powiadomieniu (Reminders) - kalorie na żywo.
+      supabase.from("v_daily_nutrition").select("kcal").eq("user_id", user.id).eq("date", today).maybeSingle(),
     ]);
 
   // Nowa osoba nie ma prawa zobaczyć pustego pulpitu z napisem "wybierz plan".
@@ -71,6 +78,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       }
     : null;
 
+  // Brak celu kcal ORAZ brak wpisów wody = nic sensownego do pokazania -
+  // "widget" pokazujący same zera nikomu by nie pomógł.
+  const nutritionToday: NutritionToday =
+    profile?.daily_kcal != null || drunk > 0
+      ? {
+          kcal: Math.round(nutrition?.kcal ?? 0),
+          kcalGoal: profile?.daily_kcal ?? null,
+          waterMl: drunk,
+          waterGoal: profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML,
+        }
+      : null;
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
       {/*
@@ -83,7 +102,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
       <OfflineGate />
       <BottomNav />
-      <Reminders habits={habitReminders} water={waterReminder} sleep={sleepReminder} />
+      <Reminders
+        habits={habitReminders}
+        water={waterReminder}
+        sleep={sleepReminder}
+        nutritionToday={nutritionToday}
+      />
     </div>
   );
 }

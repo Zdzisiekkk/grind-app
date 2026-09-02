@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { notify } from "@/lib/notify";
 
 export type HabitReminder = { id: string; name: string; icon: string; at: string; due: boolean };
 
@@ -50,11 +51,13 @@ function writeFired(keys: Set<string>) {
   );
 }
 
-function notify(title: string, body: string, tag: string) {
-  if (typeof Notification === "undefined" || Notification.permission !== "granted") return false;
-  new Notification(title, { body, tag, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png" });
-  return true;
-}
+/** Stan dnia do "widgetu" powiadomienia - kalorie i woda na żywo. */
+export type NutritionToday = {
+  kcal: number;
+  kcalGoal: number | null;
+  waterMl: number;
+  waterGoal: number;
+} | null;
 
 /**
  * Przypomnienia o nawykach i piciu wody.
@@ -71,18 +74,21 @@ export function Reminders({
   habits,
   water,
   sleep,
+  nutritionToday,
 }: {
   habits: HabitReminder[];
   water: WaterReminder;
   sleep: SleepReminder;
+  /** Brak = nie pokazujemy statusu dnia (np. brak celu skonfigurowanego). */
+  nutritionToday?: NutritionToday;
 }) {
   // Świeże dane bez restartowania interwału przy każdym renderze.
   // Ref aktualizujemy w efekcie - pisanie do niego w trakcie renderu
   // łamie reguły Reacta.
-  const dataRef = useRef({ habits, water, sleep });
+  const dataRef = useRef({ habits, water, sleep, nutritionToday });
   useEffect(() => {
-    dataRef.current = { habits, water, sleep };
-  }, [habits, water, sleep]);
+    dataRef.current = { habits, water, sleep, nutritionToday };
+  }, [habits, water, sleep, nutritionToday]);
 
   useEffect(() => {
     if (typeof Notification === "undefined") return;
@@ -137,6 +143,23 @@ export function Reminders({
       }
 
       if (fired.size !== before) writeFired(fired);
+
+      /*
+       * Stan dnia jako "widget" w powiadomieniach - kalorie i woda na żywo.
+       *
+       * Świadomie BEZ odznaczania w `fired`: to nie jest jednorazowy alarm,
+       * tylko odczyt, który ma być zawsze aktualny. Ten sam `tag` w notify()
+       * podmienia poprzednią treść bez ponownego dźwięku/wibracji
+       * (`renotify` domyślnie false) - a jeśli człowiek powiadomienie zamknie,
+       * wróci przy najbliższym sprawdzeniu. To jest zamierzone: ma działać
+       * jak widget, nie jak alarm, który raz zgaszony ma zniknąć na stałe.
+       */
+      const n = dataRef.current.nutritionToday;
+      if (n) {
+        const kcalCzesc = n.kcalGoal ? `${n.kcal} / ${n.kcalGoal} kcal` : `${n.kcal} kcal`;
+        const wodaCzesc = `${n.waterMl} / ${n.waterGoal} ml wody`;
+        notify("Grind - stan dnia", `${kcalCzesc} · ${wodaCzesc}`, "status-dnia");
+      }
     }
 
     check();

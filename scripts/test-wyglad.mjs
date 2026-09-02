@@ -58,6 +58,17 @@ r = await as(A, `insert into public.wyglad_zdjecia (user_id, skan_id, ujecie, st
                  values ('${A}', '${skanA}', 'front', '${A}/${skanA}/front2.jpg')`);
 check('to samo ujęcie drugi raz odrzucone', !r.ok);
 
+// Migracja 0055: zęby jako czwarte ujęcie - dodane, nie zamiast czegoś.
+r = await as(A, `insert into public.wyglad_zdjecia (user_id, skan_id, ujecie, storage_path)
+                 values ('${A}', '${skanA}', 'zeby', '${A}/${skanA}/zeby.jpg') returning id`);
+check('ujęcie "zeby" jest dozwolone (migracja 0055)', r.ok, r.err);
+
+// Ten sam skan co wyżej - drugi wiersz w wyglad_skany trafiłby w limit
+// skanów (odstęp 7 dni / 5 miesięcznie), a to zupełnie inna reguła.
+r = await as(A, `insert into public.wyglad_zdjecia (user_id, skan_id, ujecie, storage_path)
+                 values ('${A}', '${skanA}', 'usta', '${A}/${skanA}/usta.jpg')`);
+check('nieznane ujęcie dalej jest odrzucone', !r.ok);
+
 console.log('\n  Cofnięcie zgody nie zabiera własnych skanów\n');
 await as(A, `update public.wyglad_zgoda set wiek_potwierdzony = false where user_id = '${A}'`);
 r = await as(A, `select ocena_ogolna from public.wyglad_skany where id = '${skanA}'`);

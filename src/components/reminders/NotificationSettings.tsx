@@ -187,7 +187,7 @@ export function NotificationSettings({ vapidKey }: { vapidKey: string | null }) 
   return (
     <Card
       title="Powiadomienia"
-      subtitle="Nawyki, woda i pora snu."
+      subtitle="Nawyki, woda, pora snu, stan dnia i minutnik przerwy."
       action={pushOn ? <Chip tone="success">w tle</Chip> : null}
     >
       <div className="flex flex-col gap-3">
@@ -252,6 +252,12 @@ export function NotificationSettings({ vapidKey }: { vapidKey: string | null }) 
         <p className="text-[12px] leading-relaxed text-faint">
           Godziny ustawiasz przy każdym nawyku, a dla wody i snu - wyżej w tym profilu.
           Zaległe rzeczy zawsze widać też na ekranie Dziś.
+        </p>
+
+        <p className="text-[12px] leading-relaxed text-faint">
+          Stan dnia (kalorie i woda) oraz odliczanie przerwy w treningu działają jak widget:
+          zamknięte powiadomienie wraca przy kolejnym odświeżeniu, dopóki masz otwartą
+          aplikację - to celowe, nie usterka.
         </p>
       </div>
     </Card>

@@ -716,7 +716,7 @@ export type LastExerciseSet = {
 
 /* ------------------------------- Wygląd ----------------------------------- */
 
-export type Ujecie = "front" | "profil" | "sylwetka";
+export type Ujecie = "front" | "zeby" | "profil" | "sylwetka";
 export type PoraDnia = "rano" | "wieczor" | "dowolnie";
 export type ZrodloRutyny = "ai" | "wlasna" | "biblioteka";
 

@@ -29,13 +29,20 @@ import type { Ujecie } from "@/lib/database.types";
  * przejście przez render.
  */
 
-const KOLEJNOSC: Ujecie[] = ["front", "profil", "sylwetka"];
+// Zęby zaraz po froncie: obie klatki to ten sam kadr twarzy, tylko wyraz
+// się zmienia, więc naturalnie robi się je jedna po drugiej.
+const KOLEJNOSC: Ujecie[] = ["front", "zeby", "profil", "sylwetka"];
 
 const OPIS: Record<Ujecie, { tytul: string; jak: string; wymagane: boolean }> = {
   front: {
     tytul: "Twarz na wprost",
     jak: "Neutralny wyraz, światło z przodu, bez okularów. Telefon na wysokości oczu.",
     wymagane: true,
+  },
+  zeby: {
+    tytul: "Zęby (uśmiech)",
+    jak: "Ten sam kadr co poprzednio, ale szeroki uśmiech - ma być widać zęby. Dobre, równe światło.",
+    wymagane: false,
   },
   profil: {
     tytul: "Profil",
@@ -432,7 +439,13 @@ export function FaceScanner({
               <input
                 type="file"
                 accept="image/*"
-                capture="user"
+                /*
+                 * Bez atrybutu `capture`. Jego obecność - niezależnie od
+                 * wartości ("user", "environment", nawet pusty string) - każe
+                 * mobilnym przeglądarkom otwierać od razu aparat, pomijając
+                 * pełny wybór (Zdjęcia/Pliki/Aparat). To był dokładnie ten
+                 * błąd: przycisk "Z galerii" i tak uruchamiał kamerę.
+                 */
                 className="sr-only"
                 onChange={(e) => {
                   const plik = e.target.files?.[0];

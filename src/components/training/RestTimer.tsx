@@ -3,6 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { mmss } from "@/lib/format";
 import { clsx } from "@/lib/clsx";
+import { notify } from "@/lib/notify";
+
+/**
+ * Co ile odświeżać powiadomienie z odliczaniem.
+ *
+ * Sam timer liczy co 250 ms - dobre dla animacji paska, fatalne dla
+ * powiadomień (Android potrafi je wtedy tłumić jako spam). 5 s wystarcza,
+ * żeby zerknięcie na zablokowany ekran pokazało czas z dokładnością, jakiej
+ * ktokolwiek potrzebuje w przerwie między seriami.
+ */
+const NOTIFY_EVERY_S = 5;
 
 /**
  * Odliczanie przerwy między seriami.
@@ -36,7 +47,21 @@ export function RestTimer({
     if (!done || notified.current) return;
     notified.current = true;
     navigator.vibrate?.([180, 90, 180]);
+    notify("Grind - przerwa skończona", "Do roboty 💪", "trening-przerwa");
   }, [done]);
+
+  /*
+   * Odliczanie jako powiadomienie - "widget" minutnika na zablokowanym
+   * ekranie. Ten sam ograniczenie co reszta powiadomień w aplikacji: działa
+   * tylko, dopóki karta/PWA żyje w pamięci. Na Androidzie to zwykle cała
+   * przerwa między seriami; na iOS system może uśpić stronę wcześniej -
+   * wibracja i dźwięk przy końcu (wyżej) i tak dotrą, bo telefon budzi
+   * zaplanowany `setInterval` na krótko przed jego odpaleniem.
+   */
+  useEffect(() => {
+    if (done || remaining % NOTIFY_EVERY_S !== 0) return;
+    notify("Grind - przerwa", `Zostało ${mmss(remaining)}`, "trening-przerwa");
+  }, [remaining, done]);
 
   useEffect(() => {
     notified.current = false;
