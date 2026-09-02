@@ -68,7 +68,19 @@ export async function startSession(formData: FormData) {
 export async function deleteSession(formData: FormData) {
   const id = formData.get("sessionId") as string;
   const supabase = await createClient();
-  const { error } = await supabase.from("workout_sessions").delete().eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // RLS i tak dopuszcza wyłącznie własne wiersze, ale jawny filtr jest tu
+  // zgodny z resztą pliku (patrz startSession) i nie polega wyłącznie na
+  // tym, że nikt nigdy nie zmieni polityki na tej tabeli.
+  const { error } = await supabase
+    .from("workout_sessions")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/");

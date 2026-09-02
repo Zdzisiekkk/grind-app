@@ -49,3 +49,6 @@ supabase/.temp/
 
 # pamięć podręczna importu przepisów - do pobrania na nowo skryptem
 scripts/dane/.wikibooks-cache.json
+
+# nie trzymamy tego w publicznym repo - patrz PRZEKAZANIE.md dlaczego
+PRZEKAZANIE.md
