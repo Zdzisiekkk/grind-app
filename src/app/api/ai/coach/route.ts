@@ -24,6 +24,13 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-5";
  */
 const DAILY_LIMIT = 10;
 
+/**
+ * Miesięczna pula rozmów, zależna od planu. To jest właściwy wyróżnik
+ * Starter/Pro - limit dzienny wyżej chroni tylko przed klikaniem w kółko
+ * i jest wspólny dla obu planów.
+ */
+const LIMIT_MIESIECZNY = { starter: 4, pro: 30 } as const;
+
 const SYSTEM = `Jesteś trenerem przygotowania motorycznego i rozmawiasz po polsku z osobą, która prowadzi dziennik treningów, diety i snu.
 
 Jak pracujesz:
@@ -36,7 +43,7 @@ Jak pracujesz:
 7. Piszesz zwięźle, bezpośrednio i bez motywacyjnych ogólników. Nie chwalisz za samo pojawienie się.`;
 
 async function guard(): Promise<
-  | { ok: true; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+  | { ok: true; supabase: Awaited<ReturnType<typeof createClient>>; userId: string; poziom: number }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
@@ -58,8 +65,8 @@ async function guard(): Promise<
     };
   }
 
-  const { data: pro } = await supabase.rpc("has_pro", {});
-  if (!pro) {
+  const { data: poziom } = await supabase.rpc("plan_poziom", {});
+  if (!poziom) {
     return {
       ok: false,
       response: NextResponse.json(
@@ -69,7 +76,7 @@ async function guard(): Promise<
     };
   }
 
-  return { ok: true, supabase, userId: user.id };
+  return { ok: true, supabase, userId: user.id, poziom };
 }
 
 /**
@@ -84,6 +91,7 @@ async function guard(): Promise<
  */
 async function consumeCall(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  poziom: number,
 ): Promise<{ ok: true; id: string } | { ok: false; response: NextResponse }> {
   const { data: allowed } = await supabase.rpc("consume_ai_call", { p_limit: DAILY_LIMIT });
   if (!allowed) {
@@ -93,6 +101,27 @@ async function consumeCall(
         {
           error: `Dzienny limit ${DAILY_LIMIT} zapytań do trenera został wyczerpany. Wróć jutro.`,
           code: "daily_limit",
+        },
+        { status: 429 },
+      ),
+    };
+  }
+
+  const limitMies = poziom >= 2 ? LIMIT_MIESIECZNY.pro : LIMIT_MIESIECZNY.starter;
+  const { data: wolnoMies } = await supabase.rpc("ai_licznik_zuzyj_mies", {
+    p_kategoria: "trener",
+    p_limit: limitMies,
+  });
+  if (!wolnoMies) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error:
+            poziom >= 2
+              ? `Miesięczna pula ${limitMies} rozmów z trenerem została wyczerpana. Odnowi się pierwszego dnia miesiąca.`
+              : `Miesięczna pula ${limitMies} rozmów w planie Starter została wyczerpana. Plan Pro ma ich ${LIMIT_MIESIECZNY.pro}.`,
+          code: "monthly_limit",
         },
         { status: 429 },
       ),
@@ -126,7 +155,7 @@ function modelError(error: unknown): NextResponse {
 export async function POST(request: Request) {
   const gate = await guard();
   if (!gate.ok) return gate.response;
-  const { supabase, userId } = gate;
+  const { supabase, userId, poziom } = gate;
 
   const body = await request.json().catch(() => ({}));
   const mode = body?.mode === "chat" ? "chat" : "analyze";
@@ -218,7 +247,7 @@ export async function POST(request: Request) {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    const limit = await consumeCall(supabase);
+    const limit = await consumeCall(supabase, poziom);
     if (!limit.ok) return limit.response;
 
     try {
@@ -301,7 +330,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const limit = await consumeCall(supabase);
+  const limit = await consumeCall(supabase, poziom);
   if (!limit.ok) return limit.response;
 
   try {

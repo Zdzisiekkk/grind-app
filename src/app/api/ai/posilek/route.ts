@@ -53,6 +53,9 @@ const MODEL = process.env.ANTHROPIC_MODEL_POSILEK || "claude-sonnet-5";
  */
 const LIMIT_DZIENNY = 25;
 
+/** Miesięczna pula opisów, zależna od planu - właściwy wyróżnik Starter/Pro. */
+const LIMIT_MIESIECZNY = { starter: 30, pro: 150 } as const;
+
 /** Dłuższy opis to nie posiłek, tylko próba przemycenia własnego promptu. */
 const MAX_ZNAKOW = 500;
 
@@ -84,8 +87,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: pro } = await supabase.rpc("has_pro", {});
-  if (!pro) {
+  const { data: poziomPlanu } = await supabase.rpc("plan_poziom", {});
+  if (!poziomPlanu) {
     return NextResponse.json(
       {
         error: "Liczenie posiłku z opisu jest częścią wersji płatnej.",
@@ -120,6 +123,25 @@ export async function POST(request: Request) {
       {
         error: `Dzienny limit ${LIMIT_DZIENNY} opisów został wyczerpany. Wróć jutro - produkty z wyszukiwarki dodasz bez ograniczeń.`,
         code: "daily_limit",
+      },
+      { status: 429 },
+    );
+  }
+
+  const limitMies =
+    poziomPlanu >= 2 ? LIMIT_MIESIECZNY.pro : LIMIT_MIESIECZNY.starter;
+  const { data: wolnoMies } = await supabase.rpc("ai_licznik_zuzyj_mies", {
+    p_kategoria: "jedzenie",
+    p_limit: limitMies,
+  });
+  if (!wolnoMies) {
+    return NextResponse.json(
+      {
+        error:
+          poziomPlanu >= 2
+            ? `Miesięczna pula ${limitMies} opisów została wyczerpana. Odnowi się pierwszego dnia miesiąca - do tego czasu dodawaj produkty z wyszukiwarki.`
+            : `Miesięczna pula ${limitMies} opisów w planie Starter została wyczerpana. Plan Pro ma ich ${LIMIT_MIESIECZNY.pro}, a wyszukiwarka produktów działa bez ograniczeń.`,
+        code: "monthly_limit",
       },
       { status: 429 },
     );

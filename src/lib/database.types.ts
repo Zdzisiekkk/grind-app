@@ -499,9 +499,13 @@ export type SubscriptionStatus =
  * Lokalna kopia stanu ze Stripe'a - źródłem prawdy jest Stripe, a ten wiersz
  * wypełnia wyłącznie webhook kluczem serwisowym. Użytkownik ma tu tylko odczyt.
  */
+/** Plan płatny. Darmowy nie ma wiersza w subscriptions - jest brakiem planu. */
+export type PlatnyPlan = "starter" | "pro";
+
 export type Subscription = {
   user_id: string;
   status: SubscriptionStatus;
+  plan: PlatnyPlan;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   price_id: string | null;
@@ -944,6 +948,8 @@ export type Database = {
       period_summary: { Args: { p_from: string; p_to: string }; Returns: PeriodSummary };
       is_admin: { Args: Record<string, never>; Returns: boolean };
       has_pro: { Args: { p_user?: string }; Returns: boolean };
+      /** 0 = darmowy, 1 = Starter, 2 = Pro (albo administrator). */
+      plan_poziom: { Args: { p_user?: string }; Returns: number };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
@@ -973,6 +979,9 @@ export type Database = {
        * opisy posiłków zjadałyby wtedy pytania do trenera (migracja 0046).
        */
       ai_licznik_zuzyj: { Args: { p_kategoria: string; p_limit: number }; Returns: boolean };
+      /** Jak wyżej, ale pula na miesiąc - limity zależne od planu (0056). */
+      ai_licznik_zuzyj_mies: { Args: { p_kategoria: string; p_limit: number }; Returns: boolean };
+      ai_licznik_stan_mies: { Args: { p_kategoria: string; p_limit: number }; Returns: unknown };
       /** Ile z dziennej puli kategorii zostało - dla ekranu, przed kliknięciem. */
       ai_licznik_stan: {
         Args: { p_kategoria: string; p_limit: number };
@@ -1057,6 +1066,7 @@ export type Database = {
           p_trial_end: string | null;
           p_event_id?: string | null;
           p_event_at?: string | null;
+          p_plan?: string;
         };
         Returns: boolean;
       };

@@ -10,7 +10,12 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 export type Access = {
+  /** Dowolny plan płatny - bramka do funkcji AI. */
   pro: boolean;
+  /** 0 = darmowy, 1 = Starter, 2 = Pro. Decyduje o wysokości limitów. */
+  poziom: number;
+  /** Nazwa aktywnego planu do pokazania na ekranie. */
+  plan: "none" | "starter" | "pro";
   status: string;
   /** Do kiedy opłacone - null, gdy nigdy nie było subskrypcji. */
   until: string | null;
@@ -20,7 +25,10 @@ export type Access = {
 };
 
 export type Pricing = {
+  /** Cena planu Pro w groszach. Nazwa bez sufiksu z czasów jednego planu. */
   amount: number;
+  /** Cena planu Starter w groszach. */
+  starter_amount: number;
   currency: string;
   interval: string;
   trial_days: number;
@@ -29,7 +37,8 @@ export type Pricing = {
 };
 
 export const FALLBACK_PRICING: Pricing = {
-  amount: 2900,
+  amount: 2999,
+  starter_amount: 1499,
   currency: "PLN",
   interval: "month",
   trial_days: 7,
@@ -43,21 +52,32 @@ export async function getAccess(): Promise<Access> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { pro: false, status: "none", until: null, cancelAtPeriodEnd: false, viaAdmin: false };
+    return {
+      pro: false,
+      poziom: 0,
+      plan: "none",
+      status: "none",
+      until: null,
+      cancelAtPeriodEnd: false,
+      viaAdmin: false,
+    };
   }
 
-  const [{ data: pro }, { data: sub }, { data: profile }] = await Promise.all([
-    supabase.rpc("has_pro", {}),
+  const [{ data: poziom }, { data: sub }, { data: profile }] = await Promise.all([
+    supabase.rpc("plan_poziom", {}),
     supabase
       .from("subscriptions")
-      .select("status, current_period_end, cancel_at_period_end")
+      .select("status, plan, current_period_end, cancel_at_period_end")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
   ]);
 
+  const level = poziom ?? 0;
   return {
-    pro: Boolean(pro),
+    pro: level >= 1,
+    poziom: level,
+    plan: level >= 2 ? "pro" : level === 1 ? "starter" : "none",
     status: sub?.status ?? "none",
     until: sub?.current_period_end ?? null,
     cancelAtPeriodEnd: sub?.cancel_at_period_end ?? false,
@@ -76,10 +96,11 @@ export async function getPricing(): Promise<Pricing> {
   return { ...FALLBACK_PRICING, ...((data?.value as Partial<Pricing>) ?? {}) };
 }
 
-/** "29 zł / mies." - do pokazania na ekranie. */
-export function priceLabel(pricing: Pricing): string {
-  const amount = (pricing.amount / 100).toLocaleString("pl-PL", {
-    minimumFractionDigits: pricing.amount % 100 === 0 ? 0 : 2,
+/** "29,99 zł / mies." - do pokazania na ekranie, osobno dla każdego planu. */
+export function priceLabel(pricing: Pricing, plan: "starter" | "pro" = "pro"): string {
+  const grosze = plan === "starter" ? pricing.starter_amount : pricing.amount;
+  const amount = (grosze / 100).toLocaleString("pl-PL", {
+    minimumFractionDigits: grosze % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   });
   const unit = pricing.currency === "PLN" ? "zł" : pricing.currency;

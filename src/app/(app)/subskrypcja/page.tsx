@@ -18,7 +18,8 @@ export default async function SubscriptionPage({
     <SubscriptionScreen
       access={access}
       pricing={pricing}
-      priceText={priceLabel(pricing)}
+      priceStarter={priceLabel(pricing, "starter")}
+      pricePro={priceLabel(pricing, "pro")}
       paymentsReady={isStripeConfigured()}
       notice={notice}
     />

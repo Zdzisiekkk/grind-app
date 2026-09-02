@@ -5,28 +5,34 @@ import { Alert, Button, Card, Chip } from "@/components/ui";
 import { humanDate } from "@/lib/format";
 import type { Access, Pricing } from "@/lib/subscription";
 
-const PERKS = [
-  {
-    icon: "💬",
-    title: "Rozmowa z trenerem AI",
-    desc: "Pytasz, on patrzy na Twoje treningi, dietę, sen i kontuzje - i odpowiada konkretnie, a nie ogólnikami z internetu.",
+/**
+ * Dwa plany, jedna zasada: WSZYSTKIE funkcje AI są dostępne już od Startera,
+ * a Pro różni się wysokością miesięcznych pul. Liczby niżej muszą się zgadzać
+ * z limitami w trasach API i w bazie (0056) - to jest cennik, nie marketing.
+ */
+const PLANY = {
+  starter: {
+    nazwa: "Starter",
+    haslo: "Całe AI w rozsądnej dawce",
+    limity: [
+      { icon: "🍽️", text: "Opis posiłku słowami - 30 opisów / mies." },
+      { icon: "💬", text: "Rozmowy z trenerem AI - 4 / mies." },
+      { icon: "📋", text: "Plan treningowy pisany pod Ciebie - co 30 dni" },
+      { icon: "📸", text: "Skan wyglądu i zębów - 1 / mies." },
+    ],
   },
-  {
-    icon: "📋",
-    title: "Plan pisany pod Ciebie",
-    desc: "Nie szablon, tylko plan pod Twój sprzęt, staż, kontuzje i termin walki. Zmienia się, gdy zmieniają się Twoje wyniki.",
+  pro: {
+    nazwa: "Pro",
+    haslo: "Bez oglądania się na liczniki",
+    limity: [
+      { icon: "🍽️", text: "Opis posiłku słowami - 150 opisów / mies." },
+      { icon: "💬", text: "Rozmowy z trenerem AI - 30 / mies." },
+      { icon: "📋", text: "Plan treningowy pisany pod Ciebie - co 7 dni" },
+      { icon: "📸", text: "Skan wyglądu i zębów - 5 / mies." },
+      { icon: "🚀", text: "Nowe funkcje AI najpierw tutaj (podsumowania tygodnia, eksport PDF)" },
+    ],
   },
-  {
-    icon: "🔔",
-    title: "Odprawy i przypomnienia",
-    desc: "Trener sam się odzywa: po słabej nocy, przy stagnacji, gdy waga idzie w złą stronę.",
-  },
-  {
-    icon: "🍽️",
-    title: "Opis posiłku słowami",
-    desc: "Piszesz zdaniem, co zjadłeś - model sam rozbija to na gramaturę i wartości odżywcze.",
-  },
-];
+} as const;
 
 const FREE = [
   "Wszystkie gotowe plany treningowe",
@@ -38,25 +44,32 @@ const FREE = [
 export function SubscriptionScreen({
   access,
   pricing,
-  priceText,
+  priceStarter,
+  pricePro,
   paymentsReady,
   notice,
 }: {
   access: Access;
   pricing: Pricing;
-  priceText: string;
+  priceStarter: string;
+  pricePro: string;
   /** Czy klucze Stripe'a są w ogóle wpisane po stronie serwera. */
   paymentsReady: boolean;
   notice: "ok" | "anulowana" | null;
 }) {
-  const [busy, setBusy] = useState<"buy" | "manage" | null>(null);
+  const [busy, setBusy] = useState<"starter" | "pro" | "manage" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function go(path: string, kind: "buy" | "manage") {
+  async function go(path: string, kind: "starter" | "pro" | "manage", body?: object) {
     setBusy(kind);
     setError(null);
     try {
-      const response = await fetch(path, { method: "POST" });
+      const response = await fetch(path, {
+        method: "POST",
+        ...(body
+          ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+          : {}),
+      });
       const data = await response.json();
       if (!response.ok || !data.url) {
         setError(data.error ?? "Nie udało się otworzyć płatności.");
@@ -71,6 +84,8 @@ export function SubscriptionScreen({
   }
 
   const canBuy = paymentsReady && pricing.enabled;
+  const planName =
+    access.plan === "pro" ? "Plan Pro" : access.plan === "starter" ? "Plan Starter" : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -96,7 +111,7 @@ export function SubscriptionScreen({
         title="Twój dostęp"
         action={
           <Chip tone={access.pro ? "success" : "neutral"}>
-            {access.pro ? "aktywny" : "wersja darmowa"}
+            {planName ?? "wersja darmowa"}
           </Chip>
         }
       >
@@ -108,7 +123,9 @@ export function SubscriptionScreen({
         ) : access.pro ? (
           <div className="flex flex-col gap-3">
             <p className="text-[14px]">
-              {access.status === "trialing" ? "Trwa okres próbny." : "Subskrypcja aktywna."}
+              {access.status === "trialing"
+                ? `Trwa okres próbny (${planName}).`
+                : `${planName} aktywny.`}
               {access.until && (
                 <>
                   {" "}
@@ -125,8 +142,8 @@ export function SubscriptionScreen({
               Zarządzaj płatnością
             </Button>
             <p className="text-[12px] text-faint">
-              Zmiana karty, faktury i rezygnacja - wszystko w panelu Stripe&apos;a.
-              Rezygnacja działa od razu i nie trzeba nikogo o nią prosić.
+              Zmiana karty, przejście między Starterem a Pro, faktury i rezygnacja - wszystko
+              w panelu Stripe&apos;a. Rezygnacja działa od razu i nie trzeba nikogo o nią prosić.
             </p>
           </div>
         ) : access.status === "past_due" ? (
@@ -144,51 +161,63 @@ export function SubscriptionScreen({
           </div>
         ) : (
           <p className="text-[14px] text-muted">
-            Korzystasz z wersji darmowej. Poniżej jest dokładnie to, co dokłada wersja płatna.
+            Korzystasz z wersji darmowej. Poniżej jest dokładnie to, co dokładają plany płatne.
           </p>
         )}
       </Card>
 
-      {/* --- Co daje płatna wersja --- */}
+      {/* --- Wybór planu --- */}
       {!access.pro && (
-        <Card title="Co dostajesz" subtitle={priceText}>
-          <ul className="flex flex-col gap-3">
-            {PERKS.map((p) => (
-              <li key={p.title} className="flex gap-3">
-                <span className="text-[20px]" aria-hidden>
-                  {p.icon}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[14px] font-semibold leading-tight">{p.title}</span>
-                  <span className="block text-[13px] leading-snug text-muted">{p.desc}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4">
-            {canBuy ? (
-              <Button
-                variant="primary"
-                size="lg"
-                block
-                loading={busy === "buy"}
-                onClick={() => go("/api/stripe/checkout", "buy")}
+        <>
+          {(["starter", "pro"] as const).map((plan) => {
+            const p = PLANY[plan];
+            const cena = plan === "starter" ? priceStarter : pricePro;
+            return (
+              <Card
+                key={plan}
+                title={p.nazwa}
+                subtitle={`${p.haslo} · ${cena}`}
+                action={plan === "pro" ? <Chip tone="accent">pełna moc</Chip> : null}
               >
-                {pricing.trial_days > 0
-                  ? `Wypróbuj ${pricing.trial_days} dni za darmo`
-                  : `Włącz za ${priceText}`}
-              </Button>
-            ) : (
-              <Alert tone="info">
-                Płatności nie są jeszcze uruchomione. Gdy ruszą, przycisk pojawi się tutaj -
-                nic nie musisz robić.
-              </Alert>
-            )}
-          </div>
+                <ul className="flex flex-col gap-2.5">
+                  {p.limity.map((l) => (
+                    <li key={l.text} className="flex gap-3">
+                      <span className="text-[18px]" aria-hidden>
+                        {l.icon}
+                      </span>
+                      <span className="min-w-0 text-[14px] leading-snug">{l.text}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-4">
+                  {canBuy ? (
+                    <Button
+                      variant={plan === "pro" ? "primary" : "secondary"}
+                      size="lg"
+                      block
+                      loading={busy === plan}
+                      onClick={() => go("/api/stripe/checkout", plan, { plan })}
+                    >
+                      {pricing.trial_days > 0
+                        ? `Wypróbuj ${p.nazwa} ${pricing.trial_days} dni za darmo`
+                        : `Włącz ${p.nazwa} za ${cena}`}
+                    </Button>
+                  ) : (
+                    plan === "starter" && (
+                      <Alert tone="info">
+                        Płatności nie są jeszcze uruchomione. Gdy ruszą, przyciski pojawią się
+                        tutaj - nic nie musisz robić.
+                      </Alert>
+                    )
+                  )}
+                </div>
+              </Card>
+            );
+          })}
 
           {canBuy && (
-            <p className="mt-2 text-[12px] leading-relaxed text-faint">
+            <p className="text-[12px] leading-relaxed text-faint">
               {/*
                * Nie wypisujemy tu z nazwy BLIK-a ani przelewu: to metody
                * jednorazowe, których Stripe nie oferuje przy odnawialnej
@@ -197,12 +226,42 @@ export function SubscriptionScreen({
                * skonfigurowane w panelu Stripe'a. Obiecywanie BLIK-a tutaj
                * byłoby fałszywe.
                */}
-              Płatność obsługuje Stripe. Rezygnacja jednym kliknięciem w panelu, bez dzwonienia
-              i pisania maili.
+              Płatność obsługuje Stripe. Rezygnacja i zmiana planu jednym kliknięciem w panelu,
+              bez dzwonienia i pisania maili.
               {pricing.trial_days > 0 &&
                 ` Pierwsze ${pricing.trial_days} dni nic nie kosztuje; jeśli zrezygnujesz przed końcem, nie pobierzemy nic.`}
             </p>
           )}
+        </>
+      )}
+
+      {/* --- Starter widzi, co dokłada Pro --- */}
+      {!access.viaAdmin && access.plan === "starter" && (
+        <Card title="Pro" subtitle={`${PLANY.pro.haslo} · ${pricePro}`}>
+          <ul className="flex flex-col gap-2.5">
+            {PLANY.pro.limity.map((l) => (
+              <li key={l.text} className="flex gap-3">
+                <span className="text-[18px]" aria-hidden>
+                  {l.icon}
+                </span>
+                <span className="min-w-0 text-[14px] leading-snug">{l.text}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4">
+            <Button
+              variant="primary"
+              block
+              loading={busy === "manage"}
+              onClick={() => go("/api/stripe/portal", "manage")}
+            >
+              Przejdź na Pro w panelu Stripe&apos;a
+            </Button>
+          </div>
+          <p className="mt-2 text-[12px] text-faint">
+            Zmiana planu przelicza się proporcjonalnie - Stripe policzy tylko różnicę
+            do końca okresu.
+          </p>
         </Card>
       )}
 

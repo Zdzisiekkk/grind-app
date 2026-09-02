@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { isStripeConfigured, stripe, stripeWebhookSecret } from "@/lib/stripe/server";
+import { isStripeConfigured, planFromPriceId, stripe, stripeWebhookSecret } from "@/lib/stripe/server";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/env";
 import type { Database } from "@/lib/database.types";
 
@@ -98,6 +98,15 @@ export async function POST(request: NextRequest) {
     const status = subscription?.status ?? "canceled";
     const item = subscription?.items?.data?.[0];
 
+    // Który plan opłacono: po identyfikatorze ceny, a gdy jej nie poznajemy -
+    // po metadanych z checkoutu. Ostateczny zapas to 'pro': jedyna droga
+    // tutaj wiedzie przez zdarzenie podpisane przez Stripe'a o cenie, którą
+    // sami utworzyliśmy, więc lepiej dać za dużo niż odebrać opłacony dostęp
+    // przez literówkę w zmiennej środowiskowej.
+    const meta = subscription?.metadata as Record<string, string> | null;
+    const plan =
+      planFromPriceId(item?.price?.id) ?? (meta?.plan === "starter" ? "starter" : "pro");
+
     const supabase = createClient<Database>(SUPABASE_URL(), SUPABASE_ANON_KEY());
     const { data: applied, error } = await supabase.rpc("apply_subscription", {
       p_secret: gatewaySecret,
@@ -116,6 +125,7 @@ export async function POST(request: NextRequest) {
       // powtórzone i spóźnione (migracja 0031).
       p_event_id: event.id,
       p_event_at: new Date(event.created * 1000).toISOString(),
+      p_plan: plan,
     });
 
     if (error || applied === false) {
