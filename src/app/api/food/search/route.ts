@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { searchOff } from "@/lib/off";
-import { getUser } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
+
+/** 300 / dzień - dużo jak na człowieka, mało jak na skrypt (migracja 0054). */
+const LIMIT_DZIENNY = 300;
 
 /**
  * Proxy do Open Food Facts.
@@ -9,8 +12,22 @@ import { getUser } from "@/lib/supabase/server";
  * oraz wspólny cache dla wszystkich użytkowników.
  */
 export async function GET(request: Request) {
-  const user = await getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nie zalogowano." }, { status: 401 });
+
+  const { data: wolno } = await supabase.rpc("zewn_licznik_zuzyj", {
+    p_kategoria: "food_search",
+    p_limit: LIMIT_DZIENNY,
+  });
+  if (!wolno) {
+    return NextResponse.json(
+      { results: [], error: "Dzienny limit wyszukiwań wyczerpany. Wróć jutro." },
+      { status: 429 },
+    );
+  }
 
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   if (query.length < 2) return NextResponse.json({ results: [] });

@@ -6,6 +6,7 @@ import { DEFAULT_WATER_GOAL_ML } from "@/lib/constants";
 import { DEFAULT_WORKOUTS_PER_WEEK } from "@/lib/health";
 import type { ExercisePr, PeriodSummary, Vice, ViceEvent } from "@/lib/database.types";
 import { viceWeeks } from "@/lib/vices";
+import { findStrengthStalls, weeklyWeightTrend, type SetRow } from "@/lib/ai/analysis";
 
 export const metadata = { title: "Postępy" };
 
@@ -42,6 +43,7 @@ export default async function ProgresPage() {
     profileRes,
     vicesRes,
     viceEventsRes,
+    workoutLogsRes,
   ] = await Promise.all([
     supabase
       .from("v_exercise_prs")
@@ -97,6 +99,15 @@ export default async function ProgresPage() {
       .select("*")
       .eq("user_id", user.id)
       .gte("occurred_at", addDaysISO(today, -90)),
+    // Te samo okno co trener AI (0026 dni), żeby darmowy sygnał i płatna
+    // rozmowa liczyły tę samą stagnację - patrz src/lib/ai/analysis.ts.
+    supabase
+      .from("workout_logs")
+      .select("date, exercise_name, catalog_exercise_id, weight_kg, reps, is_warmup")
+      .eq("user_id", user.id)
+      .gte("date", addDaysISO(today, -55))
+      .order("date")
+      .limit(2000),
   ]);
 
   // Dzienna objętość → tygodnie (poniedziałek-niedziela)
@@ -171,12 +182,37 @@ export default async function ProgresPage() {
       }))
     : [];
 
+  /*
+   * Trend wagi i stagnacja siłowa - dokładnie te same funkcje, które od
+   * dawna liczą to samo dla płatnego trenera AI (src/lib/ai/analysis.ts).
+   * Komentarz w tym pliku od początku rozróżniał: darmowy użytkownik widzi
+   * SYGNAŁ (surowa liczba/fakt), płatna jest dopiero rozmowa z wyjaśnieniem
+   * i propozycją zmiany celu. Tutaj pokazujemy wyłącznie sygnał - żadnego
+   * `suggestKcal`, żadnej porady modelu.
+   */
+  const wagaOstatnie28Dni = (weightRes.data ?? [])
+    .filter((w) => w.date >= addDaysISO(today, -27))
+    .map((w) => ({ date: w.date, kg: Number(w.weight_kg) }));
+
+  const trendWagiKgTydzien = weeklyWeightTrend(wagaOstatnie28Dni);
+
+  const stagnacjaSilowa = findStrengthStalls(
+    (workoutLogsRes.data ?? []) as SetRow[],
+    today,
+  ).slice(0, 3);
+
   return (
     <ProgressScreen
       vices={vices}
       userId={user.id}
       prs={(prsRes.data ?? []) as ExercisePr[]}
       bodyWeight={(weightRes.data ?? []).map((w) => ({ date: w.date, weight: Number(w.weight_kg) }))}
+      weightTrend={
+        trendWagiKgTydzien != null
+          ? { kgPerWeek: trendWagiKgTydzien, measurements: wagaOstatnie28Dni.length }
+          : null
+      }
+      strengthStalls={stagnacjaSilowa}
       painByInjury={painByInjury}
       weeklyVolume={weeklyVolume}
       summaries={{

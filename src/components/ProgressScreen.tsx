@@ -13,6 +13,7 @@ import type { StrengthPoint, VicePoint } from "@/components/charts/Charts";
 import { HealthBreakdown } from "@/components/health/HealthCard";
 import { Card, Chip, EmptyState, SegmentedControl, Select, Spinner, Stat } from "@/components/ui";
 import type { ExercisePr, PeriodSummary, WorkoutLog } from "@/lib/database.types";
+import type { StrengthFinding } from "@/lib/ai/analysis";
 import { createClient } from "@/lib/supabase/client";
 import { addDaysISO, e1rm, num, volume as fmtVolume, workouts as fmtWorkouts } from "@/lib/format";
 import { bodyPart, injurySideLabel } from "@/lib/constants";
@@ -26,6 +27,8 @@ export function ProgressScreen({
   userId,
   prs,
   bodyWeight,
+  weightTrend,
+  strengthStalls,
   painByInjury,
   weeklyVolume,
   summaries,
@@ -42,6 +45,10 @@ export function ProgressScreen({
   userId: string;
   prs: ExercisePr[];
   bodyWeight: { date: string; weight: number }[];
+  /** Regresja liniowa z ostatnich 28 dni - null, gdy pomiarów jest za mało. */
+  weightTrend: { kgPerWeek: number; measurements: number } | null;
+  /** Ćwiczenia bez poprawy mimo regularnej pracy - to samo liczy trener AI. */
+  strengthStalls: StrengthFinding[];
   painByInjury: {
     id: string;
     name: string;
@@ -297,6 +304,21 @@ export function ProgressScreen({
         )}
       </Card>
 
+      {strengthStalls.length > 0 && (
+        <Card title="Stagnacja siłowa" subtitle="To samo liczy trener AI - tu za darmo, bez porady">
+          <ul className="flex flex-col gap-2.5">
+            {strengthStalls.map((s) => (
+              <li key={s.exercise} className="flex items-start gap-2 text-[13px] leading-snug">
+                <span aria-hidden className={s.problem === "stall" ? "text-warn" : "text-faint"}>
+                  {s.problem === "stall" ? "⏸" : "🗓"}
+                </span>
+                <span className="min-w-0 flex-1">{s.message}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Card title="Objętość tygodniowa" subtitle="Ciężar × powtórzenia, suma z tygodnia">
         <VolumeChart data={weeklyVolume} />
         <p className="mt-2 text-[12px] text-faint">
@@ -360,8 +382,27 @@ export function ProgressScreen({
         })
       )}
 
-      <Card title="Waga ciała">
+      <Card
+        title="Waga ciała"
+        action={
+          weightTrend ? (
+            <Chip tone="accent">
+              {weightTrend.kgPerWeek > 0 ? "+" : ""}
+              {num(weightTrend.kgPerWeek, 2)} kg/tydzień
+            </Chip>
+          ) : undefined
+        }
+      >
         <BodyWeightChart data={bodyWeight} />
+        {weightTrend ? (
+          <p className="mt-2 text-[12px] text-faint">
+            Regresja liniowa z {weightTrend.measurements} pomiarów w ostatnich 28 dniach.
+          </p>
+        ) : (
+          <p className="mt-2 text-[12px] text-faint">
+            Za mało pomiarów na trend - wchodź na wagę 3-4 razy w tygodniu.
+          </p>
+        )}
       </Card>
     </div>
   );

@@ -14,12 +14,26 @@ import { createClient } from "@/lib/supabase/server";
  * Suma kontrolna sprawdzana jest przed zapytaniem. Odczyt z wygniecionej folii
  * bywa o jedną cyfrę obok i szkoda na niego sekundy czekania.
  */
+/** 200 / dzień - dużo jak na człowieka, mało jak na skrypt (migracja 0054). */
+const LIMIT_DZIENNY = 200;
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nie zalogowano." }, { status: 401 });
+
+  const { data: wolno } = await supabase.rpc("zewn_licznik_zuzyj", {
+    p_kategoria: "food_kod",
+    p_limit: LIMIT_DZIENNY,
+  });
+  if (!wolno) {
+    return NextResponse.json(
+      { error: "Dzienny limit skanów wyczerpany. Wróć jutro.", code: "daily_limit" },
+      { status: 429 },
+    );
+  }
 
   const surowy = new URL(request.url).searchParams.get("kod")?.trim() ?? "";
   const kod = normalizeFoodBarcode(surowy);

@@ -14,8 +14,10 @@ import type {
 
 export const metadata = { title: "Wygląd" };
 
-/** Podpisany adres ważny godzinę - tyle, ile trwa oglądanie własnego progresu. */
-const WAZNOSC_LINKU = 3600;
+// 120 s - tyle samo co link kierowany do modelu AI przy analizie (api/ai/wyglad).
+// Przeglądarka i tak cache'uje już pobrany obraz, więc przewijanie się nie zmienia,
+// a to zdjęcie twarzy - krótszy czas na współdzielonym urządzeniu ma znaczenie.
+const WAZNOSC_LINKU = 120;
 
 /**
  * Zbieranie danych do zakładki "Wygląd".

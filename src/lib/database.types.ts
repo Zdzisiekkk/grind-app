@@ -983,6 +983,11 @@ export type Database = {
        * Ma zwracać pustą tablicę - patrz migracje 0045 i 0046.
        */
       funkcje_dla_anona: { Args: Record<string, never>; Returns: string[] };
+      /**
+       * Dzienny limit na proxy do zewnętrznych API (food_search/food_kod/isbn).
+       * Osobna od `ai_licznik_zuzyj`, bo to nie są funkcje AI (migracja 0054).
+       */
+      zewn_licznik_zuzyj: { Args: { p_kategoria: string; p_limit: number }; Returns: boolean };
       /** Rezerwacja przed wywołaniem modelu. Odmowa nic nie zapisuje. */
       ai_koszt_rezerwuj: { Args: { p_kategoria: string }; Returns: AiRezerwacja };
       /** Wpisanie prawdziwego kosztu po wywołaniu. Kwota 0 zwalnia rezerwację. */

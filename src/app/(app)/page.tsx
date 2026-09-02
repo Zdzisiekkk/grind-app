@@ -27,7 +27,10 @@ import {
 } from "@/lib/sleep";
 import { addDaysISO, duration, humanDate, longDate, num, todayISO, volume as fmtVolume } from "@/lib/format";
 import { POZIOM_LABEL, czas, porcja, udzialWCelu } from "@/lib/przepisy";
-import type { Habit, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
+import { HISTORY_DAYS } from "@/lib/nawyki";
+import { ogolnaPassa } from "@/lib/passa";
+import { dayWord } from "@/lib/vices";
+import type { Habit, HabitLog, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
 
 export const metadata = { title: "Dziś" };
 
@@ -59,6 +62,8 @@ export default async function DashboardPage() {
     { data: activePlan },
     { data: ostatniSkan },
     { data: przepisyDnia },
+    { data: habitLogsHistoria },
+    { data: posilkiHistoria },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -140,6 +145,17 @@ export default async function DashboardPage() {
     // Przepis dnia. Funkcja zwraca gotowy wiersz widoku, więc kafelek kosztuje
     // jedno zapytanie, a nie dwa - patrz migracja 0049.
     supabase.rpc("przepis_dnia"),
+    // Passa ogólna (src/lib/passa.ts) - to samo okno co passa nawyków.
+    supabase
+      .from("habit_logs")
+      .select("habit_id, date, count")
+      .eq("user_id", user.id)
+      .gte("date", addDaysISO(today, -HISTORY_DAYS)),
+    supabase
+      .from("meals")
+      .select("date")
+      .eq("user_id", user.id)
+      .gte("date", addDaysISO(today, -HISTORY_DAYS)),
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -155,6 +171,15 @@ export default async function DashboardPage() {
   const habitsDone = habitsToday.filter(
     (h) => (habitCounts.get(h.id) ?? 0) >= h.target_per_day,
   ).length;
+
+  const byHabitHistoria = new Map<string, Map<string, number>>();
+  for (const log of (habitLogsHistoria ?? []) as Pick<HabitLog, "habit_id" | "date" | "count">[]) {
+    const map = byHabitHistoria.get(log.habit_id) ?? new Map<string, number>();
+    map.set(log.date, log.count);
+    byHabitHistoria.set(log.habit_id, map);
+  }
+  const dietaZalogowana = new Set((posilkiHistoria ?? []).map((m) => m.date));
+  const passa = ogolnaPassa((habits ?? []) as Habit[], byHabitHistoria, dietaZalogowana, today);
 
   const waterMl = (waterToday ?? []).reduce((sum, w) => sum + w.ml, 0);
   const waterGoal = profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML;
@@ -229,6 +254,11 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-2xl font-bold leading-tight">{greeting}</h1>
         <p className="text-[13px] capitalize text-muted">{longDate(today)}</p>
+        {passa > 0 && (
+          <p className="mt-1 text-[13px] font-medium text-accent">
+            🔥 {passa} {dayWord(passa)} z rzędu - nawyki i dziennik diety w komplecie
+          </p>
+        )}
       </header>
 
       {/* --- Propozycje trenera czekające na decyzję --- */}

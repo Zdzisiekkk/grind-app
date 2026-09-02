@@ -23,12 +23,26 @@ const OPEN_LIBRARY = "https://openlibrary.org/api/books";
 const TIMEOUT_MS = 6000;
 const UA = "Grind (grind-app-iota.vercel.app)";
 
+/** 100 / dzień - dużo jak na człowieka, mało jak na skrypt (migracja 0054). */
+const LIMIT_DZIENNY = 100;
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nie zalogowano." }, { status: 401 });
+
+  const { data: wolno } = await supabase.rpc("zewn_licznik_zuzyj", {
+    p_kategoria: "isbn",
+    p_limit: LIMIT_DZIENNY,
+  });
+  if (!wolno) {
+    return NextResponse.json(
+      { error: "Dzienny limit wyszukiwań książek wyczerpany. Wróć jutro.", code: "daily_limit" },
+      { status: 429 },
+    );
+  }
 
   const raw = new URL(request.url).searchParams.get("isbn") ?? "";
   const isbn = normalizeIsbn(raw);

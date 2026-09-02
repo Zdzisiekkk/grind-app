@@ -45,6 +45,7 @@ jobs:
           npm run test:produkty
           npm run test:wstecz
           npm run test:przepisy
+          npm run test:passa
       - name: Budowanie
         run: npm run build
         env:

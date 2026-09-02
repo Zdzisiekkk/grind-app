@@ -21,6 +21,11 @@ const PERKS = [
     title: "Odprawy i przypomnienia",
     desc: "Trener sam się odzywa: po słabej nocy, przy stagnacji, gdy waga idzie w złą stronę.",
   },
+  {
+    icon: "🍽️",
+    title: "Opis posiłku słowami",
+    desc: "Piszesz zdaniem, co zjadłeś - model sam rozbija to na gramaturę i wartości odżywcze.",
+  },
 ];
 
 const FREE = [
@@ -184,8 +189,16 @@ export function SubscriptionScreen({
 
           {canBuy && (
             <p className="mt-2 text-[12px] leading-relaxed text-faint">
-              Płatność obsługuje Stripe - BLIK, przelew albo karta. Rezygnacja jednym kliknięciem
-              w panelu, bez dzwonienia i pisania maili.
+              {/*
+               * Nie wypisujemy tu z nazwy BLIK-a ani przelewu: to metody
+               * jednorazowe, których Stripe nie oferuje przy odnawialnej
+               * subskrypcji (mode: "subscription") - realnie dostępna jest
+               * karta, ewentualnie inne metody wspierające płatności cykliczne
+               * skonfigurowane w panelu Stripe'a. Obiecywanie BLIK-a tutaj
+               * byłoby fałszywe.
+               */}
+              Płatność obsługuje Stripe. Rezygnacja jednym kliknięciem w panelu, bez dzwonienia
+              i pisania maili.
               {pricing.trial_days > 0 &&
                 ` Pierwsze ${pricing.trial_days} dni nic nie kosztuje; jeśli zrezygnujesz przed końcem, nie pobierzemy nic.`}
             </p>
