@@ -66,6 +66,8 @@ export type Profile = {
   onboarded_at: string | null;
   /** Karty widoczne na pulpicie; null = zestaw domyślny (migracja 0058). */
   pulpit_karty: string[] | null;
+  /** Konto zwolnione z odstępu i puli skanów wyglądu (migracja 0059). */
+  wyglad_bez_limitu: boolean;
   /* --- Zgody (RODO) --- */
   /** Wersja regulaminu, na którą wyrażono zgodę. */
   terms_version: number | null;
