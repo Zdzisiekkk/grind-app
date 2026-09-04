@@ -204,7 +204,7 @@ export function AddFoodSheet({
             options={[
               { value: "search", label: "Szukaj" },
               { value: "dishes", label: "Dania" },
-              { value: "opis", label: "Opisz" },
+              { value: "opis", label: "Opisz / 📷" },
               { value: "custom", label: "Własne" },
             ]}
           />
@@ -307,7 +307,7 @@ export function AddFoodSheet({
                 <EmptyState
                   icon="🔍"
                   title="Nie znaleziono produktu"
-                  description="Opisz go słowami w zakładce Opisz albo wpisz wartości ręcznie w zakładce Własne."
+                  description="Opisz go słowami albo zrób zdjęcie w zakładce Opisz / 📷 - albo wpisz wartości ręcznie w zakładce Własne."
                 />
               )}
             </>

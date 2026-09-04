@@ -31,6 +31,7 @@
     "test:passa": "TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-passa.mjs",
     "test:plany": "node --no-warnings scripts/test-plany.mjs",
     "test:xp": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-xp.mjs",
+    "test:status": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-status-dnia.mjs",
     "import:przepisy": "node scripts/import-przepisy.mjs"
   },
   "dependencies": {

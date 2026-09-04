@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { notify } from "@/lib/notify";
+import { slotPrzypomnienia, trescPrzypomnienia } from "@/lib/statusDnia";
 
 export type HabitReminder = { id: string; name: string; icon: string; at: string; due: boolean };
 
@@ -142,24 +143,30 @@ export function Reminders({
         }
       }
 
-      if (fired.size !== before) writeFired(fired);
-
       /*
-       * Stan dnia jako "widget" w powiadomieniach - kalorie i woda na żywo.
+       * Stan dnia - najwyżej raz na cztery godziny i tylko wtedy, gdy realnie
+       * odstajesz od celu (reguła w src/lib/statusDnia.ts).
        *
-       * Świadomie BEZ odznaczania w `fired`: to nie jest jednorazowy alarm,
-       * tylko odczyt, który ma być zawsze aktualny. Ten sam `tag` w notify()
-       * podmienia poprzednią treść bez ponownego dźwięku/wibracji
-       * (`renotify` domyślnie false) - a jeśli człowiek powiadomienie zamknie,
-       * wróci przy najbliższym sprawdzeniu. To jest zamierzone: ma działać
-       * jak widget, nie jak alarm, który raz zgaszony ma zniknąć na stałe.
+       * Pierwsza wersja odświeżała to powiadomienie co 30 sekund, żeby
+       * udawało widget. Efekt był odwrotny od zamierzonego: nieustanny ping
+       * uczy wyłączać powiadomienia całkiem, a wtedy przepadają też te
+       * naprawdę ważne. Prawdziwy widget na ekranie blokady wymaga natywnej
+       * aplikacji - w przeglądarce nie ma go jak zrobić i lepiej to
+       * powiedzieć wprost niż udawać spamem.
        */
       const n = dataRef.current.nutritionToday;
       if (n) {
-        const kcalCzesc = n.kcalGoal ? `${n.kcal} / ${n.kcalGoal} kcal` : `${n.kcal} kcal`;
-        const wodaCzesc = `${n.waterMl} / ${n.waterGoal} ml wody`;
-        notify("Grind - stan dnia", `${kcalCzesc} · ${wodaCzesc}`, "status-dnia");
+        const slot = slotPrzypomnienia(minutes);
+        if (slot !== null) {
+          const key = `status:${slot}`;
+          if (!fired.has(key)) {
+            const tresc = trescPrzypomnienia(n, minutes);
+            if (tresc && notify("Grind - stan dnia", tresc, "status-dnia")) fired.add(key);
+          }
+        }
       }
+
+      if (fired.size !== before) writeFired(fired);
     }
 
     check();

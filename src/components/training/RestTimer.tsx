@@ -13,7 +13,7 @@ import { notify } from "@/lib/notify";
  * żeby zerknięcie na zablokowany ekran pokazało czas z dokładnością, jakiej
  * ktokolwiek potrzebuje w przerwie między seriami.
  */
-const NOTIFY_EVERY_S = 5;
+const NOTIFY_EVERY_S = 10;
 
 /**
  * Odliczanie przerwy między seriami.

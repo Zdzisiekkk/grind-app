@@ -4,11 +4,20 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Więcej" };
 
+/*
+ * Odkąd dolna nawigacja ma pięć pozycji zamiast siedmiu, to jest jedyna
+ * droga do snu, nawyków i zadań - dlatego stoją na samej górze listy,
+ * przed ekranami przeglądowymi. Kolejność odpowiada temu, jak często
+ * człowiek tam wchodzi, a nie temu, jak powstawały.
+ */
 const LINKS = [
+  { href: "/nawyki", icon: "🔥", label: "Nawyki i nałogi", desc: "Codzienne odhaczanie, passy, wpadki" },
+  { href: "/sen", icon: "😴", label: "Sen", desc: "Godziny, jakość, drzemki i wynik nocy" },
+  { href: "/zadania", icon: "☑️", label: "Zadania", desc: "Lista rzeczy do zrobienia z terminami" },
   { href: "/wyglad", icon: "🪪", label: "Wygląd", desc: "Skan twarzy, pielęgnacja, postawa, progres" },
   { href: "/progres", icon: "📈", label: "Postępy", desc: "Wykresy siły, wagi, bólu i objętości" },
-  { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },
   { href: "/kalendarz", icon: "📅", label: "Kalendarz", desc: "Co robiłeś danego dnia" },
+  { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },
   { href: "/profil", icon: "👤", label: "Profil i cele", desc: "Cele kaloryczne, waga, wylogowanie" },
 ] as const;
 

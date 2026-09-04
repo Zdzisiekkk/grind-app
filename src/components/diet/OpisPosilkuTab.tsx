@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Chip, NumberField, Spinner, Textarea } from "@/components/ui";
 import { kcalSkladnika, type Skladnik } from "@/lib/ai/posilekSchema";
 import { num } from "@/lib/format";
@@ -24,7 +24,39 @@ const PRZYKLAD = "np. dwa jajka sadzone na maśle, kromka chleba razowego i kube
 /** Ile pozycji naraz - powyżej tego opis jest listą zakupów, nie posiłkiem. */
 const MAX_POZYCJI = 15;
 
+/**
+ * Dłuższy bok zdjęcia posiłku.
+ *
+ * Mniej niż przy skanie wyglądu (1600 px), bo tu nie chodzi o fakturę skóry,
+ * tylko o rozpoznanie potrawy i oszacowanie porcji - do tego 1200 px
+ * wystarcza z zapasem, a zdjęcie idzie do modelu w treści żądania,
+ * więc każdy kilobajt to czas oczekiwania na łączu komórkowym.
+ */
+const MAX_BOK = 1200;
+
 type Stan = "pisanie" | "liczenie" | "przeglad";
+
+/**
+ * Zmniejszenie i kompresja zdjęcia w przeglądarce.
+ *
+ * Telefon oddaje kilkumegabajtowe pliki; bez tego kroku wysyłka trwałaby
+ * dłużej niż samo liczenie. Zwraca czysty base64, bez prefiksu "data:".
+ */
+async function doBase64(plik: File): Promise<string> {
+  const bitmapa = await createImageBitmap(plik);
+  const skala = Math.min(1, MAX_BOK / Math.max(bitmapa.width, bitmapa.height));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmapa.width * skala);
+  canvas.height = Math.round(bitmapa.height * skala);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Nie udało się przygotować zdjęcia.");
+  ctx.drawImage(bitmapa, 0, 0, canvas.width, canvas.height);
+  bitmapa.close();
+
+  return canvas.toDataURL("image/jpeg", 0.8).replace(/^data:[^,]*,/, "");
+}
 
 export function OpisPosilkuTab({
   onDodaj,
@@ -38,6 +70,45 @@ export function OpisPosilkuTab({
   const [uwaga, setUwaga] = useState<string | null>(null);
   const [blad, setBlad] = useState<string | null>(null);
   const [zapisywanie, setZapisywanie] = useState(false);
+  const [zdjecie, setZdjecie] = useState<string | null>(null);
+  const [podglad, setPodglad] = useState<string | null>(null);
+  const plikRef = useRef<HTMLInputElement>(null);
+
+  // Podgląd żyje jako obiekt URL, więc trzeba go zwolnić - inaczej każde
+  // kolejne zdjęcie zostawia w pamięci karty poprzednie.
+  useEffect(() => {
+    return () => {
+      if (podglad) URL.revokeObjectURL(podglad);
+    };
+  }, [podglad]);
+
+  async function wybierzZdjecie(e: React.ChangeEvent<HTMLInputElement>) {
+    const plik = e.target.files?.[0];
+    // Pole czyścimy od razu: bez tego wybranie DRUGI RAZ tego samego pliku
+    // nie wywołuje zdarzenia i wygląda jak zawieszona aplikacja.
+    e.target.value = "";
+    if (!plik) return;
+
+    setBlad(null);
+    try {
+      const b64 = await doBase64(plik);
+      setZdjecie(b64);
+      setPodglad((stary) => {
+        if (stary) URL.revokeObjectURL(stary);
+        return URL.createObjectURL(plik);
+      });
+    } catch {
+      setBlad("Nie udało się odczytać tego zdjęcia. Spróbuj zrobić je jeszcze raz.");
+    }
+  }
+
+  function usunZdjecie() {
+    setZdjecie(null);
+    setPodglad((stary) => {
+      if (stary) URL.revokeObjectURL(stary);
+      return null;
+    });
+  }
 
   async function policz() {
     setBlad(null);
@@ -48,7 +119,7 @@ export function OpisPosilkuTab({
       const res = await fetch("/api/ai/posilek", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ opis }),
+        body: JSON.stringify({ opis, ...(zdjecie ? { zdjecie } : {}) }),
       });
       const json = await res.json();
 
@@ -180,29 +251,66 @@ export function OpisPosilkuTab({
     );
   }
 
+  const mozliwe = zdjecie !== null || opis.trim().length >= 3;
+
   return (
     <div className="flex flex-col gap-3">
+      {/*
+        Zdjęcie i opis w jednym miejscu, a nie w dwóch zakładkach: to nie są
+        dwie różne funkcje, tylko dwa sposoby powiedzenia tego samego -
+        i najlepiej działają razem ("to jest z kurczaka, nie z indyka").
+        Bez atrybutu `capture`, żeby telefon pokazał pełny wybór: aparat,
+        galeria i pliki. Z nim otwierałby od razu aparat - dokładnie ten błąd
+        naprawiliśmy już raz w skanerze wyglądu.
+      */}
+      <input
+        ref={plikRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={wybierzZdjecie}
+      />
+
+      {podglad ? (
+        <div className="relative overflow-hidden rounded-xl border border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={podglad} alt="Zdjęcie posiłku" className="max-h-56 w-full object-cover" />
+          <button
+            type="button"
+            onClick={usunZdjecie}
+            aria-label="Usuń zdjęcie"
+            className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-lg bg-surface/90 text-muted backdrop-blur"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <Button variant="secondary" block onClick={() => plikRef.current?.click()}>
+          📷 Dodaj zdjęcie posiłku
+        </Button>
+      )}
+
       <Textarea
-        autoFocus
         rows={3}
         value={opis}
         maxLength={500}
         onChange={(e) => setOpis(e.target.value)}
-        placeholder={PRZYKLAD}
+        placeholder={zdjecie ? "opcjonalnie: co jest na zdjęciu, czego nie widać" : PRZYKLAD}
         aria-label="Opis posiłku"
       />
 
       <p className="px-1 text-[12px] text-muted">
-        Napisz zwykłym zdaniem, ile i czego. Im dokładniej podasz ilości, tym bliżej prawdy będzie
-        wynik - a każdą liczbę i tak poprawisz przed dodaniem.
+        {zdjecie
+          ? "Zdjęcie wystarczy, ale dopisek pomaga: model nie zobaczy masła pod jajkiem ani tego, czy mleko było 0%, czy 3,2%."
+          : "Napisz zwykłym zdaniem, ile i czego - albo zrób zdjęcie talerza. Każdą liczbę i tak poprawisz przed dodaniem."}
       </p>
 
       {blad && <Alert tone="warn">{blad}</Alert>}
 
-      <Button block onClick={policz} disabled={stan === "liczenie" || opis.trim().length < 3}>
+      <Button block onClick={policz} disabled={stan === "liczenie" || !mozliwe}>
         {stan === "liczenie" ? (
           <span className="inline-flex items-center gap-2">
-            <Spinner /> liczę...
+            <Spinner /> {zdjecie ? "oglądam zdjęcie..." : "liczę..."}
           </span>
         ) : (
           "Policz wartości"

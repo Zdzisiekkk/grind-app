@@ -64,6 +64,8 @@ export type Profile = {
   weekly_workouts: number | null;
   /** Puste = kreator jeszcze nie przeszedł. */
   onboarded_at: string | null;
+  /** Karty widoczne na pulpicie; null = zestaw domyślny (migracja 0058). */
+  pulpit_karty: string[] | null;
   /* --- Zgody (RODO) --- */
   /** Wersja regulaminu, na którą wyrażono zgodę. */
   terms_version: number | null;

@@ -29,6 +29,8 @@ import { addDaysISO, duration, humanDate, longDate, num, todayISO, volume as fmt
 import { POZIOM_LABEL, czas, porcja, udzialWCelu } from "@/lib/przepisy";
 import { HISTORY_DAYS } from "@/lib/nawyki";
 import { ogolnaPassa } from "@/lib/passa";
+import { widoczneKarty } from "@/lib/pulpit";
+import { UstawieniaPulpitu } from "@/components/pulpit/UstawieniaPulpitu";
 import { postepDoNastepnego, poziomZXp, progPoziomu, tytulPoziomu } from "@/lib/xp";
 import { dayWord } from "@/lib/vices";
 import type { Habit, HabitLog, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
@@ -188,6 +190,13 @@ export default async function DashboardPage() {
   const xp = (xpWiersze ?? []).reduce((sum, w) => sum + w.xp, 0);
   const poziom = poziomZXp(xp);
 
+  // Co pokazać na pulpicie (migracja 0058). Poza tym wyborem stoją rzeczy
+  // czekające na decyzję - propozycje trenera, nieocenione kontuzje - oraz
+  // szybkie wpisy: to nie są statystyki do przeglądania, tylko zaległości
+  // i droga do zapisania czegokolwiek.
+  const widoczne = widoczneKarty(profile?.pulpit_karty);
+  const pokaz = (id: string) => widoczne.has(id);
+
   const waterMl = (waterToday ?? []).reduce((sum, w) => sum + w.ml, 0);
   const waterGoal = profile?.daily_water_ml ?? DEFAULT_WATER_GOAL_ML;
   const waterPct = waterGoal > 0 ? Math.min(100, Math.round((waterMl / waterGoal) * 100)) : 0;
@@ -317,112 +326,118 @@ export default async function DashboardPage() {
       {health && <HealthCard result={health} previous={prevHealth?.total ?? null} />}
 
       {/* --- Wygląd --- */}
-      <Card
-        title="Wygląd"
-        action={
-          ostatniSkan ? <Chip tone="accent">{ostatniSkan.ocena_ogolna} / 100</Chip> : null
-        }
-      >
-        {ostatniSkan ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[13px] text-muted">
-              Ostatni skan {humanDate(String(ostatniSkan.utworzono).slice(0, 10))}
-            </p>
-            <Link href="/wyglad">
-              <Button variant="secondary">Otwórz</Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <p className="text-[14px] text-muted">
-              Skan twarzy pokazuje, co da się poprawić pielęgnacją, postawą i snem - i co z tego
-              faktycznie się zmienia.
-            </p>
-            <Link href="/wyglad">
-              <Button variant="secondary" block>
-                Zrób pierwszy skan
-              </Button>
-            </Link>
-          </div>
-        )}
-      </Card>
+      {pokaz("wyglad") && (
+        <Card
+          title="Wygląd"
+          action={
+            ostatniSkan ? <Chip tone="accent">{ostatniSkan.ocena_ogolna} / 100</Chip> : null
+          }
+        >
+          {ostatniSkan ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[13px] text-muted">
+                Ostatni skan {humanDate(String(ostatniSkan.utworzono).slice(0, 10))}
+              </p>
+              <Link href="/wyglad">
+                <Button variant="secondary">Otwórz</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-[14px] text-muted">
+                Skan twarzy pokazuje, co da się poprawić pielęgnacją, postawą i snem - i co z tego
+                faktycznie się zmienia.
+              </p>
+              <Link href="/wyglad">
+                <Button variant="secondary" block>
+                  Zrób pierwszy skan
+                </Button>
+              </Link>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* --- Trening --- */}
-      <Card
-        title="Trening"
-        action={
-          (sessions ?? []).length > 0 ? (
-            <Chip tone={openSession ? "accent" : "success"}>
-              {openSession ? "w trakcie" : "zrobiony"}
-            </Chip>
-          ) : null
-        }
-      >
-        {openSession ? (
-          <div className="flex flex-col gap-3">
-            <p className="text-[15px] font-semibold">{openSession.day_label ?? "Trening"}</p>
-            <Link href={`/trening/${openSession.id}`}>
-              <Button variant="primary" size="lg" block>
-                Wróć do treningu
-              </Button>
-            </Link>
-          </div>
-        ) : (sessions ?? []).length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {(sessions ?? []).map((s) => (
-              <Link key={s.id} href={`/trening/${s.id}`} className="flex items-center gap-2">
-                <span className="flex-1 text-[15px] font-medium">{s.day_label ?? "Trening"}</span>
-                <span className="text-[13px] text-muted">{duration(s.duration_min)}</span>
+      {pokaz("trening") && (
+        <Card
+          title="Trening"
+          action={
+            (sessions ?? []).length > 0 ? (
+              <Chip tone={openSession ? "accent" : "success"}>
+                {openSession ? "w trakcie" : "zrobiony"}
+              </Chip>
+            ) : null
+          }
+        >
+          {openSession ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-[15px] font-semibold">{openSession.day_label ?? "Trening"}</p>
+              <Link href={`/trening/${openSession.id}`}>
+                <Button variant="primary" size="lg" block>
+                  Wróć do treningu
+                </Button>
               </Link>
-            ))}
-            <Link href="/trening">
-              <Button variant="secondary" block>
-                Dorzuć jeszcze jeden
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <p className="text-[13px] text-muted">
-              {activePlan ? `Plan: ${activePlan.name}` : "Nie masz jeszcze aktywnego planu."}
-            </p>
-            <Link href={activePlan ? "/trening" : "/plan"}>
-              <Button variant="primary" size="lg" block>
-                {activePlan ? "Zacznij trening" : "Wybierz plan"}
-              </Button>
-            </Link>
-          </div>
-        )}
-      </Card>
+            </div>
+          ) : (sessions ?? []).length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {(sessions ?? []).map((s) => (
+                <Link key={s.id} href={`/trening/${s.id}`} className="flex items-center gap-2">
+                  <span className="flex-1 text-[15px] font-medium">{s.day_label ?? "Trening"}</span>
+                  <span className="text-[13px] text-muted">{duration(s.duration_min)}</span>
+                </Link>
+              ))}
+              <Link href="/trening">
+                <Button variant="secondary" block>
+                  Dorzuć jeszcze jeden
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-[13px] text-muted">
+                {activePlan ? `Plan: ${activePlan.name}` : "Nie masz jeszcze aktywnego planu."}
+              </p>
+              <Link href={activePlan ? "/trening" : "/plan"}>
+                <Button variant="primary" size="lg" block>
+                  {activePlan ? "Zacznij trening" : "Wybierz plan"}
+                </Button>
+              </Link>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* --- Dieta --- */}
-      <Card
-        title="Dieta"
-        action={
-          <Link href="/dieta" className="text-[13px] font-medium text-accent">
-            Dziennik
-          </Link>
-        }
-      >
-        <MacroSummary
-          compact
-          totals={{
-            kcal: nutrition?.kcal ?? 0,
-            protein: nutrition?.protein_g ?? 0,
-            carbs: nutrition?.carbs_g ?? 0,
-            fat: nutrition?.fat_g ?? 0,
-          }}
-          goals={{
-            kcal: profile?.daily_kcal ?? null,
-            protein: profile?.daily_protein_g ?? null,
-            carbs: profile?.daily_carbs_g ?? null,
-            fat: profile?.daily_fat_g ?? null,
-          }}
-        />
-      </Card>
+      {pokaz("dieta") && (
+        <Card
+          title="Dieta"
+          action={
+            <Link href="/dieta" className="text-[13px] font-medium text-accent">
+              Dziennik
+            </Link>
+          }
+        >
+          <MacroSummary
+            compact
+            totals={{
+              kcal: nutrition?.kcal ?? 0,
+              protein: nutrition?.protein_g ?? 0,
+              carbs: nutrition?.carbs_g ?? 0,
+              fat: nutrition?.fat_g ?? 0,
+            }}
+            goals={{
+              kcal: profile?.daily_kcal ?? null,
+              protein: profile?.daily_protein_g ?? null,
+              carbs: profile?.daily_carbs_g ?? null,
+              fat: profile?.daily_fat_g ?? null,
+            }}
+          />
+        </Card>
+      )}
 
       {/* --- Przepis dnia --- */}
-      {przepisDnia && (
+      {pokaz("przepis") && przepisDnia && (
         <Card
           title="Przepis dnia"
           subtitle={[czas(przepisDnia.czas_min), przepisDnia.poziom && POZIOM_LABEL[przepisDnia.poziom]]
@@ -458,46 +473,48 @@ export default async function DashboardPage() {
       )}
 
       {/* --- Sen --- */}
-      <Card
-        title="Sen"
-        subtitle={sleptToday ? "Dzisiejsza noc" : "Ostatnia zapisana noc"}
-        action={
-          <Link href="/sen" className="text-[13px] font-medium text-accent">
-            {sleptToday ? "Szczegóły" : "Zapisz"}
-          </Link>
-        }
-      >
-        {lastNight ? (
-          <div className="flex items-center gap-3">
-            <span
-              className="tabular flex size-12 shrink-0 items-center justify-center rounded-xl text-[17px] font-bold"
-              style={{
-                background: `${sleepBand(lastNight.score).color}22`,
-                color: sleepBand(lastNight.score).color,
-              }}
-            >
-              {lastNight.score}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold leading-tight">
-                {sleepDuration(lastNight.night.sleep_min)}
-              </p>
-              <p className="text-[13px] text-muted">
-                {lastNight.night.bedtime.slice(0, 5)} → {lastNight.night.wake_time.slice(0, 5)} ·{" "}
-                {sleepBand(lastNight.score).label}
-              </p>
+      {pokaz("sen") && (
+        <Card
+          title="Sen"
+          subtitle={sleptToday ? "Dzisiejsza noc" : "Ostatnia zapisana noc"}
+          action={
+            <Link href="/sen" className="text-[13px] font-medium text-accent">
+              {sleptToday ? "Szczegóły" : "Zapisz"}
+            </Link>
+          }
+        >
+          {lastNight ? (
+            <div className="flex items-center gap-3">
+              <span
+                className="tabular flex size-12 shrink-0 items-center justify-center rounded-xl text-[17px] font-bold"
+                style={{
+                  background: `${sleepBand(lastNight.score).color}22`,
+                  color: sleepBand(lastNight.score).color,
+                }}
+              >
+                {lastNight.score}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-semibold leading-tight">
+                  {sleepDuration(lastNight.night.sleep_min)}
+                </p>
+                <p className="text-[13px] text-muted">
+                  {lastNight.night.bedtime.slice(0, 5)} → {lastNight.night.wake_time.slice(0, 5)} ·{" "}
+                  {sleepBand(lastNight.score).label}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <p className="text-[13px] text-muted">
-            Zapisz, o której się położyłeś i o której wstałeś - to dwa tapnięcia,
-            a daje najcięższy filar Health Score.
-          </p>
-        )}
-      </Card>
+          ) : (
+            <p className="text-[13px] text-muted">
+              Zapisz, o której się położyłeś i o której wstałeś - to dwa tapnięcia,
+              a daje najcięższy filar Health Score.
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* --- Zadania z terminem na dziś lub zaległe --- */}
-      {(dueTodos ?? []).length > 0 && (
+      {pokaz("zadania") && (dueTodos ?? []).length > 0 && (
         <Card
           title="Zadania na teraz"
           subtitle={`${(dueTodos ?? []).length} z terminem`}
@@ -531,7 +548,7 @@ export default async function DashboardPage() {
       )}
 
       {/* --- Nawyki na dziś --- */}
-      {habitsToday.length > 0 && (
+      {pokaz("nawyki") && habitsToday.length > 0 && (
         <Card
           title="Nawyki na dziś"
           subtitle={`${habitsDone} z ${habitsToday.length} zrobione`}
@@ -556,37 +573,39 @@ export default async function DashboardPage() {
       )}
 
       {/* --- Nawodnienie --- */}
-      <Card
-        title="Nawodnienie"
-        subtitle={
-          waterMl >= waterGoal
-            ? "Cel osiągnięty 💧"
-            : `Zostało ${waterLabel(Math.max(0, waterGoal - waterMl))}`
-        }
-        action={
-          <Link href="/dieta" className="text-[13px] font-medium text-accent">
-            Dopisz
-          </Link>
-        }
-      >
-        <div className="flex items-baseline justify-between">
-          <span className="tabular text-[20px] font-bold">{waterLabel(waterMl)}</span>
-          <span className="text-[13px] text-muted">z {waterLabel(waterGoal)}</span>
-        </div>
-        <div
-          className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface-2"
-          role="progressbar"
-          aria-valuenow={waterPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Postęp nawodnienia"
+      {pokaz("woda") && (
+        <Card
+          title="Nawodnienie"
+          subtitle={
+            waterMl >= waterGoal
+              ? "Cel osiągnięty 💧"
+              : `Zostało ${waterLabel(Math.max(0, waterGoal - waterMl))}`
+          }
+          action={
+            <Link href="/dieta" className="text-[13px] font-medium text-accent">
+              Dopisz
+            </Link>
+          }
         >
+          <div className="flex items-baseline justify-between">
+            <span className="tabular text-[20px] font-bold">{waterLabel(waterMl)}</span>
+            <span className="text-[13px] text-muted">z {waterLabel(waterGoal)}</span>
+          </div>
           <div
-            className={waterPct >= 100 ? "h-full rounded-full bg-success" : "h-full rounded-full bg-info"}
-            style={{ width: `${waterPct}%` }}
-          />
-        </div>
-      </Card>
+            className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface-2"
+            role="progressbar"
+            aria-valuenow={waterPct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Postęp nawodnienia"
+          >
+            <div
+              className={waterPct >= 100 ? "h-full rounded-full bg-success" : "h-full rounded-full bg-info"}
+              style={{ width: `${waterPct}%` }}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* --- Kontuzje bez dzisiejszej oceny --- */}
       {unratedToday.length > 0 && (
@@ -640,36 +659,38 @@ export default async function DashboardPage() {
       </div>
 
       {/* --- Aktywności --- */}
-      <Card
-        title="Aktywności dziś"
-        action={
-          <Link href="/aktywnosci" className="text-[13px] font-medium text-accent">
-            Wszystkie
-          </Link>
-        }
-      >
-        {(activities ?? []).length === 0 ? (
-          <p className="text-[13px] text-muted">Nic dziś poza siłownią.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(activities ?? []).map((a) => (
-              <li key={a.id} className="flex items-center gap-2 text-[14px]">
-                <span aria-hidden>{ACTIVITY_ICON[a.type]}</span>
-                <span className="flex-1 truncate">
-                  {a.type === "other" && a.custom_type ? a.custom_type : ACTIVITY_LABEL[a.type]}
-                </span>
-                <span className="tabular text-[13px] text-muted">
-                  {duration(a.duration_min)}
-                  {a.kcal ? ` · ${a.kcal} kcal` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      {pokaz("aktywnosci") && (
+        <Card
+          title="Aktywności dziś"
+          action={
+            <Link href="/aktywnosci" className="text-[13px] font-medium text-accent">
+              Wszystkie
+            </Link>
+          }
+        >
+          {(activities ?? []).length === 0 ? (
+            <p className="text-[13px] text-muted">Nic dziś poza siłownią.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {(activities ?? []).map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-[14px]">
+                  <span aria-hidden>{ACTIVITY_ICON[a.type]}</span>
+                  <span className="flex-1 truncate">
+                    {a.type === "other" && a.custom_type ? a.custom_type : ACTIVITY_LABEL[a.type]}
+                  </span>
+                  <span className="tabular text-[13px] text-muted">
+                    {duration(a.duration_min)}
+                    {a.kcal ? ` · ${a.kcal} kcal` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       {/* --- Ostatnie 7 dni --- */}
-      {summary && (
+      {pokaz("tydzien") && summary && (
         <Card
           title="Ostatnie 7 dni"
           action={
@@ -690,6 +711,8 @@ export default async function DashboardPage() {
           </div>
         </Card>
       )}
+
+      <UstawieniaPulpitu widoczne={[...widoczne]} />
     </div>
   );
 }
