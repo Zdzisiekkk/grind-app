@@ -3,7 +3,7 @@ import { Button, Card, Chip, EmptyState } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { startSession } from "./actions";
 import { DAY_TYPE_ICON, DAY_TYPE_LABEL } from "@/lib/constants";
-import { humanDate, sets as setsLabel, todayISO, volume } from "@/lib/format";
+import { duration, humanDate, sets as setsLabel, todayISO, volume } from "@/lib/format";
 import { Zaplecze } from "@/components/training/Zaplecze";
 import type { Phase, WorkoutDay } from "@/lib/database.types";
 
@@ -188,8 +188,16 @@ export default async function TreningPage() {
                       <span className="block text-[12px] text-muted">
                         {humanDate(s.date)}
                         {v ? ` · ${setsLabel(v.sets)} · ${volume(v.volume_kg)}` : ""}
+                        {/*
+                          Sesja z aktywności nie ma serii ani objętości, więc
+                          bez czasu trwania nie mówiłaby o sobie nic poza datą.
+                        */}
+                        {!v && s.activity_id && s.duration_min
+                          ? ` · ${duration(s.duration_min)}`
+                          : ""}
                       </span>
                     </span>
+                    {s.activity_id && <Chip>aktywność</Chip>}
                     {!s.finished_at && <Chip tone="accent">w trakcie</Chip>}
                   </Link>
                 </li>

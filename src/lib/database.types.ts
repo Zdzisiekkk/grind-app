@@ -172,6 +172,8 @@ export type WorkoutSession = {
   id: string;
   user_id: string;
   workout_day_id: string | null;
+  /** Sesja powstała z aktywności (migracja 0061); null = trening z planu. */
+  activity_id: string | null;
   day_label: string | null;
   date: string;
   started_at: string;
