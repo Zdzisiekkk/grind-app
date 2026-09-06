@@ -49,6 +49,7 @@ jobs:
           npm run test:plany
           npm run test:xp
           npm run test:status
+          npm run test:elektrolity
       - name: Budowanie
         run: npm run build
         env:

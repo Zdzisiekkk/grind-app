@@ -37,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase
         .from("profiles")
         .select(
-          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, sleep_reminder_at, sleep_goal_min, onboarded_at",
+          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, elektrolity_przypomnienie, elektrolity_prog_ml, sleep_reminder_at, sleep_goal_min, onboarded_at",
         )
         .eq("id", user.id)
         .maybeSingle(),
@@ -62,14 +62,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }));
 
   const drunk = (water ?? []).reduce((sum, w) => sum + w.ml, 0);
-  const waterReminder: WaterReminder = profile?.water_reminder_every_min
-    ? {
-        from: profile.water_reminder_from,
-        to: profile.water_reminder_to,
-        everyMin: profile.water_reminder_every_min,
-        behind: drunk < (profile.daily_water_ml ?? DEFAULT_WATER_GOAL_ML),
-      }
-    : null;
+  // Blok wody obsługuje dwie różne rzeczy: popychanie do picia (zależne od
+  // ustawionego interwału) i przypomnienie o elektrolitach (zależne wyłącznie
+  // od tego, ile ktoś dziś wypił). Dlatego powstaje także wtedy, gdy
+  // przypomnienia o piciu są wyłączone - inaczej ktoś, kto pije dużo bez
+  // popychania, nigdy nie usłyszałby o wypłukiwaniu.
+  const waterReminder: WaterReminder =
+    profile?.water_reminder_every_min || profile?.elektrolity_przypomnienie
+      ? {
+          from: profile.water_reminder_from,
+          to: profile.water_reminder_to,
+          everyMin: profile.water_reminder_every_min,
+          behind: drunk < (profile.daily_water_ml ?? DEFAULT_WATER_GOAL_ML),
+          wypiteMl: drunk,
+          elektrolity: {
+            wlaczone: profile.elektrolity_przypomnienie ?? true,
+            progMl: profile.elektrolity_prog_ml,
+          },
+        }
+      : null;
 
   const sleepReminder: SleepReminder = profile?.sleep_reminder_at
     ? {

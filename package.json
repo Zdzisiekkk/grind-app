@@ -32,6 +32,7 @@
     "test:plany": "node --no-warnings scripts/test-plany.mjs",
     "test:xp": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-xp.mjs",
     "test:status": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-status-dnia.mjs",
+    "test:elektrolity": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-elektrolity.mjs",
     "import:przepisy": "node scripts/import-przepisy.mjs"
   },
   "dependencies": {

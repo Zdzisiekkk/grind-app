@@ -3,6 +3,11 @@
 import { useEffect, useRef } from "react";
 import { notify } from "@/lib/notify";
 import { slotPrzypomnienia, trescPrzypomnienia } from "@/lib/statusDnia";
+import {
+  czyPrzypomniec,
+  trescElektrolitow,
+  type UstawieniaElektrolitow,
+} from "@/lib/elektrolity";
 
 export type HabitReminder = { id: string; name: string; icon: string; at: string; due: boolean };
 
@@ -14,6 +19,9 @@ export type WaterReminder = {
   to: string | null;
   everyMin: number | null;
   behind: boolean;
+  /** Ile wypite dziś - do progu elektrolitów. */
+  wypiteMl: number;
+  elektrolity: UstawieniaElektrolitow;
 } | null;
 
 const STORAGE_KEY = "grind:reminders-fired";
@@ -113,6 +121,20 @@ export function Reminders({
         const key = `habit:${habit.id}`;
         if (fired.has(key)) continue;
         if (notify("Grind - nawyk", `${habit.icon} ${habit.name}`, key)) fired.add(key);
+      }
+
+      /*
+       * Elektrolity - raz dziennie, po przekroczeniu progu picia.
+       *
+       * Poza warunkiem `everyMin` niżej: przypomnienia o samym piciu można
+       * nie mieć włączonych, a wypłukiwanie i tak zachodzi. Liczy się ilość
+       * wypitej wody, nie to, czy ktoś chce być do niej popychany.
+       */
+      const woda = dataRef.current.water;
+      if (woda && !fired.has("elektrolity") && czyPrzypomniec(woda.wypiteMl, woda.elektrolity)) {
+        if (notify("Grind - elektrolity", trescElektrolitow(woda.wypiteMl), "elektrolity")) {
+          fired.add("elektrolity");
+        }
       }
 
       const w = dataRef.current.water;

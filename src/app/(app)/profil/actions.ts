@@ -12,6 +12,13 @@ const intOrNull = (value: FormDataEntryValue | null) => {
 };
 
 /** Pole <input type="time"> oddaje "HH:MM" albo pusty string. */
+/** Próg elektrolitów: puste = domyślny z aplikacji, reszta dociśnięta do zakresu z bazy. */
+const progElektrolitow = (value: FormDataEntryValue | null) => {
+  const n = Number(value);
+  if (!value || !Number.isFinite(n) || n <= 0) return null;
+  return Math.min(10000, Math.max(1000, Math.round(n)));
+};
+
 const timeOrNull = (value: FormDataEntryValue | null) =>
   typeof value === "string" && /^\d{2}:\d{2}$/.test(value) ? value : null;
 
@@ -55,6 +62,11 @@ export async function saveProfile(_prev: SaveState, formData: FormData): Promise
       water_reminder_from: timeOrNull(formData.get("water_reminder_from")),
       water_reminder_to: timeOrNull(formData.get("water_reminder_to")),
       water_reminder_every_min: intOrNull(formData.get("water_reminder_every_min")),
+      // Pole wyboru nieodhaczone NIE trafia do formularza wcale - dlatego
+      // czytamy obecność klucza, a nie jego wartość. Inaczej wyłączenia
+      // nie dałoby się zapisać: brak pola wyglądałby jak brak zmiany.
+      elektrolity_przypomnienie: formData.get("elektrolity_przypomnienie") !== null,
+      elektrolity_prog_ml: progElektrolitow(formData.get("elektrolity_prog_ml")),
       sleep_goal_min: sleepGoalMin(formData.get("sleep_goal_h")),
       sleep_target_bedtime: timeOrNull(formData.get("sleep_target_bedtime")),
       sleep_reminder_at: timeOrNull(formData.get("sleep_reminder_at")),

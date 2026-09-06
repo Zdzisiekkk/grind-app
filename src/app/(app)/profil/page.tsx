@@ -5,6 +5,7 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { DataControls } from "@/components/legal/DataControls";
 import { getAccess } from "@/lib/subscription";
 import { DEFAULT_SLEEP_GOAL_MIN } from "@/lib/sleep";
+import { DOMYSLNY_PROG_ML } from "@/lib/elektrolity";
 import { createClient } from "@/lib/supabase/server";
 import { saveProfile, signOut } from "./actions";
 import { addDaysISO, num, todayISO } from "@/lib/format";
@@ -119,6 +120,42 @@ export default async function ProfilPage() {
           <p className="mt-1 text-[12px] text-faint">
             Zostaw pole Co ile minut puste, żeby wyłączyć przypomnienia o wodzie.
           </p>
+
+          {/*
+            Elektrolity siedzą przy nawodnieniu, bo to jego druga strona:
+            im lepiej ktoś realizuje cel picia, tym więcej wypłukuje.
+            Osobna karta sugerowałaby, że to osobny temat.
+          */}
+          <div className="mt-4 border-t border-border pt-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="elektrolity_przypomnienie"
+                defaultChecked={profile?.elektrolity_przypomnienie ?? true}
+                className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]"
+              />
+              <span className="min-w-0">
+                <span className="block text-[14px] font-medium leading-tight">
+                  Przypominaj o elektrolitach
+                </span>
+                <span className="block text-[12px] leading-snug text-muted">
+                  Raz dziennie, dopiero po przekroczeniu progu picia - przy dużej ilości wody
+                  sód, potas i magnez wypłukują się szybciej.
+                </span>
+              </span>
+            </label>
+
+            <div className="mt-3 max-w-[200px]">
+              <Field label="Próg (ml)">
+                <Input
+                  name="elektrolity_prog_ml"
+                  inputMode="numeric"
+                  defaultValue={profile?.elektrolity_prog_ml ?? ""}
+                  placeholder={String(DOMYSLNY_PROG_ML)}
+                />
+              </Field>
+            </div>
+          </div>
         </Card>
 
         <Card

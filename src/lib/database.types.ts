@@ -48,6 +48,10 @@ export type Profile = {
   water_reminder_from: string | null;
   water_reminder_to: string | null;
   water_reminder_every_min: number | null;
+  /** Przypominać o elektrolitach po przekroczeniu progu picia (migracja 0060). */
+  elektrolity_przypomnienie: boolean;
+  /** Próg dziennego picia w ml; null = domyślny z aplikacji. */
+  elektrolity_prog_ml: number | null;
   /** Cel snu na dobę w minutach. */
   sleep_goal_min: number;
   /** Godzina, o której chcesz gasić światło - punkt odniesienia regularności. */
