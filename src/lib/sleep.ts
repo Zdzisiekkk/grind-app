@@ -51,6 +51,8 @@ export type SleepNight = {
   naps?: Nap[];
   factors: string[];
   note: string | null;
+  /** Noc bez snu - wynik 0, godziny nieistotne (migracja 0062). */
+  bezsenna?: boolean;
 };
 
 export type ScorePart = {
@@ -260,6 +262,32 @@ export function scoreNight(
   const goal = options.goalMin ?? DEFAULT_SLEEP_GOAL_MIN;
   const bedMin = timeToMin(night.bedtime);
   const reference = options.referenceBedtime ?? null;
+
+  /*
+   * Noc bez snu to zero, bez liczenia składowych.
+   *
+   * Bez tego skrótu wynik wyszedłby wyższy niż zero: godziny w formularzu
+   * są zerowe, więc "regularność" trafiałaby idealnie w północ, a ocena
+   * jakości 1/5 to wciąż ułamek punktów za odczucia. Punkty za regularne
+   * niespanie byłyby absurdem, a to jest liczba, którą człowiek ogląda
+   * rano po najgorszej możliwej nocy.
+   */
+  if (night.bezsenna) {
+    return {
+      total: 0,
+      parts: [
+        {
+          key: "duration",
+          label: "Długość",
+          ratio: 0,
+          points: 0,
+          max: SLEEP_WEIGHTS.duration,
+          hint: "Noc bez snu",
+        },
+      ],
+      skipped: ["feeling", "continuity", "naps", "regularity"],
+    };
+  }
 
   const parts: ScorePart[] = [
     {

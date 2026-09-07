@@ -52,6 +52,8 @@ const EMPTY = {
   awake_min: 0,
   quality: 3,
   morning_energy: 3 as number | null,
+  /** Noc bez snu - wynik 0, godziny przestają mieć znaczenie (0062). */
+  bezsenna: false,
   /*
    * Drzemki osobno, nie jedną sumą. Trzy po 20 minut i jedna godzinna dają
    * tę samą liczbę minut, ale nie to samo dla organizmu - a skoro wchodzą
@@ -170,6 +172,7 @@ export function SleepScreen({
             awake_min: existing.awake_min,
             quality: existing.quality,
             morning_energy: existing.morning_energy,
+            bezsenna: existing.bezsenna ?? false,
             naps: (existing.naps ?? []).map((n) => ({
               minutes: n.minutes,
               start: n.start == null ? null : minToTime(n.start),
@@ -205,6 +208,7 @@ export function SleepScreen({
         awake_min: draft.awake_min,
         quality: draft.quality,
         morning_energy: draft.morning_energy,
+        bezsenna: draft.bezsenna,
         factors: draft.factors,
         note: draft.note.trim() || null,
       },
@@ -542,6 +546,32 @@ export function SleepScreen({
             />
           </Field>
 
+          {/*
+            Przełącznik stoi PRZED godzinami, bo po nocy bez snu nie ma czego
+            w nie wpisać - a formularz, który najpierw każe podać porę
+            zaśnięcia, sam sobie zaprzecza. Zaznaczenie chowa resztę pól:
+            zostaje data, notatka i zapis.
+          */}
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-surface-2 p-3">
+            <input
+              type="checkbox"
+              checked={draft.bezsenna}
+              onChange={(e) => setDraft({ ...draft, bezsenna: e.target.checked })}
+              className="mt-0.5 size-5 shrink-0 accent-[var(--accent)]"
+            />
+            <span className="min-w-0">
+              <span className="block text-[14px] font-medium leading-tight">
+                Nie spałem tej nocy
+              </span>
+              <span className="block text-[12px] leading-snug text-muted">
+                Wynik nocy wyniesie 0 i wejdzie do statystyk. Lepsze niż pusty dzień, który
+                znaczy tylko tyle, że nic nie zapisałeś.
+              </span>
+            </span>
+          </label>
+
+          {!draft.bezsenna && (
+          <>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Poszedłem spać">
               <Input
@@ -724,6 +754,8 @@ export function SleepScreen({
               })}
             </div>
           </Field>
+          </>
+          )}
 
           <Field label="Notatka (opcjonalnie)">
             <Textarea

@@ -16,6 +16,7 @@ import {
   Stat,
 } from "@/components/ui";
 import { KatalogPrzepisow } from "@/components/diet/KatalogPrzepisow";
+import { PrzepisyZLodowki } from "@/components/diet/PrzepisyZLodowki";
 import { NumberStepper } from "@/components/training/NumberStepper";
 import { createClient } from "@/lib/supabase/client";
 import { portionGrams } from "@/lib/recipes";
@@ -109,6 +110,13 @@ export function RecipesScreen({
           </Button>
         )}
       </header>
+
+      {/*
+        Stoi NAD zakładkami, bo odpowiada na inne pytanie niż obie: nie
+        "który przepis wybrać", tylko "co da się zrobić z tego, co mam".
+        Schowany w zakładce byłby kolejną rzeczą do znalezienia.
+      */}
+      <PrzepisyZLodowki userId={userId} />
 
       <SegmentedControl
         value={zakladka}

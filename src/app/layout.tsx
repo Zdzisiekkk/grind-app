@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   title: { default: "Grind", template: "%s · Grind" },
   description: "Trening, dieta i aktywności w jednym miejscu.",
   applicationName: "Grind",
+  // Drugi zamek obok robots.txt. Plik robots.txt to prośba na poziomie
+  // całej witryny, a ten nagłówek jedzie z każdą stroną z osobna - łącznie
+  // z tymi, do których robot trafiłby z linku, nie od korzenia.
+  robots: { index: false, follow: false, nocache: true },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

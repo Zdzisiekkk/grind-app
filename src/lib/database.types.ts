@@ -273,6 +273,8 @@ export type SleepFactor =
 export type SleepLog = {
   id: string;
   user_id: string;
+  /** Noc bez snu - wynik 0, godziny nieistotne (migracja 0062). */
+  bezsenna: boolean;
   /** Data PORANKA, którego się obudziłeś - noc z 3 na 4 maja to 4 maja. */
   date: string;
   bedtime: string;
@@ -313,6 +315,8 @@ export type SleepView = {
   naps: Array<{ minutes: number; start_time: string | null }>;
   factors: string[];
   note: string | null;
+  /** Noc bez snu - sleep_min wychodzi wtedy 0 z widoku (migracja 0062). */
+  bezsenna: boolean;
 };
 
 /** Propozycja trenera - czeka na tapnięcie, nic nie zmienia sama z siebie. */
