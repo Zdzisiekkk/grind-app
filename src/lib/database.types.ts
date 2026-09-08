@@ -72,6 +72,12 @@ export type Profile = {
   pulpit_karty: string[] | null;
   /** Konto zwolnione z odstępu i puli skanów wyglądu (migracja 0059). */
   wyglad_bez_limitu: boolean;
+  /* --- Finanse (migracja 0064) --- */
+  /** Stałe koszty życia na miesiąc - mianownik poduszki finansowej. */
+  koszty_miesieczne: number | null;
+  poduszka_cel_miesiecy: number;
+  /** Miesięczny limit wydatków uznaniowych; null = bez limitu. */
+  budzet_uznaniowy: number | null;
   /* --- Zgody (RODO) --- */
   /** Wersja regulaminu, na którą wyrażono zgodę. */
   terms_version: number | null;
@@ -327,6 +333,85 @@ export type Dolegliwosc = Injury & {
   aktywna: boolean;
   /** Zakwasy, sztywność, otarcie - schodzą same. */
   przejsciowa: boolean;
+};
+
+/* --- Finanse (migracja 0064) --- */
+
+export type KategoriaWydatku =
+  | "jedzenie" | "zakupy" | "rozrywka" | "transport"
+  | "zdrowie" | "prezenty" | "subskrypcje" | "inne";
+
+/** Migawka majątku - odpowiednik wpisu wagi, nie suma transakcji. */
+export type FinanseStan = {
+  id: string;
+  user_id: string;
+  data: string;
+  plynne: number;
+  inwestycje: number;
+  inne: number;
+  dlugi: number;
+  note: string | null;
+  created_at: string;
+  /** Liczone przez bazę: płynne + inwestycje + inne - długi. */
+  netto: number;
+};
+
+export type FinanseWydatek = {
+  id: string;
+  user_id: string;
+  data: string;
+  kwota: number;
+  kategoria: KategoriaWydatku;
+  opis: string | null;
+  created_at: string;
+};
+
+export type FinanseCel = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  ikona: string;
+  kwota_cel: number;
+  termin: string | null;
+  status: "aktywny" | "osiagniety" | "porzucony";
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Widok v_finanse_cele - cel z postępem policzonym z wpłat. */
+export type FinanseCelZPostepem = FinanseCel & {
+  zebrane: number;
+  zostalo: number;
+  procent: number;
+  ostatnia_wplata: string | null;
+};
+
+export type FinanseWplata = {
+  id: string;
+  user_id: string;
+  cel_id: string;
+  /** Ujemna = wypłata z celu. */
+  kwota: number;
+  data: string;
+  note: string | null;
+  created_at: string;
+};
+
+/** Wynik public.finanse_podsumowanie(). */
+export type FinansePodsumowanie = {
+  netto: number | null;
+  plynne: number | null;
+  inwestycje: number | null;
+  dlugi: number | null;
+  data_migawki: string | null;
+  zmiana_30d: number | null;
+  koszty_miesieczne: number | null;
+  poduszka_cel: number;
+  poduszka_miesiecy: number | null;
+  budzet: number | null;
+  wydane_w_miesiacu: number;
+  budzet_zostalo: number | null;
 };
 
 /** Propozycja trenera - czeka na tapnięcie, nic nie zmienia sama z siebie. */
@@ -931,6 +1016,10 @@ export type Database = {
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
       subscriptions: Tbl<Subscription, "user_id">;
+      finanse_stan: Tbl<FinanseStan, "user_id">;
+      finanse_wydatki: Tbl<FinanseWydatek, "user_id" | "kwota">;
+      finanse_cele: Tbl<FinanseCel, "user_id" | "nazwa" | "kwota_cel">;
+      finanse_wplaty: Tbl<FinanseWplata, "user_id" | "cel_id" | "kwota">;
       bonus_plan: Tbl<BonusPlan, "user_id" | "plan" | "do_kiedy" | "zrodlo">;
       xp_zdarzenia: Tbl<XpZdarzenie, "user_id" | "dzien" | "zrodlo">;
       coach_proposals: Tbl<CoachProposal, "user_id" | "kind" | "title" | "rationale">;
@@ -979,6 +1068,7 @@ export type Database = {
       v_daily_water: { Row: DailyWater; Relationships: [] };
       v_sleep: { Row: SleepView; Relationships: [] };
       v_dolegliwosci: { Row: Dolegliwosc; Relationships: [] };
+      v_finanse_cele: { Row: FinanseCelZPostepem; Relationships: [] };
       v_recipe_totals: { Row: RecipeTotals; Relationships: [] };
     };
     Functions: {
@@ -1002,6 +1092,8 @@ export type Database = {
       plan_poziom: { Args: { p_user?: string }; Returns: number };
       /** Level z sumy XP - ta sama krzywa co w src/lib/xp.ts (0057). */
       xp_poziom: { Args: { p_xp: number }; Returns: number };
+      /** Majątek, poduszka i budżet w jednym zapytaniu (migracja 0064). */
+      finanse_podsumowanie: { Args: Record<string, never>; Returns: unknown };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */

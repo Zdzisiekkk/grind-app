@@ -159,6 +159,45 @@ export default async function ProfilPage() {
         </Card>
 
         <Card
+          title="Finanse"
+          subtitle="Z tych dwóch liczb liczy się poduszka i budżet w zakładce Kasa."
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Koszty życia (zł / mies.)">
+              <Input
+                name="koszty_miesieczne"
+                inputMode="decimal"
+                defaultValue={profile?.koszty_miesieczne ?? ""}
+                placeholder="4000"
+              />
+            </Field>
+            <Field label="Poduszka (miesięcy)">
+              <Input
+                name="poduszka_cel_miesiecy"
+                inputMode="numeric"
+                defaultValue={profile?.poduszka_cel_miesiecy ?? 6}
+                placeholder="6"
+              />
+            </Field>
+          </div>
+          <div className="mt-3 max-w-[220px]">
+            <Field label="Budżet uznaniowy (zł / mies.)">
+              <Input
+                name="budzet_uznaniowy"
+                inputMode="decimal"
+                defaultValue={profile?.budzet_uznaniowy ?? ""}
+                placeholder="800"
+              />
+            </Field>
+          </div>
+          <p className="mt-1 text-[12px] leading-relaxed text-faint">
+            Koszty życia to stałe wydatki: czynsz, rachunki, jedzenie w domu, raty. Budżet
+            uznaniowy dotyczy reszty - jedzenia na mieście, zakupów, rozrywki. Zostaw puste,
+            żeby nie pilnować limitu.
+          </p>
+        </Card>
+
+        <Card
           title="Sen"
           subtitle="Cel i docelowa pora snu - z nich liczy się długość i regularność w Sleep Score."
         >

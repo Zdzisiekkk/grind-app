@@ -19,6 +19,13 @@ const progElektrolitow = (value: FormDataEntryValue | null) => {
   return Math.min(10000, Math.max(1000, Math.round(n)));
 };
 
+/** Kwota z formularza: przecinek jak w polskim zapisie, puste = brak limitu. */
+const kwotaOrNull = (value: FormDataEntryValue | null) => {
+  if (!value) return null;
+  const n = Number(String(value).replace(",", ".").replace(/\s/g, ""));
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+};
+
 const timeOrNull = (value: FormDataEntryValue | null) =>
   typeof value === "string" && /^\d{2}:\d{2}$/.test(value) ? value : null;
 
@@ -67,6 +74,12 @@ export async function saveProfile(_prev: SaveState, formData: FormData): Promise
       // nie dałoby się zapisać: brak pola wyglądałby jak brak zmiany.
       elektrolity_przypomnienie: formData.get("elektrolity_przypomnienie") !== null,
       elektrolity_prog_ml: progElektrolitow(formData.get("elektrolity_prog_ml")),
+      koszty_miesieczne: kwotaOrNull(formData.get("koszty_miesieczne")),
+      budzet_uznaniowy: kwotaOrNull(formData.get("budzet_uznaniowy")),
+      poduszka_cel_miesiecy: Math.min(
+        36,
+        Math.max(1, intOrNull(formData.get("poduszka_cel_miesiecy")) ?? 6),
+      ),
       sleep_goal_min: sleepGoalMin(formData.get("sleep_goal_h")),
       sleep_target_bedtime: timeOrNull(formData.get("sleep_target_bedtime")),
       sleep_reminder_at: timeOrNull(formData.get("sleep_reminder_at")),
