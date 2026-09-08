@@ -111,6 +111,48 @@ export function bodyPart(value: string) {
   return BODY_PARTS.find((b) => b.value === value) ?? BODY_PARTS[BODY_PARTS.length - 1];
 }
 
+/**
+ * Rodzaje dolegliwości (migracja 0063).
+ *
+ * `wygasa` w dniach oznacza dolegliwość PRZEJŚCIOWĄ - taką, która schodzi
+ * sama i nie ma sensu jej ręcznie zamykać. Zakwasy trzymane na liście
+ * miesiącami zamieniają moduł kontuzji w listę rzeczy do posprzątania,
+ * a wtedy przestaje się do niego zaglądać.
+ *
+ * Urazy (`wygasa: null`) zachowują się jak dotąd: trwają, dopóki ich nie
+ * zamkniesz, i pytają o ocenę bólu po treningu.
+ */
+export const RODZAJE_DOLEGLIWOSCI = [
+  { value: "zakwasy", label: "Zakwasy", icon: "🔥", wygasa: 4,
+    hint: "Bolesność po wysiłku. Schodzi sama w kilka dni." },
+  { value: "sztywnosc", label: "Sztywność", icon: "🧱", wygasa: 3,
+    hint: "Ograniczony zakres ruchu bez bólu ostrego." },
+  { value: "otarcie", label: "Otarcie / odcisk", icon: "🩹", wygasa: 7,
+    hint: "Skóra: od pasa, rękawic, butów." },
+  { value: "naciagniecie", label: "Naciągnięcie", icon: "⚡", wygasa: null,
+    hint: "Mięsień lub ścięgno. Boli przy napięciu." },
+  { value: "przeciazenie", label: "Przeciążenie", icon: "📈", wygasa: null,
+    hint: "Ból narastający od powtarzanego ruchu." },
+  { value: "stluczenie", label: "Stłuczenie", icon: "🟣", wygasa: null,
+    hint: "Po uderzeniu. Siniak, tkliwość." },
+  { value: "skrecenie", label: "Skręcenie", icon: "🌀", wygasa: null,
+    hint: "Staw wyszedł poza zakres. Obrzęk." },
+  { value: "bol", label: "Ból bez urazu", icon: "❔", wygasa: null,
+    hint: "Boli, ale nie wiadomo od czego." },
+  { value: "uraz", label: "Kontuzja", icon: "🚑", wygasa: null,
+    hint: "Poważniejszy uraz, zwykle z diagnozą." },
+  { value: "inne", label: "Inne", icon: "❓", wygasa: null, hint: "" },
+] as const;
+
+export type RodzajDolegliwosci = (typeof RODZAJE_DOLEGLIWOSCI)[number]["value"];
+
+export function rodzajDolegliwosci(value: string) {
+  return (
+    RODZAJE_DOLEGLIWOSCI.find((r) => r.value === value) ??
+    RODZAJE_DOLEGLIWOSCI[RODZAJE_DOLEGLIWOSCI.length - 1]
+  );
+}
+
 export const INJURY_SIDES = [
   { value: "left", label: "Lewa" },
   { value: "right", label: "Prawa" },

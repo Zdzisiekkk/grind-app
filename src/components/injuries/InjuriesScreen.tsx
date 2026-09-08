@@ -7,6 +7,8 @@ import { PainPicker } from "@/components/injuries/PainPicker";
 import { DateNav } from "@/components/DateNav";
 import {
   BODY_PARTS,
+  RODZAJE_DOLEGLIWOSCI,
+  rodzajDolegliwosci,
   INJURY_SIDES,
   INJURY_STATUSES,
   bodyPart,
@@ -19,6 +21,12 @@ import { humanDate, shortDate } from "@/lib/format";
 import type { Injury, InjurySide, InjuryStatus } from "@/lib/database.types";
 
 export type InjuryWithPain = Injury & {
+  /* --- Z widoku v_dolegliwosci (migracja 0063) --- */
+  /** Czy liczy się dzisiaj. Przejściowe gasną same po swoim czasie. */
+  aktywna?: boolean;
+  /** Zakwasy, sztywność, otarcie - schodzą bez zamykania ręką. */
+  przejsciowa?: boolean;
+  wygasa_dnia?: string | null;
   lastLevel: number | null;
   lastDate: string | null;
   /** Ocena z oglądanego dnia - null, gdy tego dnia nic nie wpisano. */
@@ -28,6 +36,7 @@ export type InjuryWithPain = Injury & {
 
 const EMPTY = {
   name: "",
+  rodzaj: "zakwasy",
   body_part: "knee",
   side: "none" as InjurySide,
   status: "active" as InjuryStatus,
@@ -58,8 +67,20 @@ export function InjuriesScreen({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const active = injuries.filter((i) => i.status !== "healed");
-  const healed = injuries.filter((i) => i.status === "healed");
+  /*
+   * Trzy listy zamiast dwóch. `aktywna` liczy widok (uwzględnia wygaśnięcie
+   * przejściowych), a nie sam status - zakwasy sprzed tygodnia mają zejść
+   * z listy bez niczyjego udziału.
+   *
+   * Przejściowe stoją osobno, bo mieszanie ich z urazami było dokładnie tym
+   * problemem, który ta zmiana rozwiązuje: bark po zwichnięciu i zakwasy
+   * po nogach nie zasługują na to samo miejsce w hierarchii uwagi.
+   */
+  const czyAktywna = (i: InjuryWithPain) => i.aktywna ?? i.status !== "healed";
+
+  const active = injuries.filter((i) => czyAktywna(i) && !i.przejsciowa);
+  const przejsciowe = injuries.filter((i) => czyAktywna(i) && i.przejsciowa);
+  const healed = injuries.filter((i) => !czyAktywna(i));
 
   function openNew() {
     setEditing(null);
@@ -72,6 +93,7 @@ export function InjuriesScreen({
     setEditing(injury);
     setDraft({
       name: injury.name,
+      rodzaj: injury.rodzaj ?? "uraz",
       body_part: injury.body_part,
       side: injury.side,
       status: injury.status,
@@ -91,6 +113,10 @@ export function InjuriesScreen({
     const payload = {
       user_id: userId,
       name: draft.name.trim(),
+      rodzaj: draft.rodzaj,
+      // Czas wygasania jest cechą RODZAJU, nie osobną decyzją przy każdym
+      // wpisie - nikt nie chce ustalać, ile dni mają trwać jego zakwasy.
+      wygasa_po_dniach: rodzajDolegliwosci(draft.rodzaj).wygasa,
       body_part: draft.body_part,
       side: draft.side,
       status: draft.status,
@@ -175,6 +201,27 @@ export function InjuriesScreen({
             </div>
           )}
 
+          {przejsciowe.length > 0 && (
+            <Card
+              title="Po treningu"
+              subtitle="Schodzą same - nie trzeba ich zamykać"
+              padded={false}
+            >
+              <div className="flex flex-col gap-2 p-2">
+                {przejsciowe.map((injury) => (
+                  <InjuryCard
+                    key={injury.id}
+                    injury={injury}
+                    jestDzis={date === today}
+                    onRate={() => setRating(injury)}
+                    onEdit={() => openEdit(injury)}
+                    onDelete={() => remove(injury)}
+                  />
+                ))}
+              </div>
+            </Card>
+          )}
+
           {healed.length > 0 && (
             <Card title="Wyleczone" subtitle="Historia zostaje, ocen już nie zbieramy">
               <div className="flex flex-col gap-2">
@@ -206,6 +253,20 @@ export function InjuriesScreen({
               placeholder="np. Lewe kolano po ACL"
               autoFocus
             />
+          </Field>
+
+          <Field label="Co to jest?" hint={rodzajDolegliwosci(draft.rodzaj).hint}>
+            <Select
+              value={draft.rodzaj}
+              onChange={(e) => setDraft({ ...draft, rodzaj: e.target.value })}
+            >
+              {RODZAJE_DOLEGLIWOSCI.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.icon} {r.label}
+                  {r.wygasa ? ` (schodzi po ${r.wygasa} dniach)` : ""}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

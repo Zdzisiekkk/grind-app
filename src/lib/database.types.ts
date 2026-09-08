@@ -319,6 +319,16 @@ export type SleepView = {
   bezsenna: boolean;
 };
 
+/** Widok v_dolegliwosci - kontuzje z policzonym wygaśnięciem (migracja 0063). */
+export type Dolegliwosc = Injury & {
+  /** Data, po której przejściowa dolegliwość schodzi; null = trwa. */
+  wygasa_dnia: string | null;
+  /** Czy liczy się dzisiaj - fałsz dla wygasłych i zamkniętych ręcznie. */
+  aktywna: boolean;
+  /** Zakwasy, sztywność, otarcie - schodzą same. */
+  przejsciowa: boolean;
+};
+
 /** Propozycja trenera - czeka na tapnięcie, nic nie zmienia sama z siebie. */
 export type CoachProposal = {
   id: string;
@@ -561,6 +571,10 @@ export type InjurySide = "left" | "right" | "both" | "none";
 export type Injury = {
   id: string;
   user_id: string;
+  /** Rodzaj dolegliwości (migracja 0063). Domyślnie "uraz". */
+  rodzaj: string;
+  /** Po ilu dniach schodzi sama; null = trwa do ręcznego zamknięcia. */
+  wygasa_po_dniach: number | null;
   name: string;
   body_part: string;
   side: InjurySide;
@@ -964,6 +978,7 @@ export type Database = {
       v_exercise_prs: { Row: ExercisePr; Relationships: [] };
       v_daily_water: { Row: DailyWater; Relationships: [] };
       v_sleep: { Row: SleepView; Relationships: [] };
+      v_dolegliwosci: { Row: Dolegliwosc; Relationships: [] };
       v_recipe_totals: { Row: RecipeTotals; Relationships: [] };
     };
     Functions: {

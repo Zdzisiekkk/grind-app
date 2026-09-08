@@ -24,8 +24,11 @@ export default async function InjuriesPage({
   const date = dataZAdresu(d, today);
 
   const [{ data: injuries }, { data: logs }] = await Promise.all([
+    // Czytamy z widoku, a nie z tabeli: to on liczy, czy przejściowa
+    // dolegliwość jeszcze trwa (migracja 0063). Zapisy dalej idą do
+    // `injuries` - widok jest tylko na odczyt.
     supabase
-      .from("injuries")
+      .from("v_dolegliwosci")
       .select("*")
       .eq("user_id", user.id)
       .order("status")
