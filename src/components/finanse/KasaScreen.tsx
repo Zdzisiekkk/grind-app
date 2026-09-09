@@ -967,29 +967,39 @@ export function KasaScreen({
                 {wKoszyku.length > 0 && (
                   <ul className="mt-2 flex flex-col gap-2">
                     {wKoszyku.map((w) => (
-                      <li key={w.id} className="flex items-center gap-2">
-                        <span className="text-[16px]" aria-hidden>
+                      /*
+                       * Szerokości na opakowaniach, nie na samym polu: Input
+                       * ma w klasach bazowych `w-full`, a przekazane `w-24`
+                       * jej nie nadpisuje - obie zostają w atrybucie i wygrywa
+                       * ta późniejsza w arkuszu stylów. Efektem był wiersz
+                       * rozpychający okno w bok na telefonie.
+                       */
+                      <li key={w.id} className="flex items-center gap-1.5">
+                        <span className="w-5 shrink-0 text-center text-[16px]" aria-hidden>
                           {rodzajMajatku(w.rodzaj).icon}
                         </span>
-                        <Input
-                          value={w.nazwa}
-                          onChange={(e) => zmienWiersz(w.id, { nazwa: e.target.value })}
-                          aria-label="Nazwa pozycji"
-                          className="min-w-0 flex-1"
-                        />
-                        <Input
-                          inputMode="decimal"
-                          value={w.kwota}
-                          onChange={(e) => zmienWiersz(w.id, { kwota: e.target.value })}
-                          placeholder="0"
-                          aria-label={`Kwota: ${w.nazwa}`}
-                          className="w-24 shrink-0 text-right tabular-nums"
-                        />
+                        <div className="min-w-0 flex-1">
+                          <Input
+                            value={w.nazwa}
+                            onChange={(e) => zmienWiersz(w.id, { nazwa: e.target.value })}
+                            aria-label="Nazwa pozycji"
+                          />
+                        </div>
+                        <div className="w-[96px] shrink-0">
+                          <Input
+                            inputMode="decimal"
+                            value={w.kwota}
+                            onChange={(e) => zmienWiersz(w.id, { kwota: e.target.value })}
+                            placeholder="0"
+                            aria-label={`Kwota: ${w.nazwa}`}
+                            className="px-2 text-right tabular-nums"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => schowajWiersz(w)}
                           aria-label={`Usuń: ${w.nazwa}`}
-                          className="flex size-9 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface-2"
+                          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface-2"
                         >
                           ✕
                         </button>

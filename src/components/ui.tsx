@@ -313,7 +313,12 @@ export function Sheet({
             ✕
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+        {/*
+          overflow-x-hidden jako siatka bezpieczeństwa: arkusz na telefonie
+          nie ma prawa jechać w bok, a pojedyncze zbyt szerokie pole potrafi
+          rozepchnąć całe okno i schować przycisk zapisu poza ekranem.
+        */}
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4">{children}</div>
         {footer && (
           <footer className="border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {footer}

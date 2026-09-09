@@ -197,17 +197,20 @@ export function ArkuszRozliczenia({
               <ul className="flex flex-col gap-2">
                 {pozycje.map((p) => (
                   <li key={p.id} className="flex items-center gap-2">
-                    <span className="text-[16px]" aria-hidden>
+                    <span className="w-5 shrink-0 text-center text-[16px]" aria-hidden>
                       {rodzajMajatku(p.rodzaj).icon}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[14px]">{p.nazwa}</span>
-                    <Input
-                      inputMode="decimal"
-                      value={kwoty[p.id] ?? ""}
-                      onChange={(e) => setKwoty({ ...kwoty, [p.id]: e.target.value })}
-                      aria-label={`Realny stan: ${p.nazwa}`}
-                      className="w-28 shrink-0 text-right tabular-nums"
-                    />
+                    {/* Szerokość na opakowaniu - Input ma własne `w-full`. */}
+                    <div className="w-[110px] shrink-0">
+                      <Input
+                        inputMode="decimal"
+                        value={kwoty[p.id] ?? ""}
+                        onChange={(e) => setKwoty({ ...kwoty, [p.id]: e.target.value })}
+                        aria-label={`Realny stan: ${p.nazwa}`}
+                        className="px-2 text-right tabular-nums"
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -267,14 +270,16 @@ export function ArkuszRozliczenia({
                             brakuje {zl(c.zostalo)}
                           </span>
                         </span>
-                        <Input
-                          inputMode="decimal"
-                          value={naCele[c.id] ?? ""}
-                          onChange={(e) => setNaCele({ ...naCele, [c.id]: e.target.value })}
-                          placeholder="0"
-                          aria-label={`Na cel: ${c.nazwa}`}
-                          className="w-24 shrink-0 text-right tabular-nums"
-                        />
+                        <div className="w-[96px] shrink-0">
+                          <Input
+                            inputMode="decimal"
+                            value={naCele[c.id] ?? ""}
+                            onChange={(e) => setNaCele({ ...naCele, [c.id]: e.target.value })}
+                            placeholder="0"
+                            aria-label={`Na cel: ${c.nazwa}`}
+                            className="px-2 text-right tabular-nums"
+                          />
+                        </div>
                       </li>
                     ))}
                   </ul>
