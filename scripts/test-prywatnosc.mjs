@@ -122,11 +122,86 @@ r = await as(B, `delete from public.workout_sessions where user_id = '${A}'`);
 const ileTreningow = (await db.query(`select count(*)::int as n from public.workout_sessions where user_id = '${A}'`)).rows[0].n;
 check('B nie skasuje treningów A', ileTreningow > 0);
 
+/*
+ * A DOSTAJE SUBSKRYPCJĘ, zanim B o nią zapyta.
+ *
+ * Bez tego sprawdzenie przechodziło z niewłaściwego powodu: A nie miał planu,
+ * więc funkcja i tak zwracała zero i nie dało się odróżnić szczelności od
+ * pustego konta. Test, który przechodzi przypadkiem, jest gorszy niż jego brak,
+ * bo daje spokój tam, gdzie go nie ma.
+ */
+await db.query(`insert into public.subscriptions (user_id, status, plan, current_period_end)
+                values ('${A}', 'active', 'pro', now() + interval '30 days')
+                on conflict (user_id) do update
+                set status = 'active', plan = 'pro',
+                    current_period_end = now() + interval '30 days'`);
+
+r = await as(A, `select public.plan_poziom() as p`);
+check('A faktycznie ma plan, więc jest co ukrywać', r.ok && r.rows[0].p === 2, JSON.stringify(r.rows?.[0]));
+
 r = await as(B, `select public.has_pro('${A}') as p`);
 check('B nie sprawdzi cudzej subskrypcji', r.ok && r.rows[0].p === false, r.err);
 
 r = await as(B, `select public.plan_poziom('${A}') as p`);
 check('B nie sprawdzi cudzego planu', r.ok && r.rows[0].p === 0, r.err);
+
+console.log('\n  Audyt schematu\n');
+
+/*
+ * Sprawdzenia strukturalne, nie scenariuszowe. Powyższe testy pokazują, że
+ * KONKRETNE dane są szczelne; te pokazują, że nie da się dołożyć nowej tabeli
+ * albo widoku, który wypadnie poza ten mechanizm. Nowa zakładka to zwykle
+ * nowa tabela - i to jest moment, w którym rodzi się wyciek.
+ */
+r = await db.query(`
+  select c.relname, c.relrowsecurity,
+         (select count(*) from pg_policy p where p.polrelid = c.oid) as polityk,
+         has_table_privilege('authenticated', c.oid, 'SELECT') as czyta
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind = 'r'
+     and exists (select 1 from pg_attribute a
+                  where a.attrelid = c.oid and a.attname = 'user_id' and not a.attisdropped)`);
+
+const bezRls = r.rows.filter((t) => !t.relrowsecurity).map((t) => t.relname);
+check('każda tabela z user_id ma włączone RLS', bezRls.length === 0, bezRls.join(', '));
+
+// Zero polityk jest w porządku TYLKO wtedy, gdy nikt nie ma też prawa czytać -
+// to celowa blokada rejestrów wewnętrznych, a nie zapomniana polityka.
+const dziurawe = r.rows.filter((t) => Number(t.polityk) === 0 && t.czyta).map((t) => t.relname);
+check('tabela bez polityki jest też bez prawa odczytu', dziurawe.length === 0, dziurawe.join(', '));
+
+r = await db.query(`
+  select c.relname,
+         coalesce((select true from unnest(c.reloptions) o
+                    where o = 'security_invoker=on'), false) as pytajacy
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public' and c.relkind = 'v'`);
+const cudzePrawa = r.rows.filter((w) => !w.pytajacy).map((w) => w.relname);
+check(
+  'każdy widok działa z prawami pytającego, nie właściciela',
+  cudzePrawa.length === 0,
+  cudzePrawa.join(', '),
+);
+
+/*
+ * Funkcje SECURITY DEFINER omijają RLS z definicji. Te, które przyjmują
+ * identyfikator użytkownika jako argument, są więc pytaniem "powiedz mi coś
+ * o tym koncie" - i muszą same pilnować, żeby odpowiadać wyłącznie o pytającym.
+ * Lista jest zamknięta: nowa funkcja z takim argumentem ma zapalić lampkę.
+ */
+const DOZWOLONE_Z_ID = ['has_pro', 'plan_poziom'];
+r = await db.query(`
+  select p.proname
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.prosecdef
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and pg_get_function_arguments(p.oid) like '%p_user uuid%'`);
+const nowe = r.rows.map((f) => f.proname).filter((f) => !DOZWOLONE_Z_ID.includes(f));
+check(
+  'żadna nowa funkcja nie przyjmuje cudzego id od zalogowanych',
+  nowe.length === 0,
+  nowe.join(', '),
+);
 
 console.log('\n  Bez logowania\n');
 
