@@ -10,10 +10,13 @@
  */
 import { bazaZMigracjami } from './supabase-stub.mjs';
 import {
+  RODZAJE_MAJATKU,
   dziennieDoKonca,
+  koszykRodzaju,
   miesiaceProzycia,
   poduszkaProcent,
   stanPoduszki,
+  sumyKoszykow,
   zl,
   zmiana,
 } from '../src/lib/finanse.ts';
@@ -122,6 +125,62 @@ check('A widzi swój cel z policzonym postępem',
 
 r = await as(A, `select public.finanse_podsumowanie() as p`);
 check('podsumowanie liczy majątek A', r.ok && Number(r.rows[0].p.netto) === 30000, r.err);
+
+console.log('\n  Pozycje majątku\n');
+
+/*
+ * Najważniejsze sprawdzenie w tym pliku: koszyk musi znaczyć w kliencie
+ * dokładnie to, co w bazie. Gdyby TS uznał obligacje za płynne, a baza za
+ * inwestycje, poduszka na ekranie pokazywałaby zapas, którego nie ma -
+ * i nikt by tego nie zauważył, bo obie liczby wyglądałyby wiarygodnie.
+ */
+let rozjazd = null;
+for (const r of RODZAJE_MAJATKU) {
+  const wBazie = (await db.query(
+    `select public.finanse_kategoria_rodzaju('${r.rodzaj}') as k`,
+  )).rows[0].k;
+  if (wBazie !== r.koszyk) rozjazd = `${r.rodzaj}: TS=${r.koszyk} baza=${wBazie}`;
+}
+check('każdy rodzaj wpada w bazie do tego samego koszyka co w TS', rozjazd === null, rozjazd);
+
+check(
+  'nieznany rodzaj nie dostaje koszyka po cichu',
+  koszykRodzaju('skarbonka') === null,
+);
+
+check(
+  'poduszka nie widzi obligacji ani IKE',
+  koszykRodzaju('obligacje') === 'inwestycje' && koszykRodzaju('ike') === 'inwestycje',
+);
+
+const podglad = sumyKoszykow([
+  { kategoria: 'plynne', kwota: 9000 },
+  { kategoria: 'inwestycje', kwota: 15000 },
+  { kategoria: 'inne', kwota: 30000 },
+  { kategoria: 'dlugi', kwota: 20000 },
+  { kategoria: 'plynne', kwota: 5000, archiwalna: true },
+]);
+check('podgląd sum odejmuje długi', podglad.netto === 34000, String(podglad.netto));
+check('schowana pozycja nie wchodzi do podglądu', podglad.plynne === 9000);
+
+r = await as(A, `insert into public.finanse_pozycje (user_id, nazwa, rodzaj, kwota)
+                 values ('${A}', 'Konto ING', 'konto', 9000), ('${A}', 'IKE', 'ike', 15000)`);
+check('A opisuje majątek pozycjami', r.ok, r.err);
+
+r = await as(A, `select public.finanse_zapisz_migawke() as m`);
+check(
+  'migawka z pozycji liczy płynne i inwestycje osobno',
+  r.ok && Number(r.rows[0].m.plynne) === 9000 && Number(r.rows[0].m.inwestycje) === 15000,
+  r.err,
+);
+
+r = await as(B, `select * from public.finanse_pozycje`);
+check('B nie widzi pozycji majątku A', r.ok && r.rows.length === 0,
+  r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
+r = await as(B, `insert into public.finanse_pozycje (user_id, nazwa, rodzaj, kwota)
+                 values ('${A}', 'Podrzucone', 'konto', 1)`);
+check('B nie dopisze pozycji do majątku A', !r.ok, 'wiersz przeszedł');
 
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);

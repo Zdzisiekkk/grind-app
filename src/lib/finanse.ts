@@ -113,3 +113,122 @@ export function stanPoduszki(miesiace: number | null): {
   if (miesiace < 6) return { tone: "accent", label: "Bezpiecznie" };
   return { tone: "success", label: "Spokojnie" };
 }
+
+/* ------------------------------- Majątek ---------------------------------- */
+
+/**
+ * Koszyki majątku. Ta czwórka nie jest kosmetyką - decyduje o poduszce,
+ * którą liczymy WYŁĄCZNIE z płynnych. Dlatego przy każdym koszyku stoi
+ * zdanie o tym, co się do niego kwalifikuje: bez tego lokata na trzy lata
+ * i konto oszczędnościowe lądują w tym samym miejscu, a to dwie różne
+ * odpowiedzi na pytanie "ile wytrzymam bez przychodu".
+ */
+export const KOSZYKI_MAJATKU = [
+  {
+    value: "plynne",
+    label: "Płynne",
+    opis: "Da się z tego zapłacić w tym tygodniu. Tylko to liczy się do poduszki.",
+  },
+  {
+    value: "inwestycje",
+    label: "Inwestycje",
+    opis: "Realna wartość, ale wyjście kosztuje czas albo stratę.",
+  },
+  {
+    value: "inne",
+    label: "Rzeczy i należności",
+    opis: "Liczą się do majątku, nie do poduszki.",
+  },
+  {
+    value: "dlugi",
+    label: "Długi",
+    opis: "Wpisuj dodatnio - ile wisisz. Odejmie się samo.",
+  },
+] as const;
+
+export type KoszykMajatku = (typeof KOSZYKI_MAJATKU)[number]["value"];
+
+/**
+ * Podpowiedzi: gotowa lista tego, co ludzie faktycznie mają.
+ *
+ * Puste pole "nazwa pozycji" jest gorsze niż brak pola - trzeba wymyślić,
+ * jak nazwać własne konto, i połowa osób na tym poprzestaje. Lista do
+ * tapnięcia zamienia to w dwa ruchy, a przy okazji przypomina o rzeczach,
+ * o których się zapomina: PPK, obligacjach z inflacji, debecie na koncie.
+ *
+ * `rodzaj` musi się zgadzać z public.finanse_kategoria_rodzaju z 0065 -
+ * pilnuje tego test:finanse.
+ */
+export const RODZAJE_MAJATKU: ReadonlyArray<{
+  rodzaj: string;
+  koszyk: KoszykMajatku;
+  label: string;
+  icon: string;
+  podpowiedz: string;
+}> = [
+  // --- Płynne ---
+  { rodzaj: "konto", koszyk: "plynne", label: "Konto osobiste", icon: "🏦", podpowiedz: "To, z czego płacisz na co dzień" },
+  { rodzaj: "oszczednosciowe", koszyk: "plynne", label: "Konto oszczędnościowe", icon: "🐖", podpowiedz: "Odłożone, ale wypłacalne od ręki" },
+  { rodzaj: "gotowka", koszyk: "plynne", label: "Gotówka", icon: "💵", podpowiedz: "Portfel, koperta, szuflada" },
+  { rodzaj: "lokata", koszyk: "plynne", label: "Lokata", icon: "🔒", podpowiedz: "Zerwiesz w każdej chwili, tracąc odsetki" },
+  { rodzaj: "waluta", koszyk: "plynne", label: "Waluta obca", icon: "💱", podpowiedz: "Euro, dolary - po dzisiejszym kursie" },
+
+  // --- Inwestycje ---
+  { rodzaj: "akcje", koszyk: "inwestycje", label: "Akcje", icon: "📈", podpowiedz: "Wartość rachunku maklerskiego" },
+  { rodzaj: "etf", koszyk: "inwestycje", label: "ETF", icon: "🧺", podpowiedz: "Fundusze indeksowe" },
+  { rodzaj: "obligacje", koszyk: "inwestycje", label: "Obligacje skarbowe", icon: "🧾", podpowiedz: "EDO, ROD, antyinflacyjne" },
+  { rodzaj: "ike", koszyk: "inwestycje", label: "IKE", icon: "🏛️", podpowiedz: "Konto emerytalne - wypłata dopiero po 60." },
+  { rodzaj: "ikze", koszyk: "inwestycje", label: "IKZE", icon: "🏛️", podpowiedz: "To samo, z ulgą w PIT" },
+  { rodzaj: "ppk", koszyk: "inwestycje", label: "PPK", icon: "🧑‍💼", podpowiedz: "Łatwo zapomnieć, że to Twoje pieniądze" },
+  { rodzaj: "fundusz", koszyk: "inwestycje", label: "Fundusz", icon: "📊", podpowiedz: "TFI, fundusze inwestycyjne" },
+  { rodzaj: "krypto", koszyk: "inwestycje", label: "Krypto", icon: "🪙", podpowiedz: "Po dzisiejszej wycenie, nie po tym, ile wpłaciłeś" },
+  { rodzaj: "metale", koszyk: "inwestycje", label: "Złoto i srebro", icon: "🥇", podpowiedz: "Monety, sztabki" },
+  { rodzaj: "inwestycja_inna", koszyk: "inwestycje", label: "Inna inwestycja", icon: "💼", podpowiedz: "Udziały, pożyczki, cokolwiek pracuje" },
+
+  // --- Rzeczy i należności ---
+  { rodzaj: "nieruchomosc", koszyk: "inne", label: "Nieruchomość", icon: "🏠", podpowiedz: "Wartość mieszkania - kredyt wpisz osobno jako dług" },
+  { rodzaj: "samochod", koszyk: "inne", label: "Samochód", icon: "🚗", podpowiedz: "Tyle, ile realnie dostałbyś przy sprzedaży" },
+  { rodzaj: "sprzet", koszyk: "inne", label: "Sprzęt", icon: "💻", podpowiedz: "Komputer, rower, aparat" },
+  { rodzaj: "kolekcja", koszyk: "inne", label: "Rzeczy wartościowe", icon: "🎸", podpowiedz: "Instrumenty, zegarki, kolekcje" },
+  { rodzaj: "naleznosc", koszyk: "inne", label: "Pożyczone komuś", icon: "🤝", podpowiedz: "Pieniądze, które mają wrócić" },
+
+  // --- Długi ---
+  { rodzaj: "hipoteka", koszyk: "dlugi", label: "Kredyt hipoteczny", icon: "🏚️", podpowiedz: "Pozostało do spłaty, nie rata" },
+  { rodzaj: "kredyt", koszyk: "dlugi", label: "Kredyt gotówkowy", icon: "🏦", podpowiedz: "Pozostały kapitał" },
+  { rodzaj: "karta", koszyk: "dlugi", label: "Karta kredytowa", icon: "💳", podpowiedz: "Wykorzystany limit" },
+  { rodzaj: "raty", koszyk: "dlugi", label: "Zakupy na raty", icon: "🧾", podpowiedz: "Też dług, nawet gdy na zero procent" },
+  { rodzaj: "pozyczka_prywatna", koszyk: "dlugi", label: "Pożyczka od bliskich", icon: "🤝", podpowiedz: "Bez umowy to nadal dług" },
+  { rodzaj: "debet", koszyk: "dlugi", label: "Debet na koncie", icon: "📉", podpowiedz: "Minus, na którym siedzisz" },
+  { rodzaj: "dlug_inny", koszyk: "dlugi", label: "Inny dług", icon: "💸", podpowiedz: "Zaległy podatek, mandat, rachunek" },
+];
+
+export function rodzajMajatku(rodzaj: string) {
+  return (
+    RODZAJE_MAJATKU.find((r) => r.rodzaj === rodzaj) ??
+    RODZAJE_MAJATKU[RODZAJE_MAJATKU.length - 1]
+  );
+}
+
+/** Odpowiednik public.finanse_kategoria_rodzaju - null dla nieznanego rodzaju. */
+export function koszykRodzaju(rodzaj: string): KoszykMajatku | null {
+  return RODZAJE_MAJATKU.find((r) => r.rodzaj === rodzaj)?.koszyk ?? null;
+}
+
+/**
+ * Podgląd sum przy wpisywaniu.
+ *
+ * To tylko podgląd: zapisu dokonuje public.finanse_zapisz_migawke i to baza
+ * ma ostatnie słowo. Liczymy tu drugi raz wyłącznie po to, żeby suma zmieniała
+ * się pod palcem - bez tego nie wiadomo, czy wpisana kwota trafiła tam, gdzie
+ * miała.
+ */
+export function sumyKoszykow(
+  pozycje: ReadonlyArray<{ kategoria: string; kwota: number; archiwalna?: boolean }>,
+): Record<KoszykMajatku, number> & { netto: number } {
+  const s = { plynne: 0, inwestycje: 0, inne: 0, dlugi: 0 };
+  for (const p of pozycje) {
+    if (p.archiwalna) continue;
+    if (p.kategoria in s) s[p.kategoria as KoszykMajatku] += p.kwota || 0;
+  }
+  return { ...s, netto: s.plynne + s.inwestycje + s.inne - s.dlugi };
+}

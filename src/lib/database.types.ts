@@ -398,11 +398,32 @@ export type FinanseWplata = {
   created_at: string;
 };
 
+/** Pozycja majątku - nazwana rzecz, która trwa między migawkami (0065). */
+export type FinansePozycja = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  /** Klucz z RODZAJE_MAJATKU; baza mapuje go na koszyk. */
+  rodzaj: string;
+  /** Zawsze dodatnia, także przy długach. */
+  kwota: number;
+  /** Liczone przez bazę z rodzaju - wysłane z klienta i tak zostanie nadpisane. */
+  kategoria: "plynne" | "inwestycje" | "inne" | "dlugi";
+  /** Sprzedane albo spłacone: nie wchodzi do migawki, zostaje w historii. */
+  archiwalna: boolean;
+  note: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
 /** Wynik public.finanse_podsumowanie(). */
 export type FinansePodsumowanie = {
   netto: number | null;
   plynne: number | null;
   inwestycje: number | null;
+  /** Rzeczy i należności - wchodzą do netto, nie do poduszki (0065). */
+  inne: number | null;
   dlugi: number | null;
   data_migawki: string | null;
   zmiana_30d: number | null;
@@ -1017,6 +1038,7 @@ export type Database = {
       todos: Tbl<Todo, "user_id" | "title">;
       subscriptions: Tbl<Subscription, "user_id">;
       finanse_stan: Tbl<FinanseStan, "user_id">;
+      finanse_pozycje: Tbl<FinansePozycja, "user_id" | "nazwa" | "rodzaj">;
       finanse_wydatki: Tbl<FinanseWydatek, "user_id" | "kwota">;
       finanse_cele: Tbl<FinanseCel, "user_id" | "nazwa" | "kwota_cel">;
       finanse_wplaty: Tbl<FinanseWplata, "user_id" | "cel_id" | "kwota">;
@@ -1094,6 +1116,7 @@ export type Database = {
       xp_poziom: { Args: { p_xp: number }; Returns: number };
       /** Majątek, poduszka i budżet w jednym zapytaniu (migracja 0064). */
       finanse_podsumowanie: { Args: Record<string, never>; Returns: unknown };
+      finanse_zapisz_migawke: { Args: { p_data?: string }; Returns: unknown };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */
