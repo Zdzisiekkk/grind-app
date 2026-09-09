@@ -191,9 +191,14 @@ export default async function ProfilPage() {
             </Field>
           </div>
           <p className="mt-1 text-[12px] leading-relaxed text-faint">
-            Koszty życia to stałe wydatki: czynsz, rachunki, jedzenie w domu, raty. Budżet
-            uznaniowy dotyczy reszty - jedzenia na mieście, zakupów, rozrywki. Zostaw puste,
-            żeby nie pilnować limitu.
+            Koszty życia to stałe wydatki: czynsz, rachunki, jedzenie w domu, raty. Jeśli
+            wypiszesz je pozycja po pozycji w{" "}
+            <a className="underline" href="/kasa">
+              Kasie
+            </a>
+            , ich suma zastąpi to pole i poduszka przeliczy się sama. Budżet uznaniowy dotyczy
+            reszty - jedzenia na mieście, zakupów, rozrywki. Zostaw puste, żeby nie pilnować
+            limitu.
           </p>
         </Card>
 

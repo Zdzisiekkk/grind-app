@@ -6,7 +6,7 @@
  * kopie wzoru to prosta droga do dwóch różnych odpowiedzi na to samo pytanie.
  */
 
-import type { KategoriaWydatku } from "@/lib/database.types";
+import type { KategoriaStalego, KategoriaWydatku } from "@/lib/database.types";
 
 export const KATEGORIE_WYDATKOW: ReadonlyArray<{
   value: KategoriaWydatku;
@@ -231,4 +231,140 @@ export function sumyKoszykow(
     if (p.kategoria in s) s[p.kategoria as KoszykMajatku] += p.kwota || 0;
   }
   return { ...s, netto: s.plynne + s.inwestycje + s.inne - s.dlugi };
+}
+
+/* --------------------------- Wpływy i koszty stałe ------------------------ */
+
+export const KATEGORIE_STALYCH: ReadonlyArray<{
+  value: KategoriaStalego;
+  label: string;
+  icon: string;
+}> = [
+  { value: "mieszkanie", label: "Mieszkanie", icon: "🏠" },
+  { value: "rachunki", label: "Rachunki", icon: "🧾" },
+  { value: "subskrypcje", label: "Subskrypcje", icon: "📺" },
+  { value: "transport", label: "Transport", icon: "🚌" },
+  { value: "zdrowie", label: "Zdrowie", icon: "💊" },
+  { value: "jedzenie", label: "Jedzenie w domu", icon: "🛒" },
+  { value: "raty", label: "Raty i kredyty", icon: "🏦" },
+  { value: "inne", label: "Inne", icon: "💸" },
+];
+
+export function kategoriaStalego(value: string) {
+  return (
+    KATEGORIE_STALYCH.find((k) => k.value === value) ??
+    KATEGORIE_STALYCH[KATEGORIE_STALYCH.length - 1]
+  );
+}
+
+/**
+ * Podpowiedzi kosztów stałych.
+ *
+ * Ta sama zasada co przy majątku: puste pole "nazwa" jest gorsze niż jego
+ * brak. Lista jest też ściągą - czynsz każdy pamięta, ale ubezpieczenie
+ * płacone raz na pół roku i trzy abonamenty po dwadzieścia złotych to
+ * dokładnie te pozycje, przez które bilans nigdy się nie spina.
+ */
+export const PODPOWIEDZI_STALYCH: ReadonlyArray<{
+  nazwa: string;
+  kategoria: KategoriaStalego;
+  icon: string;
+}> = [
+  { nazwa: "Czynsz", kategoria: "mieszkanie", icon: "🏠" },
+  { nazwa: "Prąd", kategoria: "rachunki", icon: "💡" },
+  { nazwa: "Internet", kategoria: "rachunki", icon: "📶" },
+  { nazwa: "Telefon", kategoria: "rachunki", icon: "📱" },
+  { nazwa: "Zakupy spożywcze", kategoria: "jedzenie", icon: "🛒" },
+  { nazwa: "Bilet miesięczny", kategoria: "transport", icon: "🚌" },
+  { nazwa: "Siłownia", kategoria: "zdrowie", icon: "🏋️" },
+  { nazwa: "Netflix / Spotify", kategoria: "subskrypcje", icon: "📺" },
+  { nazwa: "Ubezpieczenie", kategoria: "zdrowie", icon: "🛡️" },
+  { nazwa: "Rata kredytu", kategoria: "raty", icon: "🏦" },
+];
+
+export const IKONY_ZRODEL = ["💼", "💻", "🧾", "👨‍👩‍👦", "🎓", "🏠", "📈", "💰"] as const;
+
+/**
+ * Dzienny limit wydatków uznaniowych - ta sama reguła co w bazie.
+ *
+ * Liczony z tego, co ZOSTAŁO, dzielone przez dni DO KOŃCA miesiąca. Po
+ * przepalonym tygodniu poprzeczka rośnie i to jest zamierzone: średnia
+ * z całego miesiąca pozwalałaby przepalić połowę budżetu w pięć dni
+ * i dalej "mieścić się w planie".
+ */
+export function dziennyLimit(
+  budzet: number | null | undefined,
+  wydaneWMiesiacu: number,
+  dzisiaj = new Date(),
+): number | null {
+  if (budzet == null) return null;
+  const wMiesiacu = new Date(dzisiaj.getFullYear(), dzisiaj.getMonth() + 1, 0).getDate();
+  const doKonca = Math.max(1, wMiesiacu - dzisiaj.getDate() + 1);
+  return Math.round(((budzet - wydaneWMiesiacu) / doKonca) * 100) / 100;
+}
+
+/**
+ * Czy tempo wydawania wystarczy do końca miesiąca.
+ *
+ * Ostrzegamy dopiero przy realnym zagrożeniu, a nie przy pierwszym dniu
+ * powyżej średniej - alarm, który wyje co drugi dzień, przestaje cokolwiek
+ * znaczyć po tygodniu.
+ */
+export function tempoBudzetu(
+  budzet: number | null | undefined,
+  wydaneWMiesiacu: number,
+  dzisiaj = new Date(),
+): { stan: "ok" | "uwaga" | "przekroczony"; prognoza: number | null } {
+  if (budzet == null || budzet <= 0) return { stan: "ok", prognoza: null };
+  if (wydaneWMiesiacu > budzet) return { stan: "przekroczony", prognoza: wydaneWMiesiacu };
+
+  const wMiesiacu = new Date(dzisiaj.getFullYear(), dzisiaj.getMonth() + 1, 0).getDate();
+  const minelo = dzisiaj.getDate();
+  const prognoza = Math.round((wydaneWMiesiacu / minelo) * wMiesiacu);
+
+  // Pięć procent zapasu, bo prognoza z trzech dni miesiąca i tak jest zgadywanką.
+  return { stan: prognoza > budzet * 1.05 ? "uwaga" : "ok", prognoza };
+}
+
+/**
+ * Pierwszy dzień miesiąca jako YYYY-MM-DD.
+ *
+ * Sklejane z pól lokalnej daty, NIE przez toISOString: ta konwertuje na UTC,
+ * więc pierwszy dzień miesiąca o północy czasu polskiego wychodzi jako
+ * ostatni dzień poprzedniego. Błąd cichy - wpisy lądują w sąsiednim miesiącu
+ * i bilans po prostu ich nie widzi.
+ */
+export function poczatekMiesiaca(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+/** "wrzesień 2026" z pierwszego dnia okresu. */
+export function nazwaMiesiaca(okres: string | null | undefined): string {
+  if (!okres) return "";
+  const d = new Date(`${okres}T00:00:00`);
+  return d.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
+}
+
+/**
+ * Zdanie o różnicy między rejestrem a stanem konta.
+ *
+ * Nazywamy rzecz po imieniu w obie strony. "Wyparowało" bez wskazania,
+ * że to normalne, brzmiałoby jak oskarżenie - a te pieniądze prawie zawsze
+ * poszły na drobne, o których nikt nie pamięta.
+ */
+export function opisNieuchwyconego(kwota: number | null): {
+  tone: "success" | "warn" | "danger" | "accent";
+  tekst: string;
+} {
+  if (kwota == null) return { tone: "accent", tekst: "Brak wcześniejszej migawki - nie ma z czym porównać." };
+  if (Math.abs(kwota) < 1) return { tone: "success", tekst: "Rejestr zgadza się ze stanem konta co do złotówki." };
+  if (kwota < 0)
+    return {
+      tone: "success",
+      tekst: `Znalazło się ${zl(Math.abs(kwota))} więcej, niż wynikało z wpisów - zwrot albo zapomniany wpływ.`,
+    };
+  return {
+    tone: kwota > 500 ? "danger" : "warn",
+    tekst: `${zl(kwota)} wyparowało poza wpisami. To zwykle drobne, o których się nie pamięta.`,
+  };
 }

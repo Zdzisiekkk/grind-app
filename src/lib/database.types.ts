@@ -417,6 +417,133 @@ export type FinansePozycja = {
   updated_at: string;
 };
 
+/* --- Wpływy, koszty stałe i rozliczenia (migracje 0066-0068) --- */
+
+export type KategoriaStalego =
+  | "mieszkanie" | "rachunki" | "subskrypcje" | "transport"
+  | "zdrowie" | "jedzenie" | "raty" | "inne";
+
+/** Źródło przychodu z planowaną kwotą na miesiąc. */
+export type FinanseZrodlo = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  ikona: string;
+  /** Ile spodziewasz się w miesiącu; null = nie planuję. */
+  plan_miesieczny: number | null;
+  aktywne: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FinanseWplyw = {
+  id: string;
+  user_id: string;
+  /** null dla wpływu jednorazowego, bez własnego źródła. */
+  zrodlo_id: string | null;
+  kwota: number;
+  data: string;
+  opis: string | null;
+  created_at: string;
+};
+
+/** Pozycja szablonu kosztów stałych. */
+export type FinanseStaly = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  kwota: number;
+  kategoria: KategoriaStalego;
+  /** 1-31; termin przycina się do długości miesiąca przy naliczaniu. */
+  dzien_miesiaca: number;
+  aktywny: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Naliczenie przygotowane przez szablon - czeka na potwierdzenie. */
+export type FinanseNaliczenie = {
+  id: string;
+  user_id: string;
+  stale_id: string;
+  okres: string;
+  termin: string;
+  kwota: number;
+  status: "oczekuje" | "potwierdzone" | "pominiete";
+  potwierdzone_at: string | null;
+  created_at: string;
+};
+
+/** Zamknięty miesiąc - bilans zamrożony w chwili rozliczenia. */
+export type FinanseRozliczenie = {
+  id: string;
+  user_id: string;
+  okres: string;
+  wplywy: number;
+  stale: number;
+  uznaniowe: number;
+  wynik: number;
+  plynne_oczekiwane: number | null;
+  plynne_realne: number | null;
+  /** Dodatnie = wyparowało poza wpisami; ujemne = znalazło się więcej. */
+  nieuchwycone: number | null;
+  note: string | null;
+  zamkniete_at: string;
+  created_at: string;
+};
+
+export type FinanseDzienZero = {
+  user_id: string;
+  dzien: string;
+  created_at: string;
+};
+
+/** Wynik public.finanse_bilans(). */
+export type FinanseBilans = {
+  okres: string;
+  wplywy_plan: number;
+  wplywy_realne: number;
+  stale_potwierdzone: number;
+  stale_oczekuje: number;
+  stale_do_potwierdzenia: number;
+  uznaniowe: number;
+  wynik: number;
+  wynik_po_stalych: number;
+};
+
+/** Wynik public.finanse_rozliczenie_podglad(). */
+export type FinanseRozliczeniePodglad = {
+  okres: string;
+  wplywy: number;
+  stale: number;
+  uznaniowe: number;
+  wynik: number;
+  stale_oczekuje: number;
+  plynne_start: number | null;
+  plynne_oczekiwane: number | null;
+  plynne_pozycje: number;
+  ma_pozycje: boolean;
+  nieuchwycone: number | null;
+  juz_zamkniete: boolean;
+};
+
+/** Wynik public.finanse_analiza(). */
+export type FinanseAnaliza = {
+  okres: string;
+  suma: number;
+  srednia_poprzednich: number | null;
+  kategorie: Array<{
+    kategoria: KategoriaWydatku;
+    kwota: number;
+    procent: number;
+    srednio: number | null;
+    roznica: number | null;
+  }>;
+  stale: Array<{ kategoria: KategoriaStalego; kwota: number }>;
+};
+
 /** Wynik public.finanse_podsumowanie(). */
 export type FinansePodsumowanie = {
   netto: number | null;
@@ -433,6 +560,17 @@ export type FinansePodsumowanie = {
   budzet: number | null;
   wydane_w_miesiacu: number;
   budzet_zostalo: number | null;
+  /* --- 0066-0068 --- */
+  /** Czy koszty życia liczą się z szablonu, czy z ręcznego pola w profilu. */
+  koszty_z_szablonu: boolean;
+  /** Majątek z doliczonym ruchem od ostatniej migawki; null = nic się nie ruszyło. */
+  netto_szacowany: number | null;
+  ruch_od_migawki: number | null;
+  /** Miesiąc czekający na rozliczenie; null = nie ma czego zamykać. */
+  rozliczenie_okres: string | null;
+  /** Ile średnio ucieka poza wpisami - z zamkniętych miesięcy. */
+  wyciek_sredni: number | null;
+  wyciek_miesiecy: number | null;
 };
 
 /** Propozycja trenera - czeka na tapnięcie, nic nie zmienia sama z siebie. */
@@ -1039,6 +1177,12 @@ export type Database = {
       subscriptions: Tbl<Subscription, "user_id">;
       finanse_stan: Tbl<FinanseStan, "user_id">;
       finanse_pozycje: Tbl<FinansePozycja, "user_id" | "nazwa" | "rodzaj">;
+      finanse_zrodla: Tbl<FinanseZrodlo, "user_id" | "nazwa">;
+      finanse_wplywy: Tbl<FinanseWplyw, "user_id" | "kwota">;
+      finanse_stale: Tbl<FinanseStaly, "user_id" | "nazwa" | "kwota">;
+      finanse_naliczenia: Tbl<FinanseNaliczenie, "user_id" | "stale_id" | "okres" | "termin" | "kwota">;
+      finanse_rozliczenia: Tbl<FinanseRozliczenie, "user_id" | "okres">;
+      finanse_dni_zero: Tbl<FinanseDzienZero, "user_id">;
       finanse_wydatki: Tbl<FinanseWydatek, "user_id" | "kwota">;
       finanse_cele: Tbl<FinanseCel, "user_id" | "nazwa" | "kwota_cel">;
       finanse_wplaty: Tbl<FinanseWplata, "user_id" | "cel_id" | "kwota">;
@@ -1117,6 +1261,12 @@ export type Database = {
       /** Majątek, poduszka i budżet w jednym zapytaniu (migracja 0064). */
       finanse_podsumowanie: { Args: Record<string, never>; Returns: unknown };
       finanse_zapisz_migawke: { Args: { p_data?: string }; Returns: unknown };
+      finanse_nalicz_stale: { Args: { p_okres?: string }; Returns: number };
+      finanse_bilans: { Args: { p_okres?: string }; Returns: unknown };
+      finanse_analiza: { Args: { p_miesiecy?: number }; Returns: unknown };
+      finanse_xp_rozlicz: { Args: Record<string, never>; Returns: number };
+      finanse_rozliczenie_podglad: { Args: { p_okres: string }; Returns: unknown };
+      finanse_zamknij_miesiac: { Args: { p_okres: string; p_note?: string }; Returns: unknown };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */
       consume_ai_call: { Args: { p_limit: number }; Returns: boolean };
       /** Czy wolno zrobić kolejny skan i kiedy najwcześniej następny. */

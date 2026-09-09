@@ -12,7 +12,12 @@ import { bazaZMigracjami } from './supabase-stub.mjs';
 import {
   RODZAJE_MAJATKU,
   dziennieDoKonca,
+  dziennyLimit,
   koszykRodzaju,
+  nazwaMiesiaca,
+  poczatekMiesiaca,
+  opisNieuchwyconego,
+  tempoBudzetu,
   miesiaceProzycia,
   poduszkaProcent,
   stanPoduszki,
@@ -181,6 +186,94 @@ check('B nie widzi pozycji majątku A', r.ok && r.rows.length === 0,
 r = await as(B, `insert into public.finanse_pozycje (user_id, nazwa, rodzaj, kwota)
                  values ('${A}', 'Podrzucone', 'konto', 1)`);
 check('B nie dopisze pozycji do majątku A', !r.ok, 'wiersz przeszedł');
+
+console.log('\n  Bilans, tempo i rozliczenie\n');
+
+const styczen5 = new Date(2026, 0, 5);
+check(
+  'dzienny limit liczy się z reszty budżetu, nie ze średniej miesiąca',
+  dziennyLimit(900, 200, styczen5) === 25.93,
+  String(dziennyLimit(900, 200, styczen5)),
+);
+check('bez budżetu nie ma limitu', dziennyLimit(null, 100) === null);
+
+// 5 stycznia minęło 5 dni z 31: 400 zł daje prognozę 2480 zł.
+check('tempo alarmuje, gdy prognoza przebija budżet', tempoBudzetu(900, 400, styczen5).stan === 'uwaga');
+check('spokojne tempo nie alarmuje', tempoBudzetu(900, 100, styczen5).stan === 'ok');
+check('przekroczony budżet jest przekroczony, nie "uwaga"',
+  tempoBudzetu(900, 1000, styczen5).stan === 'przekroczony');
+check(
+  'jeden dzień powyżej średniej nie wywołuje alarmu',
+  tempoBudzetu(900, 30, new Date(2026, 0, 1)).stan === 'ok',
+  JSON.stringify(tempoBudzetu(900, 30, new Date(2026, 0, 1))),
+);
+
+check('brak wcześniejszej migawki to nie oskarżenie', opisNieuchwyconego(null).tone === 'accent');
+check('zgodność co do złotówki to sukces', opisNieuchwyconego(0.4).tone === 'success');
+check('nadwyżka ponad rejestr też jest dobra', opisNieuchwyconego(-120).tone === 'success');
+check('duży wyciek to alarm', opisNieuchwyconego(800).tone === 'danger');
+check('nazwa miesiąca po polsku', nazwaMiesiaca('2026-09-01').includes('wrze'), nazwaMiesiaca('2026-09-01'));
+/*
+ * toISOString() przesuwa datę o strefę: pierwszy stycznia o północy czasu
+ * polskiego wychodzi jako 31 grudnia. Wpisy lądowały wtedy w poprzednim
+ * miesiącu i bilans ich nie widział - błąd całkowicie cichy.
+ */
+check(
+  'początek miesiąca nie ucieka do poprzedniego przez strefę czasową',
+  poczatekMiesiaca(new Date(2026, 0, 1)) === '2026-01-01',
+  poczatekMiesiaca(new Date(2026, 0, 1)),
+);
+
+const okres = poczatekMiesiaca();
+
+r = await as(A, `insert into public.finanse_zrodla (user_id, nazwa, plan_miesieczny)
+                 values ('${A}', 'Praca', 3000) returning id`);
+const zrodloA = r.ok ? r.rows[0].id : null;
+check('A definiuje źródło przychodu', r.ok, r.err);
+
+r = await as(A, `insert into public.finanse_wplywy (user_id, zrodlo_id, kwota, data)
+             values ('${A}', '${zrodloA}', 3000, '${okres}')`);
+check('A zapisuje wpływ', r.ok, r.err);
+await as(A, `insert into public.finanse_stale (user_id, nazwa, kwota, dzien_miesiaca)
+             values ('${A}', 'Czynsz', 1500, 1)`);
+r = await as(A, `select public.finanse_nalicz_stale() as n`);
+check('naliczenie tworzy rachunek do potwierdzenia', r.ok && r.rows[0].n === 1, r.err);
+
+r = await as(A, `select public.finanse_bilans() as b`);
+check(
+  'niepotwierdzony rachunek nie zjada bilansu',
+  r.ok && Number(r.rows[0].b.wynik) === 3000 - 89.99,
+  r.ok ? JSON.stringify(r.rows[0].b.wynik) : r.err,
+);
+
+await as(A, `update public.finanse_naliczenia set status = 'potwierdzone' where user_id = '${A}'`);
+r = await as(A, `select public.finanse_bilans() as b`);
+check(
+  'potwierdzony rachunek wchodzi do bilansu',
+  r.ok && Number(r.rows[0].b.wynik) === 3000 - 1500 - 89.99,
+  r.ok ? JSON.stringify(r.rows[0].b.wynik) : r.err,
+);
+
+// Sedno prywatności: pieniądze są wrażliwsze niż waga.
+r = await as(B, `select * from public.finanse_wplywy`);
+check('B nie widzi wpływów A', r.ok && r.rows.length === 0, r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
+r = await as(B, `select * from public.finanse_stale`);
+check('B nie widzi kosztów stałych A', r.ok && r.rows.length === 0, r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
+r = await as(B, `select * from public.finanse_naliczenia`);
+check('B nie widzi rachunków A', r.ok && r.rows.length === 0, r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
+r = await as(B, `insert into public.finanse_wplywy (user_id, zrodlo_id, kwota)
+                 values ('${B}', '${zrodloA}', 500)`);
+check('B nie dopisze wpływu do cudzego źródła', !r.ok, 'wiersz przeszedł');
+
+r = await as(B, `select public.finanse_bilans() as b`);
+check(
+  'bilans B nie zawiera liczb A',
+  r.ok && Number(r.rows[0].b.wplywy_realne) === 0,
+  r.ok ? JSON.stringify(r.rows[0].b) : r.err,
+);
 
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);

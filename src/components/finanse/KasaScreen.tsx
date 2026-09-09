@@ -10,35 +10,51 @@ import {
   KOSZYKI_MAJATKU,
   RODZAJE_MAJATKU,
   dziennieDoKonca,
+  kategoriaStalego,
   kategoriaWydatku,
   koszykRodzaju,
+  nazwaMiesiaca,
   poduszkaProcent,
   rodzajMajatku,
   stanPoduszki,
   sumyKoszykow,
+  tempoBudzetu,
   zl,
   zmiana,
 } from "@/lib/finanse";
+import { ArkuszRozliczenia } from "./ArkuszRozliczenia";
+import { ArkuszStalych } from "./ArkuszStalych";
+import { ArkuszZrodel } from "./ArkuszZrodel";
+import { liczba, useZapis } from "./useZapis";
 import type {
+  FinanseAnaliza,
+  FinanseBilans,
   FinanseCelZPostepem,
+  FinanseNaliczenie,
   FinansePodsumowanie,
   FinansePozycja,
+  FinanseRozliczeniePodglad,
+  FinanseStaly,
+  FinanseWplyw,
   FinanseWydatek,
+  FinanseZrodlo,
 } from "@/lib/database.types";
 
 /**
  * Kasa - finansowa strona "lock inu".
  *
- * Kolejność kart nie jest przypadkowa i odpowiada temu, jak często pytanie
- * naprawdę pada: najpierw ile mam zapasu (poduszka), potem ile zostało do
- * końca miesiąca (budżet), potem czy majątek rośnie (trend), a cele na końcu,
- * bo to jedyna rzecz, którą ogląda się raz na kilka dni, a nie codziennie.
+ * Kolejność kart odpowiada temu, jak pilne jest pytanie, na które odpowiadają:
+ * najpierw rzeczy wymagające decyzji dziś (rozliczenie miesiąca, rachunki do
+ * potwierdzenia), potem stan (poduszka, budżet), potem obraz miesiąca, a na
+ * końcu przeglądy, które ogląda się raz na kilka dni.
  */
 
-type Arkusz = "stan" | "wydatek" | "cel" | "wplata" | null;
+type Arkusz =
+  | "stan" | "wydatek" | "wplyw" | "cel" | "wplata"
+  | "stale" | "zrodla" | "rozliczenie" | null;
 
 /**
- * Pozycja w trakcie edycji.
+ * Pozycja majątku w trakcie edycji.
  *
  * Kwota jako tekst, nie liczba: między "12" a "12000" przechodzi się przez
  * stany, których nie da się sensownie trzymać jako number - a każde
@@ -67,14 +83,29 @@ const doWierszy = (ps: FinansePozycja[]): Wiersz[] =>
 export function KasaScreen({
   userId,
   podsumowanie,
+  bilans,
+  analiza,
   pozycje,
+  zrodla,
+  wplywy,
+  stale,
+  naliczenia,
+  rozliczenie,
   cele,
   wydatki,
 }: {
   userId: string;
   podsumowanie: FinansePodsumowanie;
+  bilans: FinanseBilans;
+  analiza: FinanseAnaliza;
   /** Pozycje majątku razem ze schowanymi - arkusz pozwala je przywrócić. */
   pozycje: FinansePozycja[];
+  zrodla: FinanseZrodlo[];
+  wplywy: FinanseWplyw[];
+  stale: FinanseStaly[];
+  /** Naliczenia bieżącego miesiąca, ze statusem. */
+  naliczenia: (FinanseNaliczenie & { finanse_stale: { nazwa: string; kategoria: string } | null })[];
+  rozliczenie: FinanseRozliczeniePodglad | null;
   cele: FinanseCelZPostepem[];
   /** Ostatnie wydatki - lista, nie statystyka. */
   wydatki: FinanseWydatek[];
@@ -82,46 +113,24 @@ export function KasaScreen({
   const router = useRouter();
   const supabase = createClient();
   const today = todayISO();
+  const { busy, error, setError, zapisz } = useZapis();
 
   const [arkusz, setArkusz] = useState<Arkusz>(null);
   const [celDoWplaty, setCelDoWplaty] = useState<FinanseCelZPostepem | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Migawka majątku
   const [wiersze, setWiersze] = useState<Wiersz[]>(() => doWierszy(pozycje));
   const [usuniete, setUsuniete] = useState<string[]>([]);
   /** Który koszyk ma rozwiniętą listę podpowiedzi; null = żaden. */
   const [podpowiedziDla, setPodpowiedziDla] = useState<string | null>(null);
-  // Wydatek
+
   const [wydatek, setWydatek] = useState({ kwota: "", kategoria: "jedzenie", opis: "" });
-  // Cel
+  const [wplyw, setWplyw] = useState({ kwota: "", zrodlo: "", opis: "" });
   const [cel, setCel] = useState({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "" });
   const [wplata, setWplata] = useState("");
 
-  const liczba = (t: string) => {
-    // Ludzie wpisują przecinek, bo tak wygląda kwota po polsku.
-    const n = Number(t.replace(",", ".").replace(/\s/g, ""));
-    return Number.isFinite(n) ? n : 0;
-  };
+  /* ----------------------------- Majątek ---------------------------------- */
 
-  // PromiseLike, nie Promise: builder Supabase jest "thenable" i dopiero
-  // await zamienia go w wynik - typowanie na Promise odrzucałoby wywołania
-  // bez sztucznego owijania każdego w async.
-  async function zapisz(co: () => PromiseLike<{ error: { message: string } | null }>) {
-    setBusy(true);
-    setError(null);
-    const { error } = await co();
-    setBusy(false);
-    if (error) {
-      setError(`Nie udało się zapisać: ${error.message}`);
-      return;
-    }
-    setArkusz(null);
-    router.refresh();
-  }
-
-  /** Otwarcie arkusza zawsze startuje od tego, co jest w bazie. */
   function otworzMajatek() {
     setWiersze(doWierszy(pozycje));
     setUsuniete([]);
@@ -194,14 +203,22 @@ export function KasaScreen({
       if (res.error) return res;
       // Sumy liczy baza - podgląd nad przyciskiem jest tylko podglądem.
       return supabase.rpc("finanse_zapisz_migawke", { p_data: today });
-    });
+    }, () => setArkusz(null));
   }
+
+  /* ------------------------------ Liczby ---------------------------------- */
 
   const poduszka = podsumowanie.poduszka_miesiecy;
   const ocena = stanPoduszki(poduszka);
   const procentPoduszki = poduszkaProcent(poduszka, podsumowanie.poduszka_cel);
   const naDzien = dziennieDoKonca(podsumowanie.budzet_zostalo);
   const przekroczony = (podsumowanie.budzet_zostalo ?? 0) < 0;
+  const tempo = tempoBudzetu(podsumowanie.budzet, podsumowanie.wydane_w_miesiacu);
+
+  const doPotwierdzenia = naliczenia.filter(
+    (n) => n.status === "oczekuje" && n.termin <= today,
+  );
+  const nadchodzace = naliczenia.filter((n) => n.status === "oczekuje" && n.termin > today);
 
   return (
     <div className="flex flex-col gap-4">
@@ -209,27 +226,129 @@ export function KasaScreen({
         <div>
           <h1 className="text-2xl font-bold leading-tight">Kasa</h1>
           <p className="text-[13px] text-muted">
-            Zapas, budżet i majątek. Bez księgowania każdej kawy.
+            Ile wpada, gdzie znika, ile masz zapasu.
           </p>
         </div>
-        <Button variant="primary" onClick={() => setArkusz("wydatek")}>
-          + Wydatek
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" onClick={() => setArkusz("wplyw")}>
+            + Wpływ
+          </Button>
+          <Button variant="primary" onClick={() => setArkusz("wydatek")}>
+            + Wydatek
+          </Button>
+        </div>
       </header>
 
       {error && <Alert>{error}</Alert>}
+
+      {/* --- Rozliczenie miesiąca: jedyna rzecz, która wymaga decyzji dziś --- */}
+      {podsumowanie.rozliczenie_okres && (
+        <Card
+          title={`${nazwaMiesiaca(podsumowanie.rozliczenie_okres)} czeka na rozliczenie`}
+          subtitle="Trzy kroki: bilans, sprawdzenie konta, decyzja o nadwyżce"
+        >
+          <p className="text-[13px] text-muted">
+            Dopóki miesiąca nie zamkniesz, majątek opiera się na szacunku z wpisów. Zamknięcie
+            konfrontuje go ze stanem konta i pokazuje, ile w tym miesiącu wyciekło poza rejestrem.
+          </p>
+          <Button
+            variant="primary"
+            block
+            className="mt-3"
+            onClick={() => setArkusz("rozliczenie")}
+          >
+            Rozlicz {nazwaMiesiaca(podsumowanie.rozliczenie_okres)}
+          </Button>
+        </Card>
+      )}
+
+      {/* --- Rachunki do potwierdzenia --- */}
+      {doPotwierdzenia.length > 0 && (
+        <Card
+          title="Do potwierdzenia"
+          subtitle="Szablon przygotował, Ty potwierdzasz albo poprawiasz kwotę"
+          padded={false}
+        >
+          <ul className="divide-y divide-border">
+            {doPotwierdzenia.map((n) => (
+              <li key={n.id} className="flex items-center gap-2 px-4 py-2.5">
+                <span className="text-[16px]" aria-hidden>
+                  {kategoriaStalego(n.finanse_stale?.kategoria ?? "inne").icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px]">
+                    {n.finanse_stale?.nazwa ?? "Koszt stały"}
+                  </span>
+                  <span className="block text-[12px] text-faint">
+                    termin {humanDate(n.termin)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[14px] font-semibold tabular-nums">
+                  {zl(Number(n.kwota))}
+                </span>
+                <Button
+                  size="sm"
+                  variant="success"
+                  loading={busy}
+                  onClick={() =>
+                    zapisz(() =>
+                      supabase
+                        .from("finanse_naliczenia")
+                        .update({ status: "potwierdzone", potwierdzone_at: new Date().toISOString() })
+                        .eq("id", n.id),
+                    )
+                  }
+                >
+                  Było
+                </Button>
+                <button
+                  type="button"
+                  aria-label="Pomiń"
+                  className="shrink-0 px-1 text-[12px] text-faint"
+                  onClick={() =>
+                    zapisz(() =>
+                      supabase.from("finanse_naliczenia").update({ status: "pominiete" }).eq("id", n.id),
+                    )
+                  }
+                >
+                  pomiń
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* --- Poduszka: najważniejsza liczba w całym module --- */}
       <Card
         title="Poduszka finansowa"
         subtitle="Ile miesięcy wytrzymasz bez przychodu"
-        action={<Chip tone={ocena.tone === "danger" ? "danger" : ocena.tone === "warn" ? "warn" : ocena.tone === "success" ? "success" : "accent"}>{ocena.label}</Chip>}
+        action={
+          <Chip
+            tone={
+              ocena.tone === "danger"
+                ? "danger"
+                : ocena.tone === "warn"
+                  ? "warn"
+                  : ocena.tone === "success"
+                    ? "success"
+                    : "accent"
+            }
+          >
+            {ocena.label}
+          </Chip>
+        }
       >
         {poduszka == null ? (
           <EmptyState
             icon="🛟"
-            title="Brakuje jednej liczby"
-            description="Podaj w profilu swoje miesięczne koszty życia, a policzymy, na ile miesięcy starczy Ci to, co masz płynne."
+            title="Brakuje kosztów życia"
+            description="Wypisz koszty stałe, a policzymy, na ile miesięcy starczy Ci to, co masz płynne."
+            action={
+              <Button variant="primary" onClick={() => setArkusz("stale")}>
+                Wypisz koszty stałe
+              </Button>
+            }
           />
         ) : (
           <>
@@ -249,9 +368,17 @@ export function KasaScreen({
             </div>
             <p className="mt-2 text-[12px] text-faint">
               Liczone z {zl(podsumowanie.plynne)} płynnych przy kosztach{" "}
-              {zl(podsumowanie.koszty_miesieczne)} na miesiąc. Inwestycje nie wchodzą - nie
-              sprzedaje się ich w dniu, w którym psuje się pralka.
+              {zl(podsumowanie.koszty_miesieczne)} na miesiąc
+              {podsumowanie.koszty_z_szablonu ? " (suma kosztów stałych)" : " (z profilu)"}.
+              Inwestycje nie wchodzą - nie sprzedaje się ich w dniu, w którym psuje się pralka.
             </p>
+            <button
+              type="button"
+              className="mt-2 text-[13px] font-medium text-accent"
+              onClick={() => setArkusz("stale")}
+            >
+              Koszty stałe ({stale.filter((s) => s.aktywny).length})
+            </button>
           </>
         )}
       </Card>
@@ -268,9 +395,7 @@ export function KasaScreen({
             >
               {zl(podsumowanie.budzet_zostalo)}
             </span>
-            <span className="text-[13px] text-muted">
-              z {zl(podsumowanie.budzet)}
-            </span>
+            <span className="text-[13px] text-muted">z {zl(podsumowanie.budzet)}</span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2">
             <div
@@ -285,15 +410,91 @@ export function KasaScreen({
               ? `Przekroczone o ${zl(Math.abs(podsumowanie.budzet_zostalo ?? 0))}. Nie jest to koniec świata - jest to informacja.`
               : `Zostało ${zl(naDzien)} na dzień do końca miesiąca.`}
           </p>
+          {tempo.stan === "uwaga" && (
+            <Alert tone="warn">
+              W tym tempie skończysz miesiąc na {zl(tempo.prognoza)}, czyli powyżej budżetu.
+            </Alert>
+          )}
         </Card>
       )}
+
+      {/* --- Bilans miesiąca --- */}
+      <Card
+        title="Ten miesiąc"
+        subtitle="Ile wpadło, ile wyszło"
+        action={
+          <Button variant="secondary" onClick={() => setArkusz("zrodla")}>
+            Źródła
+          </Button>
+        }
+      >
+        <div className="flex items-baseline gap-3">
+          <span
+            className={`text-[28px] font-bold tabular-nums ${bilans.wynik < 0 ? "text-danger" : "text-success"}`}
+          >
+            {zmiana(bilans.wynik)}
+          </span>
+          {bilans.stale_oczekuje > 0 && (
+            <Chip tone="warn">-{zl(bilans.stale_oczekuje)} niepotwierdzone</Chip>
+          )}
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
+          <div>
+            <div className="text-faint">Wpłynęło</div>
+            <div className="font-semibold tabular-nums text-success">
+              {zl(bilans.wplywy_realne)}
+            </div>
+            {bilans.wplywy_plan > 0 && (
+              <div className="text-[11px] text-faint">plan {zl(bilans.wplywy_plan)}</div>
+            )}
+          </div>
+          <div>
+            <div className="text-faint">Stałe</div>
+            <div className="font-semibold tabular-nums">{zl(bilans.stale_potwierdzone)}</div>
+          </div>
+          <div>
+            <div className="text-faint">Uznaniowe</div>
+            <div className="font-semibold tabular-nums">{zl(bilans.uznaniowe)}</div>
+          </div>
+        </div>
+
+        {zrodla.length > 0 && bilans.wplywy_plan > 0 && (
+          <ul className="mt-3 flex flex-col gap-1 border-t border-border pt-3 text-[13px]">
+            {zrodla
+              .filter((z) => z.aktywne)
+              .map((z) => {
+                const wpadlo = wplywy
+                  .filter((w) => w.zrodlo_id === z.id && w.data >= bilans.okres)
+                  .reduce((s, w) => s + Number(w.kwota), 0);
+                const plan = Number(z.plan_miesieczny ?? 0);
+                return (
+                  <li key={z.id} className="flex items-baseline gap-2">
+                    <span aria-hidden>{z.ikona}</span>
+                    <span className="min-w-0 flex-1 truncate text-muted">{z.nazwa}</span>
+                    <span className="shrink-0 tabular-nums">
+                      {zl(wpadlo)}
+                      {plan > 0 && <span className="text-faint"> / {zl(plan)}</span>}
+                    </span>
+                  </li>
+                );
+              })}
+          </ul>
+        )}
+
+        {nadchodzace.length > 0 && (
+          <p className="mt-3 text-[12px] text-faint">
+            Jeszcze w tym miesiącu zejdzie {zl(bilans.stale_oczekuje)} w {nadchodzace.length}{" "}
+            {nadchodzace.length === 1 ? "racie" : "ratach"}.
+          </p>
+        )}
+      </Card>
 
       {/* --- Majątek --- */}
       <Card
         title="Majątek"
         subtitle={
           podsumowanie.data_migawki
-            ? `Ostatni wpis: ${humanDate(podsumowanie.data_migawki)}`
+            ? `Potwierdzony ${humanDate(podsumowanie.data_migawki)}`
             : "Jeszcze nic nie zapisano"
         }
         action={
@@ -318,6 +519,24 @@ export function KasaScreen({
                 </Chip>
               )}
             </div>
+
+            {/*
+              Szacunek obok potwierdzonego, nigdy zamiast. Jedna liczba
+              udawałaby sprawdzoną, a opiera się wyłącznie na tym, co ktoś
+              zdążył wpisać.
+            */}
+            {podsumowanie.netto_szacowany != null && (
+              <p className="mt-1 text-[13px] text-muted">
+                Szacunek na dziś:{" "}
+                <span className="font-semibold tabular-nums">
+                  {zl(podsumowanie.netto_szacowany)}
+                </span>{" "}
+                <span className="text-faint">
+                  ({zmiana(podsumowanie.ruch_od_migawki)} od migawki)
+                </span>
+              </p>
+            )}
+
             <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
               <div>
                 <div className="text-faint">Płynne</div>
@@ -362,6 +581,15 @@ export function KasaScreen({
                     </li>
                   ))}
               </ul>
+            )}
+
+            {podsumowanie.wyciek_sredni != null && (podsumowanie.wyciek_miesiecy ?? 0) > 0 && (
+              <p className="mt-3 border-t border-border pt-3 text-[12px] text-faint">
+                Z {podsumowanie.wyciek_miesiecy} rozliczonych{" "}
+                {podsumowanie.wyciek_miesiecy === 1 ? "miesiąca" : "miesięcy"}: średnio{" "}
+                {zl(Math.abs(podsumowanie.wyciek_sredni))}{" "}
+                {podsumowanie.wyciek_sredni >= 0 ? "wycieka poza wpisami" : "znajduje się ponad wpisy"}.
+              </p>
             )}
           </>
         )}
@@ -430,6 +658,57 @@ export function KasaScreen({
         )}
       </Card>
 
+      {/* --- Gdzie znika kasa --- */}
+      {analiza.kategorie.length > 0 && (
+        <Card
+          title="Gdzie znika kasa"
+          subtitle={
+            analiza.srednia_poprzednich != null
+              ? `Ten miesiąc: ${zl(analiza.suma)} · zwykle ${zl(analiza.srednia_poprzednich)}`
+              : `Ten miesiąc: ${zl(analiza.suma)}`
+          }
+        >
+          <ul className="flex flex-col gap-2.5">
+            {analiza.kategorie.map((k) => {
+              const kat = kategoriaWydatku(k.kategoria);
+              const gorzej = (k.roznica ?? 0) > 0;
+              return (
+                <li key={k.kategoria}>
+                  <div className="flex items-baseline gap-2 text-[13px]">
+                    <span aria-hidden>{kat.icon}</span>
+                    <span className="min-w-0 flex-1 truncate">{kat.label}</span>
+                    <span className="shrink-0 font-semibold tabular-nums">{zl(k.kwota)}</span>
+                    {k.roznica != null && Math.abs(k.roznica) >= 1 && (
+                      <span
+                        className={`shrink-0 text-[12px] tabular-nums ${gorzej ? "text-danger" : "text-success"}`}
+                      >
+                        {zmiana(k.roznica)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                    <div className="h-full rounded-full bg-accent" style={{ width: `${k.procent}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/*
+            Przeliczenie na cel zamiast morału. "Wydałeś dużo" nikogo nie
+            przekonuje; "to jest 8% mieszkania" pokazuje koszt alternatywny,
+            czyli jedyną rzecz, o której naprawdę decydujesz.
+          */}
+          {cele[0] && analiza.suma > 0 && (
+            <p className="mt-3 border-t border-border pt-3 text-[12px] text-faint">
+              {zl(analiza.suma)} wydane w tym miesiącu to{" "}
+              {Math.round((analiza.suma / Number(cele[0].kwota_cel)) * 100)}% celu
+              &bdquo;{cele[0].nazwa}&rdquo;.
+            </p>
+          )}
+        </Card>
+      )}
+
       {/* --- Ostatnie wydatki --- */}
       {wydatki.length > 0 && (
         <Card title="Ostatnie wydatki" padded={false}>
@@ -495,20 +774,91 @@ export function KasaScreen({
             loading={busy}
             disabled={liczba(wydatek.kwota) <= 0}
             onClick={() =>
-              zapisz(async () => {
-                const res = await supabase.from("finanse_wydatki").insert({
-                  user_id: userId,
-                  kwota: liczba(wydatek.kwota),
-                  kategoria: wydatek.kategoria as FinanseWydatek["kategoria"],
-                  opis: wydatek.opis.trim() || null,
-                });
-                if (!res.error) setWydatek({ kwota: "", kategoria: wydatek.kategoria, opis: "" });
-                return res;
-              })
+              zapisz(
+                () =>
+                  supabase.from("finanse_wydatki").insert({
+                    user_id: userId,
+                    kwota: liczba(wydatek.kwota),
+                    kategoria: wydatek.kategoria as FinanseWydatek["kategoria"],
+                    opis: wydatek.opis.trim() || null,
+                  }),
+                () => {
+                  setWydatek({ kwota: "", kategoria: wydatek.kategoria, opis: "" });
+                  setArkusz(null);
+                },
+              )
             }
           >
             Zapisz wydatek
           </Button>
+        </div>
+      </Sheet>
+
+      <Sheet open={arkusz === "wplyw"} onClose={() => setArkusz(null)} title="Wpływ">
+        <div className="flex flex-col gap-3">
+          <Field label="Kwota (zł)">
+            <Input
+              inputMode="decimal"
+              value={wplyw.kwota}
+              onChange={(e) => setWplyw({ ...wplyw, kwota: e.target.value })}
+              placeholder="2000"
+              autoFocus
+            />
+          </Field>
+          <Field label="Skąd" hint="Bez źródła też można - jednorazowy zwrot nie potrzebuje własnej pozycji.">
+            <Select
+              value={wplyw.zrodlo}
+              onChange={(e) => setWplyw({ ...wplyw, zrodlo: e.target.value })}
+            >
+              <option value="">Bez źródła</option>
+              {zrodla
+                .filter((z) => z.aktywne)
+                .map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.ikona} {z.nazwa}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          <Field label="Opis (opcjonalnie)">
+            <Input
+              value={wplyw.opis}
+              onChange={(e) => setWplyw({ ...wplyw, opis: e.target.value })}
+              placeholder="np. wypłata za wrzesień"
+            />
+          </Field>
+          <Button
+            variant="primary"
+            block
+            loading={busy}
+            disabled={liczba(wplyw.kwota) <= 0}
+            onClick={() =>
+              zapisz(
+                () =>
+                  supabase.from("finanse_wplywy").insert({
+                    user_id: userId,
+                    zrodlo_id: wplyw.zrodlo || null,
+                    kwota: liczba(wplyw.kwota),
+                    opis: wplyw.opis.trim() || null,
+                  }),
+                () => {
+                  setWplyw({ kwota: "", zrodlo: wplyw.zrodlo, opis: "" });
+                  setArkusz(null);
+                },
+              )
+            }
+          >
+            Zapisz wpływ
+          </Button>
+          {zrodla.length === 0 && (
+            <button
+              type="button"
+              className="text-[13px] font-medium text-accent"
+              onClick={() => setArkusz("zrodla")}
+            >
+              Najpierw nazwij swoje źródła przychodu
+            </button>
+          )}
         </div>
       </Sheet>
 
@@ -714,17 +1064,20 @@ export function KasaScreen({
             loading={busy}
             disabled={!cel.nazwa.trim() || liczba(cel.kwota_cel) <= 0}
             onClick={() =>
-              zapisz(async () => {
-                const res = await supabase.from("finanse_cele").insert({
-                  user_id: userId,
-                  nazwa: cel.nazwa.trim(),
-                  ikona: cel.ikona,
-                  kwota_cel: liczba(cel.kwota_cel),
-                  termin: cel.termin || null,
-                });
-                if (!res.error) setCel({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "" });
-                return res;
-              })
+              zapisz(
+                () =>
+                  supabase.from("finanse_cele").insert({
+                    user_id: userId,
+                    nazwa: cel.nazwa.trim(),
+                    ikona: cel.ikona,
+                    kwota_cel: liczba(cel.kwota_cel),
+                    termin: cel.termin || null,
+                  }),
+                () => {
+                  setCel({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "" });
+                  setArkusz(null);
+                },
+              )
             }
           >
             Dodaj cel
@@ -759,12 +1112,14 @@ export function KasaScreen({
             loading={busy}
             disabled={liczba(wplata) === 0 || !celDoWplaty}
             onClick={() =>
-              zapisz(() =>
-                supabase.from("finanse_wplaty").insert({
-                  user_id: userId,
-                  cel_id: celDoWplaty!.id,
-                  kwota: liczba(wplata),
-                }),
+              zapisz(
+                () =>
+                  supabase.from("finanse_wplaty").insert({
+                    user_id: userId,
+                    cel_id: celDoWplaty!.id,
+                    kwota: liczba(wplata),
+                  }),
+                () => setArkusz(null),
               )
             }
           >
@@ -772,6 +1127,35 @@ export function KasaScreen({
           </Button>
         </div>
       </Sheet>
+
+      <ArkuszStalych
+        open={arkusz === "stale"}
+        onClose={() => setArkusz(null)}
+        userId={userId}
+        stale={stale}
+      />
+
+      <ArkuszZrodel
+        open={arkusz === "zrodla"}
+        onClose={() => setArkusz(null)}
+        userId={userId}
+        zrodla={zrodla}
+      />
+
+      {podsumowanie.rozliczenie_okres && (
+        <ArkuszRozliczenia
+          open={arkusz === "rozliczenie"}
+          onClose={() => {
+            setArkusz(null);
+            router.refresh();
+          }}
+          userId={userId}
+          okres={podsumowanie.rozliczenie_okres}
+          podglad={rozliczenie}
+          pozycje={pozycje.filter((p) => !p.archiwalna && p.kategoria === "plynne")}
+          cele={cele}
+        />
+      )}
     </div>
   );
 }

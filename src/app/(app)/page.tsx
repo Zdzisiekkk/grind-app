@@ -33,6 +33,8 @@ import { widoczneKarty } from "@/lib/pulpit";
 import { UstawieniaPulpitu } from "@/components/pulpit/UstawieniaPulpitu";
 import { postepDoNastepnego, poziomZXp, progPoziomu, tytulPoziomu } from "@/lib/xp";
 import { dayWord } from "@/lib/vices";
+import { nazwaMiesiaca, tempoBudzetu, zl } from "@/lib/finanse";
+import type { FinanseBilans, FinansePodsumowanie } from "@/lib/database.types";
 import type { Habit, HabitLog, Injury, PeriodSummary, RecipeTotals } from "@/lib/database.types";
 
 export const metadata = { title: "Dziś" };
@@ -68,6 +70,8 @@ export default async function DashboardPage() {
     { data: habitLogsHistoria },
     { data: posilkiHistoria },
     { data: xpWiersze },
+    { data: kasaPods },
+    { data: kasaBilans },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -162,6 +166,10 @@ export default async function DashboardPage() {
       .gte("date", addDaysISO(today, -HISTORY_DAYS)),
     // XP nalicza baza wyzwalaczami (0057) - tu tylko suma do levelu.
     supabase.from("xp_zdarzenia").select("xp").eq("user_id", user.id),
+    // Finanse: karta pokazuje się warunkowo, ale limit dzienny przy szybkim
+    // wpisie wydatku potrzebny jest zawsze.
+    supabase.rpc("finanse_podsumowanie"),
+    supabase.rpc("finanse_bilans", {}),
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -189,6 +197,39 @@ export default async function DashboardPage() {
 
   const xp = (xpWiersze ?? []).reduce((sum, w) => sum + w.xp, 0);
   const poziom = poziomZXp(xp);
+
+  /*
+   * Kasa na pulpicie odzywa się TYLKO wtedy, gdy czegoś od Ciebie chce.
+   * Stała karta z saldem byłaby kolejnym kafelkiem do przewinięcia, a przy
+   * dwunastu kartach pulpit przestaje być pulpitem. Przycisk wydatku
+   * zostaje zawsze - to inna sprawa, bo służy wpisywaniu, nie oglądaniu.
+   */
+  const kasa = kasaPods as FinansePodsumowanie | null;
+  const kasaB = kasaBilans as FinanseBilans | null;
+  const kasaTempo = tempoBudzetu(kasa?.budzet, kasa?.wydane_w_miesiacu ?? 0);
+  const kasaPowod = !kasa
+    ? null
+    : kasa.rozliczenie_okres
+      ? {
+          tytul: `Rozlicz ${nazwaMiesiaca(kasa.rozliczenie_okres)}`,
+          opis: "Bilans, sprawdzenie konta i decyzja o nadwyżce. Zajmie minutę.",
+        }
+      : (kasaB?.stale_do_potwierdzenia ?? 0) > 0
+        ? {
+            tytul: `${kasaB!.stale_do_potwierdzenia} ${kasaB!.stale_do_potwierdzenia === 1 ? "rachunek czeka" : "rachunki czekają"} na potwierdzenie`,
+            opis: "Szablon je przygotował - potwierdź kwoty albo popraw.",
+          }
+        : kasaTempo.stan === "przekroczony"
+          ? {
+              tytul: "Budżet na ten miesiąc przekroczony",
+              opis: `Wydane ${zl(kasa.wydane_w_miesiacu)} z ${zl(kasa.budzet)}.`,
+            }
+          : kasaTempo.stan === "uwaga"
+            ? {
+                tytul: "Lecisz z tempem budżetu",
+                opis: `W tym tempie skończysz miesiąc na ${zl(kasaTempo.prognoza)} przy budżecie ${zl(kasa.budzet)}.`,
+              }
+            : null;
 
   // Co pokazać na pulpicie (migracja 0058). Poza tym wyborem stoją rzeczy
   // czekające na decyzję - propozycje trenera, nieocenione kontuzje - oraz
@@ -297,6 +338,18 @@ export default async function DashboardPage() {
           </div>
         )}
       </header>
+
+      {/* --- Kasa: tylko gdy czegoś od Ciebie chce --- */}
+      {kasaPowod && (
+        <Card title={kasaPowod.tytul}>
+          <p className="text-[13px] text-muted">{kasaPowod.opis}</p>
+          <Link href="/kasa" className="mt-3 block">
+            <Button variant="primary" block>
+              Otwórz Kasę
+            </Button>
+          </Link>
+        </Card>
+      )}
 
       {/* --- Propozycje trenera czekające na decyzję --- */}
       {(coachProposals ?? []).length > 0 && (
@@ -638,6 +691,8 @@ export default async function DashboardPage() {
           lastWeightKg={lastWeight}
           injuries={trackedInjuries}
           painToday={Object.fromEntries(painToday)}
+          budzet={kasa?.budzet ?? null}
+          wydaneWMiesiacu={kasa?.wydane_w_miesiacu ?? 0}
         />
         {(lastWeight != null || ratedToday.length > 0) && (
           <div className="flex flex-wrap gap-1.5 px-1">
