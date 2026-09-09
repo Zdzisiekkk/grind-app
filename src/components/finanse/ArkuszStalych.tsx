@@ -56,6 +56,17 @@ export function ArkuszStalych({
           &bdquo;Koszty życia&rdquo; w profilu, więc od niej liczy się poduszka.
         </p>
 
+        {/*
+          Zdanie o tym, co stanie się PO dodaniu. Bez niego człowiek wpisuje
+          czynsz, wraca na ekran i nie wie, czy coś się w ogóle stało - bo
+          w bilansie nic nie drgnęło i drgnąć nie miało prawa.
+        */}
+        <p className="-mt-2 text-[12px] leading-snug text-faint">
+          Każda pozycja pojawi się w karcie &bdquo;Rachunki w tym miesiącu&rdquo; w swoim
+          dniu płatności. Dopiero potwierdzenie tam wciąga ją do bilansu - dzięki temu
+          rachunek, który wyszedł inaczej, nie zatruwa liczb po cichu.
+        </p>
+
         {stale.length > 0 && (
           <ul className="flex flex-col divide-y divide-border">
             {stale.map((s) => {

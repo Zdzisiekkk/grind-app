@@ -157,6 +157,8 @@ export function FinanseScreen({
   const [wplataPozycja, setWplataPozycja] = useState("");
   const [pozycjaPortfela, setPozycjaPortfela] = useState<FinansePozycjaZRezerwacja | null>(null);
   const [ruchDoEdycji, setRuchDoEdycji] = useState<FinanseRuch | null>(null);
+  const [naliczenieWEdycji, setNaliczenieWEdycji] = useState<string | null>(null);
+  const [kwotaNaliczenia, setKwotaNaliczenia] = useState("");
   const [edycja, setEdycja] = useState<FormularzCelu | null>(null);
   const [celEdytowany, setCelEdytowany] = useState<FinanseCelZPostepem | null>(null);
   /** Kasowanie w dwóch krokach - cel znika razem z historią wpłat. */
@@ -271,6 +273,22 @@ export function FinanseScreen({
   const celeAktywne = cele.filter((c) => c.status === "aktywny");
   const celeZamkniete = cele.filter((c) => c.status !== "aktywny");
 
+  /** Jedno miejsce na potwierdzenie - z kwotą z szablonu albo poprawioną. */
+  function potwierdzNaliczenie(id: string, kwota: number) {
+    zapisz(
+      () =>
+        supabase
+          .from("finanse_naliczenia")
+          .update({
+            status: "potwierdzone",
+            kwota,
+            potwierdzone_at: new Date().toISOString(),
+          })
+          .eq("id", id),
+      () => setNaliczenieWEdycji(null),
+    );
+  }
+
   const doPotwierdzenia = naliczenia.filter(
     (n) => n.status === "oczekuje" && n.termin <= today,
   );
@@ -318,60 +336,142 @@ export function FinanseScreen({
         </Card>
       )}
 
-      {/* --- Rachunki do potwierdzenia --- */}
-      {doPotwierdzenia.length > 0 && (
+      {/* --- Rachunki tego miesiąca --- */}
+      {naliczenia.length > 0 && (
         <Card
-          title="Do potwierdzenia"
-          subtitle="Szablon przygotował, Ty potwierdzasz albo poprawiasz kwotę"
+          title="Rachunki w tym miesiącu"
+          subtitle={
+            doPotwierdzenia.length > 0
+              ? `${doPotwierdzenia.length} ${doPotwierdzenia.length === 1 ? "czeka" : "czekają"} na potwierdzenie`
+              : "Wszystko odhaczone"
+          }
           padded={false}
         >
           <ul className="divide-y divide-border">
-            {doPotwierdzenia.map((n) => (
-              <li key={n.id} className="flex items-center gap-2 px-4 py-2.5">
-                <span className="text-[16px]" aria-hidden>
-                  {kategoriaStalego(n.finanse_stale?.kategoria ?? "inne").icon}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px]">
-                    {n.finanse_stale?.nazwa ?? "Koszt stały"}
-                  </span>
-                  <span className="block text-[12px] text-faint">
-                    termin {humanDate(n.termin)}
-                  </span>
-                </span>
-                <span className="shrink-0 text-[14px] font-semibold tabular-nums">
-                  {zl(Number(n.kwota))}
-                </span>
-                <Button
-                  size="sm"
-                  variant="success"
-                  loading={busy}
-                  onClick={() =>
-                    zapisz(() =>
-                      supabase
-                        .from("finanse_naliczenia")
-                        .update({ status: "potwierdzone", potwierdzone_at: new Date().toISOString() })
-                        .eq("id", n.id),
-                    )
-                  }
-                >
-                  Było
-                </Button>
-                <button
-                  type="button"
-                  aria-label="Pomiń"
-                  className="shrink-0 px-1 text-[12px] text-faint"
-                  onClick={() =>
-                    zapisz(() =>
-                      supabase.from("finanse_naliczenia").update({ status: "pominiete" }).eq("id", n.id),
-                    )
-                  }
-                >
-                  pomiń
-                </button>
-              </li>
-            ))}
+            {naliczenia.map((n) => {
+              const potwierdzone = n.status === "potwierdzone";
+              const pominiete = n.status === "pominiete";
+              const zalegle = n.status === "oczekuje" && n.termin < today;
+              const edytowane = naliczenieWEdycji === n.id;
+
+              return (
+                <li key={n.id} className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 shrink-0 text-center text-[16px]" aria-hidden>
+                      {potwierdzone ? "✅" : pominiete ? "⏭️" : kategoriaStalego(n.finanse_stale?.kategoria ?? "inne").icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={`block truncate text-[14px] ${pominiete ? "text-faint line-through" : ""}`}
+                      >
+                        {n.finanse_stale?.nazwa ?? "Koszt stały"}
+                      </span>
+                      <span className="block text-[12px] text-faint">
+                        {potwierdzone
+                          ? "zapłacone"
+                          : pominiete
+                            ? "pominięte w tym miesiącu"
+                            : zalegle
+                              ? `termin minął ${humanDate(n.termin)}`
+                              : `termin ${humanDate(n.termin)}`}
+                      </span>
+                    </span>
+
+                    {/*
+                      Kwota jest przyciskiem, bo rachunek za prąd rzadko wychodzi
+                      dokładnie tyle, ile w szablonie - a przechodzenie do ustawień
+                      po to, żeby poprawić jedną liczbę raz w miesiącu, kończy się
+                      potwierdzaniem kwoty, która jest nieprawdziwa.
+                    */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNaliczenieWEdycji(edytowane ? null : n.id);
+                        setKwotaNaliczenia(String(Number(n.kwota)));
+                      }}
+                      className="shrink-0 text-[14px] font-semibold tabular-nums underline decoration-transparent underline-offset-2 hover:decoration-inherit"
+                    >
+                      {zl(Number(n.kwota))}
+                    </button>
+
+                    {n.status === "oczekuje" ? (
+                      <Button
+                        size="sm"
+                        variant={zalegle ? "primary" : "secondary"}
+                        loading={busy}
+                        onClick={() => potwierdzNaliczenie(n.id, Number(n.kwota))}
+                      >
+                        Było
+                      </Button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="shrink-0 px-1 text-[12px] font-medium text-accent"
+                        onClick={() =>
+                          zapisz(() =>
+                            supabase
+                              .from("finanse_naliczenia")
+                              .update({ status: "oczekuje", potwierdzone_at: null })
+                              .eq("id", n.id),
+                          )
+                        }
+                      >
+                        cofnij
+                      </button>
+                    )}
+
+                    {n.status === "oczekuje" && (
+                      <button
+                        type="button"
+                        aria-label="Pomiń w tym miesiącu"
+                        className="shrink-0 px-1 text-[12px] text-faint"
+                        onClick={() =>
+                          zapisz(() =>
+                            supabase
+                              .from("finanse_naliczenia")
+                              .update({ status: "pominiete" })
+                              .eq("id", n.id),
+                          )
+                        }
+                      >
+                        pomiń
+                      </button>
+                    )}
+                  </div>
+
+                  {edytowane && (
+                    <div className="mt-2 flex items-end gap-2 rounded-xl border border-border bg-surface-2 p-2">
+                      <div className="min-w-0 flex-1">
+                        <Field label="Ile realnie zeszło (zł)">
+                          <Input
+                            inputMode="decimal"
+                            value={kwotaNaliczenia}
+                            onChange={(e) => setKwotaNaliczenia(e.target.value)}
+                            className="tabular-nums"
+                            autoFocus
+                          />
+                        </Field>
+                      </div>
+                      <Button
+                        variant="primary"
+                        loading={busy}
+                        disabled={liczba(kwotaNaliczenia) < 0}
+                        onClick={() => potwierdzNaliczenie(n.id, liczba(kwotaNaliczenia))}
+                      >
+                        Było
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
+
+          <p className="px-4 pb-3 pt-2 text-[12px] leading-snug text-faint">
+            Rachunki z szablonu pojawiają się tu same, ale nic nie wchodzi do bilansu, dopóki
+            nie potwierdzisz. Tapnij kwotę, jeśli wyszło inaczej niż zwykle.
+            &bdquo;Pomiń&rdquo; znaczy &bdquo;w tym miesiącu tego nie było&rdquo; - da się cofnąć.
+          </p>
         </Card>
       )}
 
