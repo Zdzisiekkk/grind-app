@@ -23,6 +23,8 @@ import {
   zl,
   zmiana,
 } from "@/lib/finanse";
+import { ArkuszPortfela } from "./ArkuszPortfela";
+import { ArkuszRuchu } from "./ArkuszRuchu";
 import { ArkuszRozliczenia } from "./ArkuszRozliczenia";
 import { ArkuszStalych } from "./ArkuszStalych";
 import { ArkuszZrodel } from "./ArkuszZrodel";
@@ -35,6 +37,9 @@ import type {
   FinansePodsumowanie,
   FinansePozycja,
   FinanseRozliczeniePodglad,
+  FinanseAktywoZWynikiem,
+  FinansePozycjaZRezerwacja,
+  FinanseRuch,
   FinanseStaly,
   FinanseWplyw,
   FinanseWydatek,
@@ -52,7 +57,7 @@ import type {
 
 type Arkusz =
   | "stan" | "wydatek" | "wplyw" | "cel" | "celEdycja" | "wplata"
-  | "stale" | "zrodla" | "rozliczenie" | null;
+  | "stale" | "zrodla" | "rozliczenie" | "portfel" | "ruch" | null;
 
 /** Pola celu wspólne dla zakładania i edycji. */
 type FormularzCelu = {
@@ -102,14 +107,15 @@ export function FinanseScreen({
   naliczenia,
   rozliczenie,
   cele,
-  wydatki,
+  ruchy,
+  aktywa,
 }: {
   userId: string;
   podsumowanie: FinansePodsumowanie;
   bilans: FinanseBilans;
   analiza: FinanseAnaliza;
   /** Pozycje majątku razem ze schowanymi - arkusz pozwala je przywrócić. */
-  pozycje: FinansePozycja[];
+  pozycje: FinansePozycjaZRezerwacja[];
   zrodla: FinanseZrodlo[];
   wplywy: FinanseWplyw[];
   stale: FinanseStaly[];
@@ -117,8 +123,9 @@ export function FinanseScreen({
   naliczenia: (FinanseNaliczenie & { finanse_stale: { nazwa: string; kategoria: string } | null })[];
   rozliczenie: FinanseRozliczeniePodglad | null;
   cele: FinanseCelZPostepem[];
-  /** Ostatnie wydatki - lista, nie statystyka. */
-  wydatki: FinanseWydatek[];
+  /** Wydatki i wpłaty na cele w jednym dzienniku - lista, nie statystyka. */
+  ruchy: FinanseRuch[];
+  aktywa: FinanseAktywoZWynikiem[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -144,6 +151,12 @@ export function FinanseScreen({
     przypominac: false,
   });
   const [wplata, setWplata] = useState("");
+  const [wplataZrodlo, setWplataZrodlo] = useState<"budzet" | "oszczednosci" | "zewnetrzne">(
+    "oszczednosci",
+  );
+  const [wplataPozycja, setWplataPozycja] = useState("");
+  const [pozycjaPortfela, setPozycjaPortfela] = useState<FinansePozycjaZRezerwacja | null>(null);
+  const [ruchDoEdycji, setRuchDoEdycji] = useState<FinanseRuch | null>(null);
   const [edycja, setEdycja] = useState<FormularzCelu | null>(null);
   const [celEdytowany, setCelEdytowany] = useState<FinanseCelZPostepem | null>(null);
   /** Kasowanie w dwóch krokach - cel znika razem z historią wpłat. */
@@ -248,6 +261,12 @@ export function FinanseScreen({
   const naDzien = dziennieDoKonca(podsumowanie.budzet_zostalo);
   const przekroczony = (podsumowanie.budzet_zostalo ?? 0) < 0;
   const tempo = tempoBudzetu(podsumowanie.budzet, podsumowanie.wydane_w_miesiacu);
+
+  // Największa wolna pozycja jest domyślnym źródłem wpłaty - odłożone
+  // pieniądze leżą na koncie, a nie w samochodzie.
+  const plynnePozycje = pozycje
+    .filter((p) => !p.archiwalna && p.kategoria === "plynne")
+    .sort((a, b) => Number(b.dostepne) - Number(a.dostepne));
 
   const celeAktywne = cele.filter((c) => c.status === "aktywny");
   const celeZamkniete = cele.filter((c) => c.status !== "aktywny");
@@ -404,7 +423,13 @@ export function FinanseScreen({
               />
             </div>
             <p className="mt-2 text-[12px] text-faint">
-              Liczone z {zl(podsumowanie.plynne)} płynnych przy kosztach{" "}
+              {podsumowanie.zarezerwowane > 0 && (
+                <>
+                  Z {zl(podsumowanie.plynne)} płynnych {zl(podsumowanie.zarezerwowane)} jest
+                  umówione na cele i nie liczy się do zapasu.{" "}
+                </>
+              )}
+              Liczone z {zl(podsumowanie.plynne_wolne ?? podsumowanie.plynne)} przy kosztach{" "}
               {zl(podsumowanie.koszty_miesieczne)} na miesiąc
               {podsumowanie.koszty_z_szablonu ? " (suma kosztów stałych)" : " (z profilu)"}.
               Inwestycje nie wchodzą - nie sprzedaje się ich w dniu, w którym psuje się pralka.
@@ -446,6 +471,8 @@ export function FinanseScreen({
             {przekroczony
               ? `Przekroczone o ${zl(Math.abs(podsumowanie.budzet_zostalo ?? 0))}. Nie jest to koniec świata - jest to informacja.`
               : `Zostało ${zl(naDzien)} na dzień do końca miesiąca.`}
+            {podsumowanie.na_cele_z_budzetu > 0 &&
+              ` W tym ${zl(podsumowanie.na_cele_z_budzetu)} odłożone na cele.`}
           </p>
           {tempo.stan === "uwaga" && (
             <Alert tone="warn">
@@ -601,22 +628,63 @@ export function FinanseScreen({
             */}
             {pozycje.some((p) => !p.archiwalna) && (
               <ul className="mt-3 flex flex-col gap-1 border-t border-border pt-3 text-[13px]">
+                {/*
+                  Pozycje pokazują kwotę POMNIEJSZONĄ o rezerwacje, a umówione
+                  pieniądze stoją osobno jako "Cele". Ta sama złotówka jest więc
+                  policzona raz, a mimo to widać, ile z majątku jest już zajęte.
+                */}
                 {pozycje
                   .filter((p) => !p.archiwalna && Number(p.kwota) > 0)
                   .sort((a, b) => Number(b.kwota) - Number(a.kwota))
                   .slice(0, 6)
-                  .map((p) => (
-                    <li key={p.id} className="flex items-baseline gap-2">
-                      <span aria-hidden>{rodzajMajatku(p.rodzaj).icon}</span>
-                      <span className="min-w-0 flex-1 truncate text-muted">{p.nazwa}</span>
-                      <span
-                        className={`shrink-0 tabular-nums ${p.kategoria === "dlugi" ? "text-danger" : ""}`}
-                      >
-                        {p.kategoria === "dlugi" ? "-" : ""}
-                        {zl(Number(p.kwota))}
-                      </span>
-                    </li>
-                  ))}
+                  .map((p) => {
+                    const maAktywa = aktywa.some((a) => a.pozycja_id === p.id);
+                    const inwestycja = p.kategoria === "inwestycje";
+                    return (
+                      <li key={p.id} className="flex items-baseline gap-2">
+                        <span aria-hidden>{rodzajMajatku(p.rodzaj).icon}</span>
+                        {inwestycja ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPozycjaPortfela(p);
+                              setArkusz("portfel");
+                            }}
+                            className="min-w-0 flex-1 truncate text-left text-accent"
+                          >
+                            {p.nazwa}
+                            <span className="text-faint">
+                              {" "}
+                              · {maAktywa
+                                ? `${aktywa.filter((a) => a.pozycja_id === p.id).length} pozycji`
+                                : "rozpisz"}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="min-w-0 flex-1 truncate text-muted">{p.nazwa}</span>
+                        )}
+                        <span
+                          className={`shrink-0 tabular-nums ${p.kategoria === "dlugi" ? "text-danger" : ""}`}
+                        >
+                          {p.kategoria === "dlugi" ? "-" : ""}
+                          {zl(Number(p.dostepne))}
+                        </span>
+                      </li>
+                    );
+                  })}
+
+                {podsumowanie.zarezerwowane > 0 && (
+                  <li className="flex items-baseline gap-2">
+                    <span aria-hidden>🎯</span>
+                    <span className="min-w-0 flex-1 truncate text-muted">
+                      Cele
+                      <span className="text-faint"> · umówione na {celeAktywne.length}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums">
+                      {zl(podsumowanie.zarezerwowane)}
+                    </span>
+                  </li>
+                )}
               </ul>
             )}
 
@@ -844,30 +912,66 @@ export function FinanseScreen({
         </Card>
       )}
 
-      {/* --- Ostatnie wydatki --- */}
-      {wydatki.length > 0 && (
-        <Card title="Ostatnie wydatki" padded={false}>
+      {/* --- Ostatnie ruchy --- */}
+      {ruchy.length > 0 && (
+        <Card
+          title="Ostatnie ruchy"
+          subtitle="Wydatki i wpłaty na cele"
+          padded={false}
+        >
           <ul className="divide-y divide-border">
-            {wydatki.map((w) => {
-              const k = kategoriaWydatku(w.kategoria);
+            {ruchy.map((r) => {
+              const naCel = r.typ === "cel";
+              const wplyw = r.typ === "wplyw";
+              const k = kategoriaWydatku(r.kategoria);
               return (
-                <li key={w.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="text-[16px]" aria-hidden>
-                    {k.icon}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px]">{w.opis || k.label}</span>
-                    <span className="block text-[12px] text-faint">
-                      {w.data === today ? "dziś" : humanDate(w.data)}
+                <li key={`${r.typ}-${r.id}`}>
+                  {/* Cały wiersz jest przyciskiem - poprawki szuka się tam,
+                      gdzie widać błędną kwotę, a nie w osobnym menu. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRuchDoEdycji(r);
+                      setArkusz("ruch");
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-2"
+                  >
+                    <span className="w-5 shrink-0 text-center text-[16px]" aria-hidden>
+                      {wplyw ? "💰" : naCel ? "🎯" : k.icon}
                     </span>
-                  </span>
-                  <span className="shrink-0 text-[14px] font-semibold tabular-nums">
-                    {zl(w.kwota, true)}
-                  </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px]">
+                        {naCel
+                          ? `Wpłata na cel: ${r.cel_nazwa}`
+                          : wplyw
+                            ? r.opis || r.cel_nazwa || "Wpływ"
+                            : r.opis || k.label}
+                      </span>
+                      <span className="block text-[12px] text-faint">
+                        {r.data === today ? "dziś" : humanDate(r.data)}
+                        {naCel && r.zrodlo === "budzet" && " · z budżetu"}
+                        {naCel && r.zrodlo === "oszczednosci" && " · z oszczędności"}
+                        {wplyw && r.cel_nazwa && r.opis && ` · ${r.cel_nazwa}`}
+                      </span>
+                    </span>
+                    <span
+                      className={`shrink-0 text-[14px] font-semibold tabular-nums ${
+                        wplyw ? "text-success" : naCel ? "text-accent" : ""
+                      }`}
+                    >
+                      {wplyw ? "+" : ""}
+                      {zl(r.kwota, true)}
+                    </span>
+                  </button>
                 </li>
               );
             })}
           </ul>
+          <p className="px-4 pb-3 pt-1 text-[12px] leading-snug text-faint">
+            Tapnij wpis, żeby go poprawić albo usunąć. Wpłata na cel nie jest wydatkiem -
+            pieniądze nie znikają, tylko są już na coś umówione, dlatego widać ją tutaj,
+            ale nie w bilansie miesiąca.
+          </p>
         </Card>
       )}
 
@@ -1468,6 +1572,61 @@ export function FinanseScreen({
               autoFocus
             />
           </Field>
+
+          {/*
+            Skąd idą pieniądze, bo od tego zależą trzy różne liczby. Z budżetu:
+            zjada tegomiesięczną pulę na decyzje. Z oszczędności: nie rusza
+            budżetu, tylko rezerwuje to, co już leży. Z zewnątrz: pieniądze
+            spoza Twojego obiegu, np. prezent na konkretny cel.
+          */}
+          <Field label="Skąd">
+            <div className="grid grid-cols-3 gap-1.5">
+              {(
+                [
+                  ["oszczednosci", "Z oszczędności"],
+                  ["budzet", "Z budżetu"],
+                  ["zewnetrzne", "Z zewnątrz"],
+                ] as const
+              ).map(([w, label]) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => setWplataZrodlo(w)}
+                  className={`min-h-11 rounded-xl border px-2 text-[13px] font-medium ${
+                    wplataZrodlo === w
+                      ? "border-accent bg-surface-2 text-text"
+                      : "border-border text-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <p className="-mt-1 text-[12px] leading-snug text-faint">
+            {wplataZrodlo === "budzet"
+              ? "Zmniejszy tegomiesięczny budżet uznaniowy - tak jakbyś wydał tę kwotę na cokolwiek innego."
+              : wplataZrodlo === "oszczednosci"
+                ? "Budżetu nie ruszy. Kwota zniknie z wybranej pozycji i pojawi się w majątku pod nazwą Cele."
+                : "Pieniądze spoza Twojego obiegu - nie ruszą ani budżetu, ani istniejących pozycji."}
+          </p>
+
+          {wplataZrodlo !== "zewnetrzne" && plynnePozycje.length > 0 && (
+            <Field label="Z której pozycji" hint="Tam te pieniądze fizycznie leżą.">
+              <Select
+                value={wplataPozycja}
+                onChange={(e) => setWplataPozycja(e.target.value)}
+              >
+                {plynnePozycje.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {rodzajMajatku(p.rodzaj).icon} {p.nazwa} · wolne {zl(Number(p.dostepne))}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+
           <Button
             variant="primary"
             block
@@ -1480,6 +1639,9 @@ export function FinanseScreen({
                     user_id: userId,
                     cel_id: celDoWplaty!.id,
                     kwota: liczba(wplata),
+                    zrodlo: wplataZrodlo,
+                    pozycja_id:
+                      wplataZrodlo === "zewnetrzne" ? null : wplataPozycja || null,
                   }),
                 () => setArkusz(null),
               )
@@ -1489,6 +1651,24 @@ export function FinanseScreen({
           </Button>
         </div>
       </Sheet>
+
+      {ruchDoEdycji && (
+        <ArkuszRuchu
+          key={`${ruchDoEdycji.typ}-${ruchDoEdycji.id}`}
+          open={arkusz === "ruch"}
+          onClose={() => setArkusz(null)}
+          ruch={ruchDoEdycji}
+          zrodla={zrodla}
+        />
+      )}
+
+      <ArkuszPortfela
+        open={arkusz === "portfel"}
+        onClose={() => setArkusz(null)}
+        userId={userId}
+        pozycja={pozycjaPortfela}
+        aktywa={aktywa}
+      />
 
       <ArkuszStalych
         open={arkusz === "stale"}

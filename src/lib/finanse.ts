@@ -18,6 +18,7 @@ export const KATEGORIE_WYDATKOW: ReadonlyArray<{
   { value: "rozrywka", label: "Rozrywka", icon: "🎬" },
   { value: "transport", label: "Transport", icon: "🚕" },
   { value: "zdrowie", label: "Zdrowie", icon: "💊" },
+  { value: "sport", label: "Sport i aktywność", icon: "🏋️" },
   { value: "prezenty", label: "Prezenty", icon: "🎁" },
   { value: "subskrypcje", label: "Subskrypcje", icon: "📺" },
   { value: "inne", label: "Inne", icon: "💸" },
@@ -283,6 +284,20 @@ export const PODPOWIEDZI_STALYCH: ReadonlyArray<{
 ];
 
 export const IKONY_ZRODEL = ["💼", "💻", "🧾", "👨‍👩‍👦", "🎓", "🏠", "📈", "💰"] as const;
+
+export const TYPY_AKTYWOW: ReadonlyArray<{ value: string; label: string; icon: string }> = [
+  { value: "akcje", label: "Akcje", icon: "📈" },
+  { value: "etf", label: "ETF", icon: "🧺" },
+  { value: "obligacje", label: "Obligacje", icon: "🧾" },
+  { value: "fundusz", label: "Fundusz", icon: "📊" },
+  { value: "krypto", label: "Krypto", icon: "🪙" },
+  { value: "metale", label: "Metale", icon: "🥇" },
+  { value: "inne", label: "Inne", icon: "💼" },
+];
+
+export function typAktywa(value: string) {
+  return TYPY_AKTYWOW.find((t) => t.value === value) ?? TYPY_AKTYWOW[TYPY_AKTYWOW.length - 1];
+}
 
 export const IKONY_CELOW = [
   "🎯", "🏠", "🚗", "✈️", "💻", "🎓", "🛟", "💍", "🏋️", "🎸", "📷", "🎁",

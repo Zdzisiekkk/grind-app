@@ -339,7 +339,7 @@ export type Dolegliwosc = Injury & {
 
 export type KategoriaWydatku =
   | "jedzenie" | "zakupy" | "rozrywka" | "transport"
-  | "zdrowie" | "prezenty" | "subskrypcje" | "inne";
+  | "zdrowie" | "sport" | "prezenty" | "subskrypcje" | "inne";
 
 /** Migawka majątku - odpowiednik wpisu wagi, nie suma transakcji. */
 export type FinanseStan = {
@@ -406,6 +406,65 @@ export type FinanseWplata = {
   data: string;
   note: string | null;
   created_at: string;
+  /* --- 0070 --- */
+  /** budzet = zjada budżet miesiąca; oszczednosci = z odłożonych; zewnetrzne = z zewnątrz. */
+  zrodlo: "budzet" | "oszczednosci" | "zewnetrzne";
+  /** Pozycja majątku, na której te pieniądze fizycznie leżą. */
+  pozycja_id: string | null;
+};
+
+/** Widok v_finanse_pozycje - pozycja z odjętą rezerwacją na cele (0070). */
+export type FinansePozycjaZRezerwacja = FinansePozycja & {
+  zarezerwowane: number;
+  /** Kwota naprawdę wolna: stan minus to, co umówione na cele. */
+  dostepne: number;
+};
+
+/** Widok v_finanse_ruchy - wydatki i wpłaty na cele w jednym dzienniku (0070). */
+export type FinanseRuch = {
+  id: string;
+  user_id: string;
+  data: string;
+  typ: "wydatek" | "cel" | "wplyw";
+  kwota: number;
+  kategoria: string;
+  opis: string | null;
+  cel_id: string | null;
+  cel_nazwa: string | null;
+  zrodlo: string | null;
+  created_at: string;
+};
+
+/** Pojedyncze aktywo w portfelu (0071). */
+export type FinanseAktywo = {
+  id: string;
+  user_id: string;
+  pozycja_id: string;
+  symbol: string | null;
+  nazwa: string;
+  typ: "akcje" | "etf" | "obligacje" | "krypto" | "metale" | "fundusz" | "inne";
+  ilosc: number;
+  /** Cena za sztukę w walucie notowania. */
+  cena: number;
+  waluta: string;
+  /** Przelicznik na złote; 1 dla PLN. */
+  kurs: number;
+  koszt_zakupu: number | null;
+  cena_zrodlo: "reczna" | "import" | "notowania";
+  cena_aktualizacja: string | null;
+  note: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+  /** Liczone przez bazę: ilość × cena × kurs. */
+  wartosc: number;
+};
+
+/** Widok v_finanse_aktywa - aktywo z wynikiem i udziałem w portfelu. */
+export type FinanseAktywoZWynikiem = FinanseAktywo & {
+  zysk: number | null;
+  zysk_procent: number | null;
+  udzial: number;
 };
 
 /** Pozycja majątku - nazwana rzecz, która trwa między migawkami (0065). */
@@ -570,6 +629,13 @@ export type FinansePodsumowanie = {
   budzet: number | null;
   wydane_w_miesiacu: number;
   budzet_zostalo: number | null;
+  /* --- 0070 --- */
+  /** Ile z majątku jest umówione na aktywne cele. */
+  zarezerwowane: number;
+  /** Płynne po odjęciu rezerwacji - z tego liczy się poduszka. */
+  plynne_wolne: number | null;
+  /** Ile z tegomiesięcznego budżetu poszło na cele. */
+  na_cele_z_budzetu: number;
   /* --- 0066-0068 --- */
   /** Czy koszty życia liczą się z szablonu, czy z ręcznego pola w profilu. */
   koszty_z_szablonu: boolean;
@@ -1193,6 +1259,7 @@ export type Database = {
       finanse_naliczenia: Tbl<FinanseNaliczenie, "user_id" | "stale_id" | "okres" | "termin" | "kwota">;
       finanse_rozliczenia: Tbl<FinanseRozliczenie, "user_id" | "okres">;
       finanse_dni_zero: Tbl<FinanseDzienZero, "user_id">;
+      finanse_aktywa: Tbl<FinanseAktywo, "user_id" | "pozycja_id" | "nazwa">;
       finanse_wydatki: Tbl<FinanseWydatek, "user_id" | "kwota">;
       finanse_cele: Tbl<FinanseCel, "user_id" | "nazwa" | "kwota_cel">;
       finanse_wplaty: Tbl<FinanseWplata, "user_id" | "cel_id" | "kwota">;
@@ -1245,6 +1312,9 @@ export type Database = {
       v_sleep: { Row: SleepView; Relationships: [] };
       v_dolegliwosci: { Row: Dolegliwosc; Relationships: [] };
       v_finanse_cele: { Row: FinanseCelZPostepem; Relationships: [] };
+      v_finanse_pozycje: { Row: FinansePozycjaZRezerwacja; Relationships: [] };
+      v_finanse_ruchy: { Row: FinanseRuch; Relationships: [] };
+      v_finanse_aktywa: { Row: FinanseAktywoZWynikiem; Relationships: [] };
       v_recipe_totals: { Row: RecipeTotals; Relationships: [] };
     };
     Functions: {

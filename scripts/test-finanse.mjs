@@ -350,5 +350,108 @@ const wplatyPo = (await db.query(
   `select count(*)::int as n from public.finanse_wplaty where cel_id = '${celPilny}'`)).rows[0].n;
 check('usunięcie celu kasuje jego wpłaty', wplatyPo === 0, `zostało ${wplatyPo}`);
 
+console.log('\n  Wpłaty na cel: skąd idą pieniądze\n');
+
+r = await as(A, `insert into public.finanse_pozycje (user_id, nazwa, rodzaj, kwota)
+                 values ('${A}', 'Oszczędnościowe', 'oszczednosciowe', 10000) returning id`);
+const kontoA = r.ok ? r.rows[0].id : null;
+await as(A, `select public.finanse_zapisz_migawke()`);
+await as(A, `update public.profiles set budzet_uznaniowy = 800 where id = '${A}'`);
+
+r = await as(A, `insert into public.finanse_cele (user_id, nazwa, kwota_cel)
+                 values ('${A}', 'Wyjazd', 5000) returning id`);
+const celW = r.ok ? r.rows[0].id : null;
+
+/*
+ * Porównania WZGLĘDNE: konto A ma za sobą pół pliku wpisów, a sedno i tak
+ * leży w różnicy przed i po. Sztywne kwoty sprawdzałyby głównie to, czy
+ * ktoś wcześniej nie dopisał sobie wydatku.
+ */
+const podsPrzed = (await as(A, `select public.finanse_podsumowanie() as p`)).rows[0].p;
+
+await as(A, `insert into public.finanse_wplaty (user_id, cel_id, kwota, zrodlo, pozycja_id)
+             values ('${A}', '${celW}', 2000, 'oszczednosci', '${kontoA}')`);
+
+const pods = (await as(A, `select public.finanse_podsumowanie() as p`)).rows[0].p;
+
+check('rezerwacja nie zmienia majątku netto',
+  Number(pods.netto) === Number(podsPrzed.netto),
+  `${podsPrzed.netto} -> ${pods.netto}`);
+check('rezerwacja rośnie dokładnie o wpłaconą kwotę',
+  Number(pods.zarezerwowane) - Number(podsPrzed.zarezerwowane) === 2000,
+  String(pods.zarezerwowane));
+check('poduszka liczy się z płynnych po odjęciu rezerwacji',
+  Number(pods.plynne_wolne) === Number(pods.plynne) - Number(pods.zarezerwowane),
+  `${pods.plynne} - ${pods.zarezerwowane} != ${pods.plynne_wolne}`);
+check('wpłata z oszczędności nie rusza budżetu',
+  Number(pods.budzet_zostalo) === Number(podsPrzed.budzet_zostalo),
+  `${podsPrzed.budzet_zostalo} -> ${pods.budzet_zostalo}`);
+
+r = await as(A, `select dostepne from public.v_finanse_pozycje where id = '${kontoA}'`);
+check('pozycja pokazuje kwotę wolną, nie sumę',
+  r.ok && Number(r.rows[0].dostepne) === 8000, JSON.stringify(r.rows?.[0]));
+
+await as(A, `insert into public.finanse_wplaty (user_id, cel_id, kwota, zrodlo, pozycja_id)
+             values ('${A}', '${celW}', 300, 'budzet', '${kontoA}')`);
+r = await as(A, `select public.finanse_podsumowanie() as p`);
+check('wpłata z budżetu zjada tegomiesięczną pulę',
+  r.ok && Number(pods.budzet_zostalo) - Number(r.rows[0].p.budzet_zostalo) === 300,
+  `${pods.budzet_zostalo} -> ${r.rows[0]?.p?.budzet_zostalo}`);
+
+r = await as(A, `select public.finanse_bilans() as b`);
+check('wpłata na cel nie jest wypływem w bilansie',
+  r.ok && Number(r.rows[0].b.uznaniowe) === 89.99,
+  r.ok ? String(r.rows[0].b.uznaniowe) : r.err);
+
+r = await as(B, `insert into public.finanse_wplaty (user_id, cel_id, kwota, pozycja_id)
+                 values ('${B}', '${celW}', 100, '${kontoA}')`);
+check('B nie zarezerwuje pieniędzy na cudzej pozycji', !r.ok, 'wiersz przeszedł');
+
+console.log('\n  Portfel inwestycyjny\n');
+
+r = await as(A, `insert into public.finanse_pozycje (user_id, nazwa, rodzaj, kwota)
+                 values ('${A}', 'Makler', 'akcje', 0) returning id`);
+const makler = r.ok ? r.rows[0].id : null;
+r = await as(A, `insert into public.finanse_aktywa
+                   (user_id, pozycja_id, symbol, nazwa, typ, ilosc, cena, koszt_zakupu)
+                 values ('${A}', '${makler}', 'CDR', 'CD Projekt', 'akcje', 10, 220, 1800)
+                 returning wartosc`);
+check('wartość aktywa to ilość razy cena', r.ok && Number(r.rows[0].wartosc) === 2200, r.err);
+
+r = await as(A, `select kwota from public.finanse_pozycje where id = '${makler}'`);
+check('rachunek przelicza się z aktywów, bez ręcznego wpisywania',
+  r.ok && Number(r.rows[0].kwota) === 2200, JSON.stringify(r.rows?.[0]));
+
+r = await as(A, `insert into public.finanse_aktywa (user_id, pozycja_id, nazwa, ilosc, cena)
+                 values ('${A}', '${kontoA}', 'Akcje na koncie', 1, 100)`);
+check('akcji nie da się doczepić do konta osobistego', !r.ok, 'przeszło');
+
+r = await as(B, `select * from public.v_finanse_aktywa`);
+check('B nie widzi portfela A', r.ok && r.rows.length === 0,
+  r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
+console.log('\n  Dziennik ruchów\n');
+
+r = await as(A, `select typ, count(*)::int as n from public.v_finanse_ruchy group by typ order by typ`);
+const typy = r.ok ? Object.fromEntries(r.rows.map((x) => [x.typ, x.n])) : {};
+check('dziennik łączy wydatki, wpływy i wpłaty na cele',
+  typy.wydatek > 0 && typy.wplyw > 0 && typy.cel > 0, JSON.stringify(typy));
+
+r = await as(A, `insert into public.finanse_wydatki (user_id, kwota, kategoria)
+                 values ('${A}', 150, 'sport') returning id`);
+const wydSport = r.ok ? r.rows[0].id : null;
+check('kategoria sport jest dozwolona', r.ok, r.err);
+
+r = await as(A, `update public.finanse_wydatki set kwota = 99 where id = '${wydSport}'`);
+check('A poprawia własny wydatek', r.ok, r.err);
+
+r = await as(B, `update public.finanse_wydatki set kwota = 1 where id = '${wydSport}'`);
+const kwotaPo = (await db.query(
+  `select kwota from public.finanse_wydatki where id = '${wydSport}'`)).rows[0].kwota;
+check('B nie poprawi cudzego wydatku', Number(kwotaPo) === 99, String(kwotaPo));
+
+r = await as(A, `delete from public.finanse_wydatki where id = '${wydSport}'`);
+check('A usuwa własny wydatek', r.ok, r.err);
+
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);

@@ -40,7 +40,8 @@ export default async function FinansePage() {
     { data: stale },
     { data: naliczenia },
     { data: cele },
-    { data: wydatki },
+    { data: ruchy },
+    { data: aktywa },
   ] = await Promise.all([
     // Majątek, poduszka i budżet jednym zapytaniem zamiast czterema -
     // każda z tych liczb potrzebuje innego okna czasu i łączenie ich
@@ -50,8 +51,9 @@ export default async function FinansePage() {
     supabase.rpc("finanse_analiza", {}),
     // Ze schowanymi włącznie - arkusz pozwala je przywrócić, a karta i tak
     // filtruje. Drugie zapytanie tylko po to byłoby rundą do bazy za nic.
+    // Widok, nie tabela: dokłada rezerwację na cele i kwotę naprawdę wolną.
     supabase
-      .from("finanse_pozycje")
+      .from("v_finanse_pozycje")
       .select("*")
       .eq("user_id", user.id)
       .order("archiwalna")
@@ -79,13 +81,15 @@ export default async function FinansePage() {
       .order("status")
       .order("order_index")
       .order("created_at"),
+    // Jeden dziennik: wydatki i wpłaty na cele obok siebie, chronologicznie.
     supabase
-      .from("finanse_wydatki")
+      .from("v_finanse_ruchy")
       .select("*")
       .eq("user_id", user.id)
       .order("data", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(12),
+    supabase.from("v_finanse_aktywa").select("*").eq("user_id", user.id).order("order_index"),
   ]);
 
   const pods = podsumowanie as FinansePodsumowanie;
@@ -108,7 +112,8 @@ export default async function FinansePage() {
       naliczenia={(naliczenia ?? []) as never}
       rozliczenie={rozliczenie as FinanseRozliczeniePodglad | null}
       cele={cele ?? []}
-      wydatki={wydatki ?? []}
+      ruchy={ruchy ?? []}
+      aktywa={aktywa ?? []}
     />
   );
 }
