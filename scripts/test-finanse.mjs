@@ -453,5 +453,43 @@ check('B nie poprawi cudzego wydatku', Number(kwotaPo) === 99, String(kwotaPo));
 r = await as(A, `delete from public.finanse_wydatki where id = '${wydSport}'`);
 check('A usuwa własny wydatek', r.ok, r.err);
 
+console.log('\n  Notowania\n');
+
+r = await as(A, `insert into public.finanse_aktywa
+                   (user_id, pozycja_id, symbol, nazwa, ilosc, cena, notowanie_zrodlo, notowanie_symbol)
+                 values ('${A}', '${makler}', 'PKO', 'PKO BP', 100, 40, 'stooq', 'pko')
+                 returning id`);
+const aktNot = r.ok ? r.rows[0].id : null;
+check('aktywo da się powiązać z notowaniem', r.ok, r.err);
+
+await as(A, `insert into public.finanse_notowania (user_id, zrodlo, symbol, cena, data)
+             values ('${A}', 'stooq', 'pko', 62.50, current_date)`);
+r = await as(A, `select public.finanse_zastosuj_notowania() as n`);
+check('notowanie trafia do powiązanego aktywa', r.ok && r.rows[0].n === 1, r.err);
+
+r = await as(A, `select cena, cena_zrodlo from public.finanse_aktywa where id = '${aktNot}'`);
+check('cena i jej źródło zostają zapisane',
+  r.ok && Number(r.rows[0].cena) === 62.5 && r.rows[0].cena_zrodlo === 'notowania',
+  JSON.stringify(r.rows?.[0]));
+
+r = await as(A, `select public.finanse_zastosuj_notowania() as n`);
+check('powtórka nie przepisuje tych samych cen', r.ok && r.rows[0].n === 0, r.err);
+
+// Cena wpisana ręcznie jest deklaracją człowieka - nic nie ma prawa jej ruszyć.
+r = await as(A, `select cena from public.finanse_aktywa
+                  where pozycja_id = '${makler}' and notowanie_symbol is null limit 1`);
+const recznaPrzed = r.ok ? Number(r.rows[0]?.cena) : null;
+await as(A, `insert into public.finanse_notowania (user_id, zrodlo, symbol, cena, data)
+             values ('${A}', 'stooq', 'cdr', 999, current_date)`);
+await as(A, `select public.finanse_zastosuj_notowania()`);
+r = await as(A, `select cena from public.finanse_aktywa
+                  where pozycja_id = '${makler}' and notowanie_symbol is null limit 1`);
+check('ręcznie wpisana cena zostaje nietknięta',
+  r.ok && Number(r.rows[0]?.cena) === recznaPrzed, `${recznaPrzed} -> ${r.rows?.[0]?.cena}`);
+
+r = await as(B, `select * from public.finanse_notowania`);
+check('B nie widzi notowań A', r.ok && r.rows.length === 0,
+  r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);

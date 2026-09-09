@@ -30,7 +30,7 @@ type Klient = Awaited<ReturnType<typeof createClient>>;
  * nie ma żadnego naturalnego sufitu, a przy kilku posiłkach dziennie to
  * najczęściej używana funkcja AI w aplikacji.
  */
-export type KategoriaAI = "trener" | "plan" | "wyglad" | "jedzenie";
+export type KategoriaAI = "trener" | "plan" | "wyglad" | "jedzenie" | "portfel";
 
 type Uzycie = {
   input_tokens?: number | null;

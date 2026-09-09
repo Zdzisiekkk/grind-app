@@ -452,6 +452,11 @@ export type FinanseAktywo = {
   koszt_zakupu: number | null;
   cena_zrodlo: "reczna" | "import" | "notowania";
   cena_aktualizacja: string | null;
+  /* --- 0073 --- */
+  /** Serwis, z którego ciągniemy cenę; null = wpisywana ręcznie. */
+  notowanie_zrodlo: "stooq" | "coingecko" | null;
+  /** Symbol w formacie tego serwisu, małymi literami. */
+  notowanie_symbol: string | null;
   note: string | null;
   order_index: number;
   created_at: string;
@@ -561,6 +566,18 @@ export type FinanseRozliczenie = {
   note: string | null;
   zamkniete_at: string;
   created_at: string;
+};
+
+/** Zapamiętane notowanie - własne dla każdego konta (0073). */
+export type FinanseNotowanie = {
+  user_id: string;
+  zrodlo: "stooq" | "coingecko" | "nbp";
+  symbol: string;
+  cena: number;
+  waluta: string;
+  /** Dzień, z którego pochodzi notowanie - nie dzień pobrania. */
+  data: string;
+  updated_at: string;
 };
 
 export type FinanseDzienZero = {
@@ -1260,6 +1277,7 @@ export type Database = {
       finanse_rozliczenia: Tbl<FinanseRozliczenie, "user_id" | "okres">;
       finanse_dni_zero: Tbl<FinanseDzienZero, "user_id">;
       finanse_aktywa: Tbl<FinanseAktywo, "user_id" | "pozycja_id" | "nazwa">;
+      finanse_notowania: Tbl<FinanseNotowanie, "user_id" | "zrodlo" | "symbol" | "cena" | "data">;
       finanse_wydatki: Tbl<FinanseWydatek, "user_id" | "kwota">;
       finanse_cele: Tbl<FinanseCel, "user_id" | "nazwa" | "kwota_cel">;
       finanse_wplaty: Tbl<FinanseWplata, "user_id" | "cel_id" | "kwota">;
@@ -1345,6 +1363,7 @@ export type Database = {
       finanse_bilans: { Args: { p_okres?: string }; Returns: unknown };
       finanse_analiza: { Args: { p_miesiecy?: number }; Returns: unknown };
       finanse_xp_rozlicz: { Args: Record<string, never>; Returns: number };
+      finanse_zastosuj_notowania: { Args: Record<string, never>; Returns: number };
       finanse_rozliczenie_podglad: { Args: { p_okres: string }; Returns: unknown };
       finanse_zamknij_miesiac: { Args: { p_okres: string; p_note?: string }; Returns: unknown };
       /** Podbija dzienny licznik wywołań modelu; false = limit wyczerpany. */

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Alert, Button, Chip, Field, Input, Select, Sheet } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import { TYPY_AKTYWOW, typAktywa, zl, zmiana } from "@/lib/finanse";
+import { ImportPortfela } from "./ImportPortfela";
 import { liczba, useZapis } from "./useZapis";
 import type { FinanseAktywoZWynikiem, FinansePozycja } from "@/lib/database.types";
 
@@ -28,6 +30,7 @@ export function ArkuszPortfela({
   pozycja: FinansePozycja | null;
   aktywa: FinanseAktywoZWynikiem[];
 }) {
+  const router = useRouter();
   const supabase = createClient();
   const { busy, error, setError, zapisz } = useZapis();
   const [nowe, setNowe] = useState<{
@@ -39,9 +42,13 @@ export function ArkuszPortfela({
     waluta: string;
     kurs: string;
     koszt: string;
+    notowanieZrodlo: string;
+    notowanieSymbol: string;
   } | null>(null);
   const [edytowane, setEdytowane] = useState<string | null>(null);
   const [ceny, setCeny] = useState<Record<string, string>>({});
+  const [odswieza, setOdswieza] = useState(false);
+  const [komunikat, setKomunikat] = useState<string | null>(null);
 
   if (!pozycja) return null;
 
@@ -77,6 +84,42 @@ export function ArkuszPortfela({
           wtedy sama z sumy aktywów.
         </p>
 
+        <ImportPortfela userId={userId} pozycjaId={pozycja.id} istniejace={moje} />
+
+        {moje.some((a) => a.notowanie_symbol) && (
+          <div>
+            <button
+              type="button"
+              disabled={odswieza}
+              onClick={async () => {
+                setOdswieza(true);
+                setKomunikat(null);
+                try {
+                  const res = await fetch("/api/notowania", { method: "POST" });
+                  const json = await res.json();
+                  setKomunikat(
+                    res.ok
+                      ? json.uwaga ??
+                          (json.zastosowane > 0
+                            ? `Zaktualizowano ${json.zastosowane} ${json.zastosowane === 1 ? "cenę" : "ceny"}.`
+                            : "Ceny są już aktualne.")
+                      : (json.error ?? "Nie udało się pobrać notowań."),
+                  );
+                  if (res.ok) router.refresh();
+                } catch {
+                  setKomunikat("Nie udało się połączyć ze źródłem notowań.");
+                } finally {
+                  setOdswieza(false);
+                }
+              }}
+              className="text-[13px] font-medium text-accent disabled:opacity-50"
+            >
+              {odswieza ? "Pobieram notowania..." : "🔄 Odśwież ceny"}
+            </button>
+            {komunikat && <p className="mt-1 text-[12px] text-faint">{komunikat}</p>}
+          </div>
+        )}
+
         {moje.length > 0 && (
           <ul className="flex flex-col divide-y divide-border">
             {moje.map((a) => {
@@ -101,6 +144,7 @@ export function ArkuszPortfela({
                         {a.nazwa}
                       </span>
                       <span className="block text-[12px] text-faint">
+                        {a.notowanie_symbol ? "🔄 " : ""}
                         {Number(a.ilosc)} × {Number(a.cena).toLocaleString("pl-PL")} {a.waluta}
                         {a.udzial > 0 && ` · ${a.udzial}% portfela`}
                       </span>
@@ -267,6 +311,50 @@ export function ArkuszPortfela({
                 placeholder="1800"
               />
             </Field>
+
+            {/*
+              Symbol notowania osobno od tickera: to, co widać w aplikacji
+              maklerskiej, i to, pod czym instrument leży w serwisie z cenami,
+              bywa napisane inaczej. Puste = cena zostaje ręczna, czyli Twoja.
+            */}
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Ceny z sieci">
+                <Select
+                  value={nowe.notowanieZrodlo}
+                  onChange={(e) =>
+                    setNowe({
+                      ...nowe,
+                      notowanieZrodlo: e.target.value,
+                      notowanieSymbol:
+                        e.target.value === "stooq" ? nowe.symbol.toLowerCase() : nowe.notowanieSymbol,
+                    })
+                  }
+                >
+                  <option value="">Wpisuję ręcznie</option>
+                  <option value="stooq">Stooq (GPW, ETF)</option>
+                  <option value="coingecko">CoinGecko (krypto)</option>
+                </Select>
+              </Field>
+              <Field
+                label="Symbol notowania"
+                hint={
+                  nowe.notowanieZrodlo === "coingecko"
+                    ? "Nazwa z CoinGecko, np. bitcoin"
+                    : nowe.notowanieZrodlo === "stooq"
+                      ? "Np. cdr, pko, vwce.de"
+                      : undefined
+                }
+              >
+                <Input
+                  value={nowe.notowanieSymbol}
+                  disabled={!nowe.notowanieZrodlo}
+                  onChange={(e) =>
+                    setNowe({ ...nowe, notowanieSymbol: e.target.value.toLowerCase() })
+                  }
+                  placeholder={nowe.notowanieZrodlo === "coingecko" ? "bitcoin" : "cdr"}
+                />
+              </Field>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="primary"
@@ -286,6 +374,11 @@ export function ArkuszPortfela({
                       kurs: nowe.waluta === "PLN" ? 1 : liczba(nowe.kurs) || 1,
                       koszt_zakupu: nowe.koszt.trim() ? liczba(nowe.koszt) : null,
                       cena_aktualizacja: new Date().toISOString(),
+                      notowanie_zrodlo:
+                        (nowe.notowanieZrodlo as "stooq" | "coingecko") || null,
+                      notowanie_symbol: nowe.notowanieZrodlo
+                        ? nowe.notowanieSymbol.trim() || null
+                        : null,
                     }),
                   );
                   if (ok) setNowe(null);
@@ -312,6 +405,8 @@ export function ArkuszPortfela({
                 waluta: "PLN",
                 kurs: "1",
                 koszt: "",
+                notowanieZrodlo: "",
+                notowanieSymbol: "",
               })
             }
           >

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { FinanseScreen } from "@/components/finanse/FinanseScreen";
 import { createClient } from "@/lib/supabase/server";
+import { OdswiezNotowania } from "@/components/finanse/OdswiezNotowania";
 import { poczatekMiesiaca } from "@/lib/finanse";
 import type {
   FinanseAnaliza,
@@ -42,6 +43,7 @@ export default async function FinansePage() {
     { data: cele },
     { data: ruchy },
     { data: aktywa },
+    { data: ostatnieNotowanie },
   ] = await Promise.all([
     // Majątek, poduszka i budżet jednym zapytaniem zamiast czterema -
     // każda z tych liczb potrzebuje innego okna czasu i łączenie ich
@@ -90,6 +92,14 @@ export default async function FinansePage() {
       .order("created_at", { ascending: false })
       .limit(12),
     supabase.from("v_finanse_aktywa").select("*").eq("user_id", user.id).order("order_index"),
+    // Najświeższe notowanie decyduje, czy trzeba ruszać zewnętrzne serwisy.
+    supabase
+      .from("finanse_notowania")
+      .select("updated_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const pods = podsumowanie as FinansePodsumowanie;
@@ -99,8 +109,21 @@ export default async function FinansePage() {
     ? await supabase.rpc("finanse_rozliczenie_podglad", { p_okres: pods.rozliczenie_okres })
     : { data: null };
 
+  /*
+   * "Nieaktualne" znaczy: z innego dnia niż dziś. Nie "starsze niż 24 godziny" -
+   * notowanie z wczorajszego zamknięcia jest aktualne przez cały dzisiejszy
+   * poranek, a odmierzanie dób od losowej godziny kazałoby pobierać ceny
+   * w środku nocy bez żadnego zysku.
+   */
+  const notowaniaNieaktualne =
+    (aktywa ?? []).some((a) => a.notowanie_symbol) &&
+    (!ostatnieNotowanie?.updated_at ||
+      ostatnieNotowanie.updated_at.slice(0, 10) < new Date().toISOString().slice(0, 10));
+
   return (
-    <FinanseScreen
+    <>
+      <OdswiezNotowania nieaktualne={notowaniaNieaktualne} />
+      <FinanseScreen
       userId={user.id}
       podsumowanie={pods}
       bilans={bilans as FinanseBilans}
@@ -114,6 +137,7 @@ export default async function FinansePage() {
       cele={cele ?? []}
       ruchy={ruchy ?? []}
       aktywa={aktywa ?? []}
-    />
+      />
+    </>
   );
 }
