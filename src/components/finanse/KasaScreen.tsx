@@ -126,7 +126,13 @@ export function KasaScreen({
 
   const [wydatek, setWydatek] = useState({ kwota: "", kategoria: "jedzenie", opis: "" });
   const [wplyw, setWplyw] = useState({ kwota: "", zrodlo: "", opis: "" });
-  const [cel, setCel] = useState({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "" });
+  const [cel, setCel] = useState({
+    nazwa: "",
+    ikona: "🎯",
+    kwota_cel: "",
+    termin: "",
+    przypominac: false,
+  });
   const [wplata, setWplata] = useState("");
 
   /* ----------------------------- Majątek ---------------------------------- */
@@ -637,19 +643,70 @@ export function KasaScreen({
                       <span>
                         {c.procent}%
                         {c.termin ? ` · do ${humanDate(c.termin)}` : ""}
+                        {c.przypominac && c.rata_potrzebna != null && (
+                          <> · {zl(c.rata_potrzebna)}/mies.</>
+                        )}
                       </span>
-                      <button
-                        type="button"
-                        className="font-medium text-accent"
-                        onClick={() => {
-                          setCelDoWplaty(c);
-                          setWplata("");
-                          setArkusz("wplata");
-                        }}
-                      >
-                        + wpłata
-                      </button>
+                      <span className="flex shrink-0 items-baseline gap-3">
+                        {/*
+                          Dzwonek przy celu, a nie w ustawieniach: decyzja
+                          "pilnuj tego" dotyczy jednego konkretnego celu
+                          i podejmuje się ją patrząc właśnie na niego.
+                        */}
+                        <button
+                          type="button"
+                          aria-label={
+                            c.przypominac
+                              ? `Przestań pilnować: ${c.nazwa}`
+                              : `Pilnuj tempa: ${c.nazwa}`
+                          }
+                          title={
+                            c.termin
+                              ? c.przypominac
+                                ? "Pilnowane - ostrzeżemy, gdy zaczniesz odstawać"
+                                : "Cichy cel - kliknij, żeby pilnować tempa"
+                              : "Pilnowanie wymaga terminu"
+                          }
+                          className={c.przypominac ? "text-accent" : "text-faint"}
+                          onClick={() => {
+                            if (!c.termin && !c.przypominac) {
+                              setError(
+                                `Cel „${c.nazwa}" nie ma terminu, więc nie ma czego pilnować. Dodaj termin, a przypomnienia zaczną działać.`,
+                              );
+                              return;
+                            }
+                            zapisz(() =>
+                              supabase
+                                .from("finanse_cele")
+                                .update({ przypominac: !c.przypominac })
+                                .eq("id", c.id),
+                            );
+                          }}
+                        >
+                          {c.przypominac ? "🔔" : "🔕"}
+                        </button>
+                        <button
+                          type="button"
+                          className="font-medium text-accent"
+                          onClick={() => {
+                            setCelDoWplaty(c);
+                            setWplata("");
+                            setArkusz("wplata");
+                          }}
+                        >
+                          + wpłata
+                        </button>
+                      </span>
                     </div>
+                    {c.spozniony && (
+                      <p className="mt-1 text-[12px] text-warn">
+                        Nie wyrabiasz się: {c.procent}% przy{" "}
+                        {c.oczekiwany_procent}% upływu czasu.
+                        {c.rata_potrzebna != null && (
+                          <> Żeby zdążyć, potrzeba {zl(c.rata_potrzebna)} miesięcznie.</>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </li>
@@ -1058,6 +1115,31 @@ export function KasaScreen({
               />
             </Field>
           </div>
+
+          {/*
+            Domyślnie cicho. Cel bywa zobowiązaniem z terminem, ale równie
+            często zwykłą etykietą na odkładane pieniądze - i wtedy
+            przypominanie o nim jest wyłącznie hałasem.
+          */}
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={cel.przypominac}
+              disabled={!cel.termin}
+              onChange={(e) => setCel({ ...cel, przypominac: e.target.checked })}
+              className="mt-0.5 size-5 shrink-0 accent-[var(--accent)] disabled:opacity-40"
+            />
+            <span className="min-w-0">
+              <span className="block text-[14px] font-medium leading-tight">
+                Pilnuj tempa
+              </span>
+              <span className="block text-[12px] leading-snug text-muted">
+                {cel.termin
+                  ? "Ostrzeżemy, gdy postęp zacznie odstawać od upływu czasu."
+                  : "Wymaga terminu - bez niego nie ma czego pilnować."}
+              </span>
+            </span>
+          </label>
           <Button
             variant="primary"
             block
@@ -1072,9 +1154,10 @@ export function KasaScreen({
                     ikona: cel.ikona,
                     kwota_cel: liczba(cel.kwota_cel),
                     termin: cel.termin || null,
+                    przypominac: cel.przypominac && !!cel.termin,
                   }),
                 () => {
-                  setCel({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "" });
+                  setCel({ nazwa: "", ikona: "🎯", kwota_cel: "", termin: "", przypominac: false });
                   setArkusz(null);
                 },
               )

@@ -377,6 +377,8 @@ export type FinanseCel = {
   order_index: number;
   created_at: string;
   updated_at: string;
+  /** Czy ostrzegać przy odstawaniu od tempa; wymaga terminu (0069). */
+  przypominac: boolean;
 };
 
 /** Widok v_finanse_cele - cel z postępem policzonym z wpłat. */
@@ -385,6 +387,14 @@ export type FinanseCelZPostepem = FinanseCel & {
   zostalo: number;
   procent: number;
   ostatnia_wplata: string | null;
+  /* --- 0069 --- */
+  /** Ile trzeba odkładać miesięcznie, żeby zdążyć; null bez terminu. */
+  rata_potrzebna: number | null;
+  dni_do_terminu: number | null;
+  /** Ile procent powinno już być odłożone, licząc liniowo od założenia. */
+  oczekiwany_procent: number | null;
+  /** Prawda tylko przy włączonym pilnowaniu i realnym odstępie od tempa. */
+  spozniony: boolean;
 };
 
 export type FinanseWplata = {

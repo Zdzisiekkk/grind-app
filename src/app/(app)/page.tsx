@@ -72,6 +72,7 @@ export default async function DashboardPage() {
     { data: xpWiersze },
     { data: kasaPods },
     { data: kasaBilans },
+    { data: celeSpoznione },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -170,6 +171,14 @@ export default async function DashboardPage() {
     // wpisie wydatku potrzebny jest zawsze.
     supabase.rpc("finanse_podsumowanie"),
     supabase.rpc("finanse_bilans", {}),
+    // Tylko cele, przy których sam poprosiłeś o pilnowanie - widok liczy to
+    // po swojej stronie, więc pulpit nie musi znać reguły.
+    supabase
+      .from("v_finanse_cele")
+      .select("nazwa, rata_potrzebna")
+      .eq("user_id", user.id)
+      .eq("spozniony", true)
+      .limit(1),
   ]);
 
   const summary = weekSummary as PeriodSummary | null;
@@ -207,29 +216,45 @@ export default async function DashboardPage() {
   const kasa = kasaPods as FinansePodsumowanie | null;
   const kasaB = kasaBilans as FinanseBilans | null;
   const kasaTempo = tempoBudzetu(kasa?.budzet, kasa?.wydane_w_miesiacu ?? 0);
-  const kasaPowod = !kasa
-    ? null
-    : kasa.rozliczenie_okres
-      ? {
+  const celSpozniony = (celeSpoznione ?? [])[0] ?? null;
+
+  /*
+   * Pokazujemy najwyżej JEDEN powód, w kolejności pilności. Trzy karty
+   * naraz zamieniłyby pulpit w listę zaległości, a i tak wszystkie prowadzą
+   * w to samo miejsce - do Kasy.
+   */
+  const kasaPowody = !kasa
+    ? []
+    : [
+        kasa.rozliczenie_okres && {
           tytul: `Rozlicz ${nazwaMiesiaca(kasa.rozliczenie_okres)}`,
           opis: "Bilans, sprawdzenie konta i decyzja o nadwyżce. Zajmie minutę.",
-        }
-      : (kasaB?.stale_do_potwierdzenia ?? 0) > 0
-        ? {
-            tytul: `${kasaB!.stale_do_potwierdzenia} ${kasaB!.stale_do_potwierdzenia === 1 ? "rachunek czeka" : "rachunki czekają"} na potwierdzenie`,
-            opis: "Szablon je przygotował - potwierdź kwoty albo popraw.",
-          }
-        : kasaTempo.stan === "przekroczony"
-          ? {
-              tytul: "Budżet na ten miesiąc przekroczony",
-              opis: `Wydane ${zl(kasa.wydane_w_miesiacu)} z ${zl(kasa.budzet)}.`,
-            }
-          : kasaTempo.stan === "uwaga"
-            ? {
-                tytul: "Lecisz z tempem budżetu",
-                opis: `W tym tempie skończysz miesiąc na ${zl(kasaTempo.prognoza)} przy budżecie ${zl(kasa.budzet)}.`,
-              }
-            : null;
+        },
+        (kasaB?.stale_do_potwierdzenia ?? 0) > 0 && {
+          tytul: `${kasaB!.stale_do_potwierdzenia} ${
+            kasaB!.stale_do_potwierdzenia === 1 ? "rachunek czeka" : "rachunki czekają"
+          } na potwierdzenie`,
+          opis: "Szablon je przygotował - potwierdź kwoty albo popraw.",
+        },
+        kasaTempo.stan === "przekroczony" && {
+          tytul: "Budżet na ten miesiąc przekroczony",
+          opis: `Wydane ${zl(kasa.wydane_w_miesiacu)} z ${zl(kasa.budzet)}.`,
+        },
+        // Tylko cele, przy których sam poprosiłeś o pilnowanie.
+        celSpozniony && {
+          tytul: `Cel „${celSpozniony.nazwa}" zaczyna uciekać`,
+          opis:
+            celSpozniony.rata_potrzebna != null
+              ? `Żeby zdążyć w terminie, potrzeba ${zl(Number(celSpozniony.rata_potrzebna))} miesięcznie.`
+              : "Termin minął, a cel nie jest zebrany.",
+        },
+        kasaTempo.stan === "uwaga" && {
+          tytul: "Lecisz z tempem budżetu",
+          opis: `W tym tempie skończysz miesiąc na ${zl(kasaTempo.prognoza)} przy budżecie ${zl(kasa.budzet)}.`,
+        },
+      ].filter((p): p is { tytul: string; opis: string } => Boolean(p));
+
+  const kasaPowod = kasaPowody[0] ?? null;
 
   // Co pokazać na pulpicie (migracja 0058). Poza tym wyborem stoją rzeczy
   // czekające na decyzję - propozycje trenera, nieocenione kontuzje - oraz

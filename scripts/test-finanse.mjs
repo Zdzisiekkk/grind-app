@@ -275,5 +275,43 @@ check(
   r.ok ? JSON.stringify(r.rows[0].b) : r.err,
 );
 
+console.log('\n  Cel pilnowany albo cichy\n');
+
+r = await as(A, `insert into public.finanse_cele (user_id, nazwa, kwota_cel, termin, created_at)
+                 values ('${A}', 'Kiedyś gitara', 4000, current_date - 5,
+                         now() - interval '120 days') returning id`);
+const celCichy = r.ok ? r.rows[0].id : null;
+r = await as(A, `select spozniony from public.v_finanse_cele where id = '${celCichy}'`);
+check('cel bez pilnowania milczy nawet po terminie', r.ok && r.rows[0].spozniony === false, r.err);
+
+r = await as(A, `insert into public.finanse_cele (user_id, nazwa, kwota_cel, termin, przypominac, created_at)
+                 values ('${A}', 'Kaucja', 6000, current_date + 60, true,
+                         now() - interval '120 days') returning id`);
+const celPilny = r.ok ? r.rows[0].id : null;
+r = await as(A, `select spozniony, rata_potrzebna, oczekiwany_procent
+                   from public.v_finanse_cele where id = '${celPilny}'`);
+check('pilnowany cel bez wpłat zgłasza spóźnienie', r.ok && r.rows[0].spozniony === true, r.err);
+check('rata potrzebna liczona z tego, co zostało',
+  r.ok && Number(r.rows[0].rata_potrzebna) > 0, JSON.stringify(r.rows?.[0]));
+
+await as(A, `insert into public.finanse_wplaty (user_id, cel_id, kwota) values ('${A}', '${celPilny}', 6000)`);
+r = await as(A, `select spozniony from public.v_finanse_cele where id = '${celPilny}'`);
+check('zebrany cel przestaje alarmować', r.ok && r.rows[0].spozniony === false, r.err);
+
+r = await as(A, `insert into public.finanse_cele (user_id, nazwa, kwota_cel, przypominac)
+                 values ('${A}', 'Bez terminu', 5000, true) returning id`);
+r = await as(A, `select spozniony, rata_potrzebna from public.v_finanse_cele where nazwa = 'Bez terminu'`);
+check('bez terminu pilnowanie milczy', r.ok && r.rows[0].spozniony === false, r.err);
+check('bez terminu nie ma raty do policzenia', r.ok && r.rows[0].rata_potrzebna === null);
+
+r = await as(A, `insert into public.finanse_cele (user_id, nazwa, kwota_cel, termin, przypominac)
+                 values ('${A}', 'Prezent', 300, current_date + 7, true) returning id`);
+r = await as(A, `select spozniony from public.v_finanse_cele where nazwa = 'Prezent'`);
+check('świeży cel nie jest spóźniony pierwszego dnia', r.ok && r.rows[0].spozniony === false, r.err);
+
+r = await as(B, `select * from public.v_finanse_cele where spozniony`);
+check('B nie widzi spóźnionych celów A', r.ok && r.rows.length === 0,
+  r.ok ? `WIDZI ${r.rows.length}` : r.err);
+
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);
