@@ -6,6 +6,7 @@ import { Alert, Button, Card, Chip, EmptyState, Field, Input, Select, Sheet } fr
 import { createClient } from "@/lib/supabase/client";
 import { humanDate, todayISO } from "@/lib/format";
 import {
+  IKONY_CELOW,
   KATEGORIE_WYDATKOW,
   KOSZYKI_MAJATKU,
   RODZAJE_MAJATKU,
@@ -50,8 +51,17 @@ import type {
  */
 
 type Arkusz =
-  | "stan" | "wydatek" | "wplyw" | "cel" | "wplata"
+  | "stan" | "wydatek" | "wplyw" | "cel" | "celEdycja" | "wplata"
   | "stale" | "zrodla" | "rozliczenie" | null;
+
+/** Pola celu wspólne dla zakładania i edycji. */
+type FormularzCelu = {
+  nazwa: string;
+  ikona: string;
+  kwota_cel: string;
+  termin: string;
+  przypominac: boolean;
+};
 
 /**
  * Pozycja majątku w trakcie edycji.
@@ -134,6 +144,10 @@ export function FinanseScreen({
     przypominac: false,
   });
   const [wplata, setWplata] = useState("");
+  const [edycja, setEdycja] = useState<FormularzCelu | null>(null);
+  const [celEdytowany, setCelEdytowany] = useState<FinanseCelZPostepem | null>(null);
+  /** Kasowanie w dwóch krokach - cel znika razem z historią wpłat. */
+  const [potwierdzUsuniecie, setPotwierdzUsuniecie] = useState(false);
 
   /* ----------------------------- Majątek ---------------------------------- */
 
@@ -143,6 +157,20 @@ export function FinanseScreen({
     setPodpowiedziDla(null);
     setError(null);
     setArkusz("stan");
+  }
+
+  function otworzEdycjeCelu(c: FinanseCelZPostepem) {
+    setCelEdytowany(c);
+    setEdycja({
+      nazwa: c.nazwa,
+      ikona: c.ikona,
+      kwota_cel: String(Number(c.kwota_cel)),
+      termin: c.termin ?? "",
+      przypominac: c.przypominac,
+    });
+    setPotwierdzUsuniecie(false);
+    setError(null);
+    setArkusz("celEdycja");
   }
 
   function dodajPozycje(rodzaj: string) {
@@ -220,6 +248,9 @@ export function FinanseScreen({
   const naDzien = dziennieDoKonca(podsumowanie.budzet_zostalo);
   const przekroczony = (podsumowanie.budzet_zostalo ?? 0) < 0;
   const tempo = tempoBudzetu(podsumowanie.budzet, podsumowanie.wydane_w_miesiacu);
+
+  const celeAktywne = cele.filter((c) => c.status === "aktywny");
+  const celeZamkniete = cele.filter((c) => c.status !== "aktywny");
 
   const doPotwierdzenia = naliczenia.filter(
     (n) => n.status === "oczekuje" && n.termin <= today,
@@ -610,9 +641,9 @@ export function FinanseScreen({
             + Cel
           </Button>
         }
-        padded={cele.length === 0}
+        padded={celeAktywne.length === 0 && celeZamkniete.length === 0}
       >
-        {cele.length === 0 ? (
+        {celeAktywne.length === 0 && celeZamkniete.length === 0 ? (
           <EmptyState
             icon="🎯"
             title="Brak celów"
@@ -620,7 +651,7 @@ export function FinanseScreen({
           />
         ) : (
           <ul className="divide-y divide-border">
-            {cele.map((c) => (
+            {celeAktywne.map((c) => (
               <li key={c.id} className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <span className="text-[20px]" aria-hidden>
@@ -628,7 +659,17 @@ export function FinanseScreen({
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-[14px] font-medium">{c.nazwa}</span>
+                      {/*
+                        Nazwa jest przyciskiem, bo edycji szuka się właśnie tam,
+                        gdzie widać rzecz do poprawienia - a nie w menu obok.
+                      */}
+                      <button
+                        type="button"
+                        onClick={() => otworzEdycjeCelu(c)}
+                        className="min-w-0 truncate text-left text-[14px] font-medium underline decoration-transparent underline-offset-2 hover:decoration-inherit"
+                      >
+                        {c.nazwa}
+                      </button>
                       <span className="shrink-0 text-[12px] tabular-nums text-muted">
                         {zl(c.zebrane)} / {zl(c.kwota_cel)}
                       </span>
@@ -713,6 +754,43 @@ export function FinanseScreen({
             ))}
           </ul>
         )}
+
+        {celeZamkniete.length > 0 && (
+          <div className="border-t border-border px-4 py-3">
+            <h3 className="text-[13px] font-semibold text-muted">
+              Zamknięte ({celeZamkniete.length})
+            </h3>
+            <ul className="mt-2 flex flex-col gap-1.5">
+              {celeZamkniete.map((c) => (
+                <li key={c.id} className="flex items-center gap-2 text-[13px]">
+                  <span aria-hidden>{c.ikona}</span>
+                  <span className="min-w-0 flex-1 truncate text-muted">
+                    {c.nazwa}
+                    <span className="text-faint">
+                      {" "}
+                      · {c.status === "osiagniety" ? "osiągnięty" : "odłożony"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-faint">{zl(c.zebrane)}</span>
+                  <button
+                    type="button"
+                    className="shrink-0 font-medium text-accent"
+                    onClick={() =>
+                      zapisz(() =>
+                        supabase
+                          .from("finanse_cele")
+                          .update({ status: "aktywny" })
+                          .eq("id", c.id),
+                      )
+                    }
+                  >
+                    przywróć
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Card>
 
       {/* --- Gdzie znika kasa --- */}
@@ -756,11 +834,11 @@ export function FinanseScreen({
             przekonuje; "to jest 8% mieszkania" pokazuje koszt alternatywny,
             czyli jedyną rzecz, o której naprawdę decydujesz.
           */}
-          {cele[0] && analiza.suma > 0 && (
+          {celeAktywne[0] && analiza.suma > 0 && (
             <p className="mt-3 border-t border-border pt-3 text-[12px] text-faint">
               {zl(analiza.suma)} wydane w tym miesiącu to{" "}
-              {Math.round((analiza.suma / Number(cele[0].kwota_cel)) * 100)}% celu
-              &bdquo;{cele[0].nazwa}&rdquo;.
+              {Math.round((analiza.suma / Number(celeAktywne[0].kwota_cel)) * 100)}% celu
+              &bdquo;{celeAktywne[0].nazwa}&rdquo;.
             </p>
           )}
         </Card>
@@ -1100,6 +1178,21 @@ export function FinanseScreen({
 
       <Sheet open={arkusz === "cel"} onClose={() => setArkusz(null)} title="Nowy cel">
         <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {IKONY_CELOW.map((i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setCel({ ...cel, ikona: i })}
+                aria-label={`Ikona ${i}`}
+                className={`flex size-10 items-center justify-center rounded-lg border text-[18px] ${
+                  cel.ikona === i ? "border-accent bg-surface-2" : "border-border"
+                }`}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
           <Field label="Na co odkładasz">
             <Input
               value={cel.nazwa}
@@ -1179,6 +1272,182 @@ export function FinanseScreen({
       </Sheet>
 
       <Sheet
+        open={arkusz === "celEdycja"}
+        onClose={() => setArkusz(null)}
+        title={celEdytowany ? `Cel: ${celEdytowany.nazwa}` : "Cel"}
+      >
+        {edycja && celEdytowany && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-1.5">
+              {IKONY_CELOW.map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setEdycja({ ...edycja, ikona: i })}
+                  aria-label={`Ikona ${i}`}
+                  className={`flex size-10 items-center justify-center rounded-lg border text-[18px] ${
+                    edycja.ikona === i ? "border-accent bg-surface-2" : "border-border"
+                  }`}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+
+            <Field label="Na co odkładasz">
+              <Input
+                value={edycja.nazwa}
+                onChange={(e) => setEdycja({ ...edycja, nazwa: e.target.value })}
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label="Kwota (zł)"
+                hint={
+                  liczba(edycja.kwota_cel) > 0 && liczba(edycja.kwota_cel) < celEdytowany.zebrane
+                    ? `Masz już odłożone ${zl(celEdytowany.zebrane)}.`
+                    : undefined
+                }
+              >
+                <Input
+                  inputMode="decimal"
+                  value={edycja.kwota_cel}
+                  onChange={(e) => setEdycja({ ...edycja, kwota_cel: e.target.value })}
+                />
+              </Field>
+              <Field label="Termin">
+                <Input
+                  type="date"
+                  value={edycja.termin}
+                  onChange={(e) =>
+                    setEdycja({
+                      ...edycja,
+                      termin: e.target.value,
+                      // Bez terminu nie ma czego pilnować - gaśnie razem z nim,
+                      // zamiast zostawać włączone i nic nie robić.
+                      przypominac: e.target.value ? edycja.przypominac : false,
+                    })
+                  }
+                />
+              </Field>
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={edycja.przypominac}
+                disabled={!edycja.termin}
+                onChange={(e) => setEdycja({ ...edycja, przypominac: e.target.checked })}
+                className="mt-0.5 size-5 shrink-0 accent-[var(--accent)] disabled:opacity-40"
+              />
+              <span className="min-w-0">
+                <span className="block text-[14px] font-medium leading-tight">Pilnuj tempa</span>
+                <span className="block text-[12px] leading-snug text-muted">
+                  {edycja.termin
+                    ? "Ostrzeżemy, gdy postęp zacznie odstawać od upływu czasu."
+                    : "Wymaga terminu - bez niego nie ma czego pilnować."}
+                </span>
+              </span>
+            </label>
+
+            <Button
+              variant="primary"
+              block
+              loading={busy}
+              disabled={!edycja.nazwa.trim() || liczba(edycja.kwota_cel) <= 0}
+              onClick={() =>
+                zapisz(
+                  () =>
+                    supabase
+                      .from("finanse_cele")
+                      .update({
+                        nazwa: edycja.nazwa.trim(),
+                        ikona: edycja.ikona,
+                        kwota_cel: liczba(edycja.kwota_cel),
+                        termin: edycja.termin || null,
+                        przypominac: edycja.przypominac && !!edycja.termin,
+                      })
+                      .eq("id", celEdytowany.id),
+                  () => setArkusz(null),
+                )
+              }
+            >
+              Zapisz zmiany
+            </Button>
+
+            <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+              {/*
+                Osiągnięty i porzucony to dwa różne końce i oba są lepsze niż
+                kasowanie: zebrane 8000 zł na wyjazd to kawałek historii, który
+                za rok mówi więcej niż brak wiersza w bazie.
+              */}
+              <Button
+                variant="success"
+                block
+                loading={busy}
+                onClick={() =>
+                  zapisz(
+                    () =>
+                      supabase
+                        .from("finanse_cele")
+                        .update({ status: "osiagniety" })
+                        .eq("id", celEdytowany.id),
+                    () => setArkusz(null),
+                  )
+                }
+              >
+                🏁 Cel osiągnięty
+              </Button>
+              <Button
+                variant="secondary"
+                block
+                loading={busy}
+                onClick={() =>
+                  zapisz(
+                    () =>
+                      supabase
+                        .from("finanse_cele")
+                        .update({ status: "porzucony" })
+                        .eq("id", celEdytowany.id),
+                    () => setArkusz(null),
+                  )
+                }
+              >
+                Odłóż na później
+              </Button>
+
+              {potwierdzUsuniecie ? (
+                <Button
+                  variant="danger"
+                  block
+                  loading={busy}
+                  onClick={() =>
+                    zapisz(
+                      () => supabase.from("finanse_cele").delete().eq("id", celEdytowany.id),
+                      () => setArkusz(null),
+                    )
+                  }
+                >
+                  {celEdytowany.zebrane !== 0
+                    ? `Tak, usuń razem z historią wpłat (${zl(celEdytowany.zebrane)})`
+                    : "Tak, usuń cel"}
+                </Button>
+              ) : (
+                <Button variant="ghost" block onClick={() => setPotwierdzUsuniecie(true)}>
+                  Usuń cel
+                </Button>
+              )}
+              <p className="text-[12px] leading-snug text-faint">
+                Usunięcie kasuje też wpłaty przypisane do tego celu. Same pieniądze zostają
+                w majątku - wpłaty na cel tylko etykietują to, co i tak masz odłożone.
+              </p>
+            </div>
+          </div>
+        )}
+      </Sheet>
+
+      <Sheet
         open={arkusz === "wplata"}
         onClose={() => setArkusz(null)}
         title={celDoWplaty ? `Wpłata: ${celDoWplaty.nazwa}` : "Wpłata"}
@@ -1246,7 +1515,7 @@ export function FinanseScreen({
           okres={podsumowanie.rozliczenie_okres}
           podglad={rozliczenie}
           pozycje={pozycje.filter((p) => !p.archiwalna && p.kategoria === "plynne")}
-          cele={cele}
+          cele={celeAktywne}
         />
       )}
     </div>

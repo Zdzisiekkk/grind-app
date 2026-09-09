@@ -313,5 +313,42 @@ r = await as(B, `select * from public.v_finanse_cele where spozniony`);
 check('B nie widzi spóźnionych celów A', r.ok && r.rows.length === 0,
   r.ok ? `WIDZI ${r.rows.length}` : r.err);
 
+console.log('\n  Edycja i kasowanie celu\n');
+
+r = await as(A, `update public.finanse_cele set nazwa = 'Kaucja na mieszkanie', kwota_cel = 7000
+                  where id = '${celPilny}'`);
+check('A poprawia własny cel', r.ok, r.err);
+r = await as(A, `select nazwa, procent from public.v_finanse_cele where id = '${celPilny}'`);
+check('zmiana kwoty przelicza postęp',
+  r.ok && r.rows[0].nazwa === 'Kaucja na mieszkanie' && r.rows[0].procent === 86,
+  JSON.stringify(r.rows?.[0]));
+
+r = await as(A, `update public.finanse_cele set status = 'osiagniety' where id = '${celPilny}'`);
+check('cel da się zamknąć jako osiągnięty', r.ok, r.err);
+r = await as(A, `select status from public.finanse_cele where id = '${celPilny}'`);
+check('zamknięty cel zostaje w bazie, a nie znika', r.ok && r.rows.length === 1);
+
+// Zamknięty cel przestaje alarmować, choćby pilnowanie było dalej włączone.
+r = await as(A, `select spozniony from public.v_finanse_cele where id = '${celPilny}'`);
+check('zamknięty cel nie alarmuje', r.ok && r.rows[0].spozniony === false);
+
+r = await as(B, `update public.finanse_cele set nazwa = 'Przejęte' where id = '${celPilny}'`);
+const nazwaPo = (await db.query(
+  `select nazwa from public.finanse_cele where id = '${celPilny}'`)).rows[0].nazwa;
+check('B nie zmieni nazwy cudzego celu', nazwaPo === 'Kaucja na mieszkanie', nazwaPo);
+
+r = await as(B, `delete from public.finanse_cele where id = '${celPilny}'`);
+const zyje = (await db.query(
+  `select count(*)::int as n from public.finanse_cele where id = '${celPilny}'`)).rows[0].n;
+check('B nie usunie cudzego celu', zyje === 1);
+
+// Kasowanie zabiera wpłaty razem z celem - bez tego zostałyby sieroty
+// wskazujące na nieistniejący cel.
+r = await as(A, `delete from public.finanse_cele where id = '${celPilny}'`);
+check('A usuwa własny cel', r.ok, r.err);
+const wplatyPo = (await db.query(
+  `select count(*)::int as n from public.finanse_wplaty where cel_id = '${celPilny}'`)).rows[0].n;
+check('usunięcie celu kasuje jego wpłaty', wplatyPo === 0, `zostało ${wplatyPo}`);
+
 console.log(`\n  Wynik: ${ok} ✅ / ${bad} ❌\n`);
 if (bad > 0) process.exit(1);

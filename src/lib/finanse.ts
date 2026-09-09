@@ -284,6 +284,10 @@ export const PODPOWIEDZI_STALYCH: ReadonlyArray<{
 
 export const IKONY_ZRODEL = ["💼", "💻", "🧾", "👨‍👩‍👦", "🎓", "🏠", "📈", "💰"] as const;
 
+export const IKONY_CELOW = [
+  "🎯", "🏠", "🚗", "✈️", "💻", "🎓", "🛟", "💍", "🏋️", "🎸", "📷", "🎁",
+] as const;
+
 /**
  * Dzienny limit wydatków uznaniowych - ta sama reguła co w bazie.
  *

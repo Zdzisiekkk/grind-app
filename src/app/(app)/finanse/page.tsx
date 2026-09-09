@@ -70,11 +70,13 @@ export default async function FinansePage() {
       .eq("user_id", user.id)
       .gte("okres", poczatekMiesiaca())
       .order("termin"),
+    // Także zamknięte: cel oznaczony jako osiągnięty musi mieć dokąd trafić,
+    // inaczej przycisk "osiągnięty" jest zapadnią, a nie zakończeniem.
     supabase
       .from("v_finanse_cele")
       .select("*")
       .eq("user_id", user.id)
-      .eq("status", "aktywny")
+      .order("status")
       .order("order_index")
       .order("created_at"),
     supabase
