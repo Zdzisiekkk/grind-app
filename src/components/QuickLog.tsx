@@ -14,7 +14,7 @@ import type { FinanseWydatek, Injury } from "@/lib/database.types";
 /**
  * Szybkie wpisy z pulpitu: waga, ból śledzonych kontuzji i wydatek.
  *
- * Wydatek stoi tutaj, a nie tylko w Kasie, bo jako jedyny z tej trójki
+ * Wydatek stoi tutaj, a nie tylko w Finansach, bo jako jedyny z tej trójki
  * zdarza się kilka razy dziennie. Droga "wejdź w zakładkę, żeby wpisać
  * dwadzieścia złotych za kawę" jest dokładnie tym, co zabija codzienne
  * notowanie wydatków po dwóch tygodniach.

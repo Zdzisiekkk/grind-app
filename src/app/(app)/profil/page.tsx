@@ -160,7 +160,7 @@ export default async function ProfilPage() {
 
         <Card
           title="Finanse"
-          subtitle="Z tych dwóch liczb liczy się poduszka i budżet w zakładce Kasa."
+          subtitle="Z tych dwóch liczb liczy się poduszka i budżet w zakładce Finanse."
         >
           <div className="grid grid-cols-2 gap-2">
             <Field label="Koszty życia (zł / mies.)">
@@ -193,8 +193,8 @@ export default async function ProfilPage() {
           <p className="mt-1 text-[12px] leading-relaxed text-faint">
             Koszty życia to stałe wydatki: czynsz, rachunki, jedzenie w domu, raty. Jeśli
             wypiszesz je pozycja po pozycji w{" "}
-            <a className="underline" href="/kasa">
-              Kasie
+            <a className="underline" href="/finanse">
+              Finansach
             </a>
             , ich suma zastąpi to pole i poduszka przeliczy się sama. Budżet uznaniowy dotyczy
             reszty - jedzenia na mieście, zakupów, rozrywki. Zostaw puste, żeby nie pilnować

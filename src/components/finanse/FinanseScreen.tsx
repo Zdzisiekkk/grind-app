@@ -41,7 +41,7 @@ import type {
 } from "@/lib/database.types";
 
 /**
- * Kasa - finansowa strona "lock inu".
+ * Finanse - finansowa strona "lock inu".
  *
  * Kolejność kart odpowiada temu, jak pilne jest pytanie, na które odpowiadają:
  * najpierw rzeczy wymagające decyzji dziś (rozliczenie miesiąca, rachunki do
@@ -80,7 +80,7 @@ const doWierszy = (ps: FinansePozycja[]): Wiersz[] =>
     nowy: false,
   }));
 
-export function KasaScreen({
+export function FinanseScreen({
   userId,
   podsumowanie,
   bilans,
@@ -230,7 +230,7 @@ export function KasaScreen({
     <div className="flex flex-col gap-4">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold leading-tight">Kasa</h1>
+          <h1 className="text-2xl font-bold leading-tight">Finanse</h1>
           <p className="text-[13px] text-muted">
             Ile wpada, gdzie znika, ile masz zapasu.
           </p>

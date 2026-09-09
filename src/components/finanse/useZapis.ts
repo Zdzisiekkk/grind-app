@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 /**
  * Zapis z arkusza: blokada przycisku, komunikat błędu, odświeżenie danych.
  *
- * Każdy arkusz Kasy robił to samo na cztery sposoby, a różnice sprowadzały
+ * Każdy arkusz Finansów robił to samo na cztery sposoby, a różnice sprowadzały
  * się do tego, który z nich zapominał odblokować przycisk po błędzie.
  *
  * `PromiseLike`, nie `Promise`: builder Supabase jest "thenable" i dopiero

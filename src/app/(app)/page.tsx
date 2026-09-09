@@ -70,8 +70,8 @@ export default async function DashboardPage() {
     { data: habitLogsHistoria },
     { data: posilkiHistoria },
     { data: xpWiersze },
-    { data: kasaPods },
-    { data: kasaBilans },
+    { data: finPods },
+    { data: finBilans },
     { data: celeSpoznione },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
@@ -208,37 +208,37 @@ export default async function DashboardPage() {
   const poziom = poziomZXp(xp);
 
   /*
-   * Kasa na pulpicie odzywa się TYLKO wtedy, gdy czegoś od Ciebie chce.
+   * Finanse na pulpicie odzywają się TYLKO wtedy, gdy czegoś od Ciebie chcą.
    * Stała karta z saldem byłaby kolejnym kafelkiem do przewinięcia, a przy
    * dwunastu kartach pulpit przestaje być pulpitem. Przycisk wydatku
    * zostaje zawsze - to inna sprawa, bo służy wpisywaniu, nie oglądaniu.
    */
-  const kasa = kasaPods as FinansePodsumowanie | null;
-  const kasaB = kasaBilans as FinanseBilans | null;
-  const kasaTempo = tempoBudzetu(kasa?.budzet, kasa?.wydane_w_miesiacu ?? 0);
+  const fin = finPods as FinansePodsumowanie | null;
+  const finB = finBilans as FinanseBilans | null;
+  const finTempo = tempoBudzetu(fin?.budzet, fin?.wydane_w_miesiacu ?? 0);
   const celSpozniony = (celeSpoznione ?? [])[0] ?? null;
 
   /*
    * Pokazujemy najwyżej JEDEN powód, w kolejności pilności. Trzy karty
    * naraz zamieniłyby pulpit w listę zaległości, a i tak wszystkie prowadzą
-   * w to samo miejsce - do Kasy.
+   * w to samo miejsce - do Finansów.
    */
-  const kasaPowody = !kasa
+  const finPowody = !fin
     ? []
     : [
-        kasa.rozliczenie_okres && {
-          tytul: `Rozlicz ${nazwaMiesiaca(kasa.rozliczenie_okres)}`,
+        fin.rozliczenie_okres && {
+          tytul: `Rozlicz ${nazwaMiesiaca(fin.rozliczenie_okres)}`,
           opis: "Bilans, sprawdzenie konta i decyzja o nadwyżce. Zajmie minutę.",
         },
-        (kasaB?.stale_do_potwierdzenia ?? 0) > 0 && {
-          tytul: `${kasaB!.stale_do_potwierdzenia} ${
-            kasaB!.stale_do_potwierdzenia === 1 ? "rachunek czeka" : "rachunki czekają"
+        (finB?.stale_do_potwierdzenia ?? 0) > 0 && {
+          tytul: `${finB!.stale_do_potwierdzenia} ${
+            finB!.stale_do_potwierdzenia === 1 ? "rachunek czeka" : "rachunki czekają"
           } na potwierdzenie`,
           opis: "Szablon je przygotował - potwierdź kwoty albo popraw.",
         },
-        kasaTempo.stan === "przekroczony" && {
+        finTempo.stan === "przekroczony" && {
           tytul: "Budżet na ten miesiąc przekroczony",
-          opis: `Wydane ${zl(kasa.wydane_w_miesiacu)} z ${zl(kasa.budzet)}.`,
+          opis: `Wydane ${zl(fin.wydane_w_miesiacu)} z ${zl(fin.budzet)}.`,
         },
         // Tylko cele, przy których sam poprosiłeś o pilnowanie.
         celSpozniony && {
@@ -248,13 +248,13 @@ export default async function DashboardPage() {
               ? `Żeby zdążyć w terminie, potrzeba ${zl(Number(celSpozniony.rata_potrzebna))} miesięcznie.`
               : "Termin minął, a cel nie jest zebrany.",
         },
-        kasaTempo.stan === "uwaga" && {
+        finTempo.stan === "uwaga" && {
           tytul: "Lecisz z tempem budżetu",
-          opis: `W tym tempie skończysz miesiąc na ${zl(kasaTempo.prognoza)} przy budżecie ${zl(kasa.budzet)}.`,
+          opis: `W tym tempie skończysz miesiąc na ${zl(finTempo.prognoza)} przy budżecie ${zl(fin.budzet)}.`,
         },
       ].filter((p): p is { tytul: string; opis: string } => Boolean(p));
 
-  const kasaPowod = kasaPowody[0] ?? null;
+  const finPowod = finPowody[0] ?? null;
 
   // Co pokazać na pulpicie (migracja 0058). Poza tym wyborem stoją rzeczy
   // czekające na decyzję - propozycje trenera, nieocenione kontuzje - oraz
@@ -364,13 +364,13 @@ export default async function DashboardPage() {
         )}
       </header>
 
-      {/* --- Kasa: tylko gdy czegoś od Ciebie chce --- */}
-      {kasaPowod && (
-        <Card title={kasaPowod.tytul}>
-          <p className="text-[13px] text-muted">{kasaPowod.opis}</p>
-          <Link href="/kasa" className="mt-3 block">
+      {/* --- Finanse: tylko gdy czegoś od Ciebie chcą --- */}
+      {finPowod && (
+        <Card title={finPowod.tytul}>
+          <p className="text-[13px] text-muted">{finPowod.opis}</p>
+          <Link href="/finanse" className="mt-3 block">
             <Button variant="primary" block>
-              Otwórz Kasę
+              Otwórz Finanse
             </Button>
           </Link>
         </Card>
@@ -716,8 +716,8 @@ export default async function DashboardPage() {
           lastWeightKg={lastWeight}
           injuries={trackedInjuries}
           painToday={Object.fromEntries(painToday)}
-          budzet={kasa?.budzet ?? null}
-          wydaneWMiesiacu={kasa?.wydane_w_miesiacu ?? 0}
+          budzet={fin?.budzet ?? null}
+          wydaneWMiesiacu={fin?.wydane_w_miesiacu ?? 0}
         />
         {(lastWeight != null || ratedToday.length > 0) && (
           <div className="flex flex-wrap gap-1.5 px-1">

@@ -15,7 +15,7 @@ const LINKS = [
   { href: "/sen", icon: "😴", label: "Sen", desc: "Godziny, jakość, drzemki i wynik nocy" },
   { href: "/zadania", icon: "☑️", label: "Zadania", desc: "Lista rzeczy do zrobienia z terminami" },
   { href: "/wyglad", icon: "🪪", label: "Wygląd", desc: "Skan twarzy, pielęgnacja, postawa, progres" },
-  { href: "/kasa", icon: "💰", label: "Kasa", desc: "Poduszka, budżet, majątek i cele" },
+  { href: "/finanse", icon: "💰", label: "Finanse", desc: "Wpływy, budżet, majątek i cele" },
   { href: "/progres", icon: "📈", label: "Postępy", desc: "Wykresy siły, wagi, bólu i objętości" },
   { href: "/kalendarz", icon: "📅", label: "Kalendarz", desc: "Co robiłeś danego dnia" },
   { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },

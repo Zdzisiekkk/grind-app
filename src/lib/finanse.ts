@@ -2,7 +2,7 @@
  * Liczby i etykiety modułu finansowego.
  *
  * Reguły liczenia trzymamy tutaj, a nie w komponentach, z tego samego powodu
- * co przy wyniku snu: te same liczby pokazuje ekran Kasy i pulpit, a dwie
+ * co przy wyniku snu: te same liczby pokazuje ekran Finansów i pulpit, a dwie
  * kopie wzoru to prosta droga do dwóch różnych odpowiedzi na to samo pytanie.
  */
 

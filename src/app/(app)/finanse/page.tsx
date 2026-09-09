@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { KasaScreen } from "@/components/finanse/KasaScreen";
+import { FinanseScreen } from "@/components/finanse/FinanseScreen";
 import { createClient } from "@/lib/supabase/server";
 import { poczatekMiesiaca } from "@/lib/finanse";
 import type {
@@ -9,9 +9,9 @@ import type {
   FinanseRozliczeniePodglad,
 } from "@/lib/database.types";
 
-export const metadata = { title: "Kasa" };
+export const metadata = { title: "Finanse" };
 
-export default async function KasaPage() {
+export default async function FinansePage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -94,7 +94,7 @@ export default async function KasaPage() {
     : { data: null };
 
   return (
-    <KasaScreen
+    <FinanseScreen
       userId={user.id}
       podsumowanie={pods}
       bilans={bilans as FinanseBilans}

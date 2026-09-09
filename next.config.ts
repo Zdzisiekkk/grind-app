@@ -41,6 +41,16 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  /*
+   * Zakładka "Kasa" nazywa się teraz "Finanse". Przekierowanie zostaje, bo
+   * stary adres siedzi w zakładkach przeglądarki i w skrócie zainstalowanej
+   * aplikacji - a link prowadzący w pustkę wygląda jak awaria, nie jak zmiana
+   * nazwy. Trwałe, więc przeglądarka zapamięta je raz.
+   */
+  async redirects() {
+    return [{ source: "/kasa", destination: "/finanse", permanent: true }];
+  },
+
   async headers() {
     return [
       {
