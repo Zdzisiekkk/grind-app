@@ -20,6 +20,7 @@ const LINKS = [
   { href: "/kalendarz", icon: "📅", label: "Kalendarz", desc: "Co robiłeś danego dnia" },
   { href: "/subskrypcja", icon: "💳", label: "Subskrypcja", desc: "Co darmowe, co płatne, płatności" },
   { href: "/profil", icon: "👤", label: "Profil i cele", desc: "Cele kaloryczne, waga, wylogowanie" },
+  { href: "/pomoc", icon: "🆘", label: "Pomoc i zgłoszenia", desc: "Samouczek, dokumenty, zgłoś problem" },
 ] as const;
 
 export default async function WiecejPage() {

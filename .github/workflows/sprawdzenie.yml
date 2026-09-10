@@ -52,6 +52,7 @@ jobs:
           npm run test:elektrolity
           npm run test:prywatnosc
           npm run test:finanse
+          npm run test:pomoc
       - name: Budowanie
         run: npm run build
         env:

@@ -34,6 +34,7 @@
     "test:status": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-status-dnia.mjs",
     "test:elektrolity": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-elektrolity.mjs",
     "test:prywatnosc": "node --no-warnings scripts/test-prywatnosc.mjs",
+    "test:pomoc": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-pomoc.mjs",
     "test:finanse": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-finanse.mjs",
     "import:przepisy": "node scripts/import-przepisy.mjs"
   },

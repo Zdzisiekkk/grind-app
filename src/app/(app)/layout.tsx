@@ -10,6 +10,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/env";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { SetupNotice } from "@/components/SetupNotice";
+import { Samouczek } from "@/components/pomoc/Samouczek";
 import { DEFAULT_WATER_GOAL_ML, habitDueOn } from "@/lib/constants";
 import { todayISO } from "@/lib/format";
 import { DEFAULT_SLEEP_GOAL_MIN, sleepDuration } from "@/lib/sleep";
@@ -37,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase
         .from("profiles")
         .select(
-          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, elektrolity_przypomnienie, elektrolity_prog_ml, sleep_reminder_at, sleep_goal_min, onboarded_at",
+          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, elektrolity_przypomnienie, elektrolity_prog_ml, sleep_reminder_at, sleep_goal_min, onboarded_at, samouczek_stan",
         )
         .eq("id", user.id)
         .maybeSingle(),
@@ -111,6 +112,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="safe-top flex-1 px-4 pb-[calc(72px+env(safe-area-inset-bottom))]">
         {children}
       </main>
+      {/*
+        Samouczek stoi NAD wszystkim i pojawia się dopiero po kreatorze startowym:
+        najpierw człowiek ustawia cele, potem dowiaduje się, gdzie co jest.
+        Odwrotna kolejność znaczyłaby opowiadanie o ekranach, których jeszcze
+        nie ma czym wypełnić.
+      */}
+      {profile?.samouczek_stan === "nowy" && <Samouczek />}
       <OfflineGate />
       <BottomNav />
       <Reminders

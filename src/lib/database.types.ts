@@ -68,6 +68,8 @@ export type Profile = {
   weekly_workouts: number | null;
   /** Puste = kreator jeszcze nie przeszedł. */
   onboarded_at: string | null;
+  /** Stan samouczka: nowy = pokazać przy wejściu (migracja 0076). */
+  samouczek_stan: "nowy" | "pominiety" | "ukonczony";
   /** Karty widoczne na pulpicie; null = zestaw domyślny (migracja 0058). */
   pulpit_karty: string[] | null;
   /** Konto zwolnione z odstępu i puli skanów wyglądu (migracja 0059). */
@@ -334,6 +336,78 @@ export type Dolegliwosc = Injury & {
   /** Zakwasy, sztywność, otarcie - schodzą same. */
   przejsciowa: boolean;
 };
+
+/* --- Pomoc i zgłoszenia (migracja 0076) --- */
+
+export type TypZgloszenia = "blad" | "propozycja" | "pytanie" | "platnosc" | "inne";
+export type StatusZgloszenia = "nowe" | "w_toku" | "rozwiazane" | "odrzucone";
+
+export type Zgloszenie = {
+  id: string;
+  user_id: string;
+  typ: TypZgloszenia;
+  tytul: string;
+  tresc: string;
+  status: StatusZgloszenia;
+  /** Kontekst techniczny zbierany automatycznie, nie wpisywany ręcznie. */
+  strona: string | null;
+  wersja: string | null;
+  przegladarka: string | null;
+  odpowiedziano_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ZgloszenieOdpowiedz = {
+  id: string;
+  zgloszenie_id: string;
+  autor_id: string;
+  /** Ustawiane przez bazę - klient nie może się podszyć pod obsługę. */
+  od_admina: boolean;
+  tresc: string;
+  created_at: string;
+};
+
+/** Wynik public.admin_statystyki(). */
+export type AdminStatystyki = {
+  kont: number;
+  nowe_7d: number;
+  nowe_30d: number;
+  aktywni_1d: number;
+  aktywni_7d: number;
+  aktywni_30d: number;
+  ukonczyli_start: number;
+  subskrypcje: {
+    aktywne: number;
+    starter: number;
+    pro: number;
+    probne: number;
+    anulowane_na_koniec: number;
+  };
+  bonusy_aktywne: number;
+  zgloszenia: { nowe: number; w_toku: number; razem: number };
+  ai: { koszt_30d_usd: number; wywolan_30d: number };
+  wpisy_7d: { treningi: number; posilki: number; wydatki: number };
+};
+
+export type AdminUzycie = { dzien: string; aktywni: number; rejestracje: number };
+
+/** Wiersz z public.admin_uzytkownicy() - METADANE konta, nigdy treść dziennika. */
+export type AdminUzytkownik = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  role: "user" | "admin";
+  created_at: string;
+  onboarded: boolean;
+  samouczek_stan: string;
+  plan_poziom: number;
+  subskrypcja_status: string | null;
+  ostatnia_aktywnosc: string | null;
+  dni_aktywnych: number;
+  xp: number;
+};
+
 
 /* --- Finanse (migracja 0064) --- */
 
@@ -1268,6 +1342,8 @@ export type Database = {
       todo_lists: Tbl<TodoList, "user_id" | "name">;
       todos: Tbl<Todo, "user_id" | "title">;
       subscriptions: Tbl<Subscription, "user_id">;
+      zgloszenia: Tbl<Zgloszenie, "user_id" | "tytul" | "tresc">;
+      zgloszenia_odpowiedzi: Tbl<ZgloszenieOdpowiedz, "zgloszenie_id" | "autor_id" | "tresc">;
       finanse_stan: Tbl<FinanseStan, "user_id">;
       finanse_pozycje: Tbl<FinansePozycja, "user_id" | "nazwa" | "rodzaj">;
       finanse_zrodla: Tbl<FinanseZrodlo, "user_id" | "nazwa">;
@@ -1357,6 +1433,10 @@ export type Database = {
       /** Level z sumy XP - ta sama krzywa co w src/lib/xp.ts (0057). */
       xp_poziom: { Args: { p_xp: number }; Returns: number };
       /** Majątek, poduszka i budżet w jednym zapytaniu (migracja 0064). */
+      admin_statystyki: { Args: Record<string, never>; Returns: unknown };
+      admin_uzycie: { Args: { p_dni?: number }; Returns: AdminUzycie[] };
+      admin_uzytkownicy: { Args: { p_limit?: number }; Returns: AdminUzytkownik[] };
+      zgloszenie_dostepne: { Args: { p_id: string }; Returns: boolean };
       finanse_podsumowanie: { Args: Record<string, never>; Returns: unknown };
       finanse_zapisz_migawke: { Args: { p_data?: string }; Returns: unknown };
       finanse_nalicz_stale: { Args: { p_okres?: string }; Returns: number };
