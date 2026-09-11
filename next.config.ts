@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "Content-Security-Policy-Report-Only", value: csp },
+          { key: "Content-Security-Policy", value: csp },
           // Nikt nie osadzi Grinda w swojej ramce.
           { key: "X-Frame-Options", value: "DENY" },
           // Przeglądarka ma wierzyć zadeklarowanemu typowi pliku, a nie zgadywać.
