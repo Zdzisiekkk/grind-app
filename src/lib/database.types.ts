@@ -1199,7 +1199,12 @@ export type WygladSkan = {
   /** false = model uznał zdjęcie za niewystarczające; taki punkt nie ciągnie wykresu. */
   jakosc_ok: boolean | null;
   model: string | null;
+  /** 1 = ocena od zera; 2 = porównanie ze zdjęciami poprzedniego skanu (0078). */
   wersja_promptu: number;
+  /** Skan, którego zdjęcia model widział obok obecnych. */
+  skan_odniesienia: string | null;
+  /** Ocena ogólna wybrana przez model w wersji 1, sprzed przeliczenia w 0078. */
+  ocena_ogolna_model: number | null;
 };
 
 export type WygladZdjecie = {

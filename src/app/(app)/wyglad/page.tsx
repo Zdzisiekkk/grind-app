@@ -1,9 +1,10 @@
 import { LooksScreen, type LooksDane } from "@/components/looks/LooksScreen";
-import type { ZdjecieDoPorownania } from "@/components/looks/ProgressTimeline";
+import type { SkanWGalerii } from "@/components/looks/GaleriaSkanow";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, todayISO } from "@/lib/format";
 import type { WygladAnalysis } from "@/lib/ai/wygladSchema";
 import type {
+  Ujecie,
   WygladLimit,
   WygladProdukt,
   WygladProtokol,
@@ -14,17 +15,12 @@ import type {
 
 export const metadata = { title: "Wygląd" };
 
-// 120 s - tyle samo co link kierowany do modelu AI przy analizie (api/ai/wyglad).
-// Przeglądarka i tak cache'uje już pobrany obraz, więc przewijanie się nie zmienia,
-// a to zdjęcie twarzy - krótszy czas na współdzielonym urządzeniu ma znaczenie.
-const WAZNOSC_LINKU = 120;
-
 /**
  * Zbieranie danych do zakładki "Wygląd".
  *
- * Zdjęcia mają adresy podpisywane tutaj, na serwerze. Przeglądarka nigdy nie
- * dostaje ścieżki w kubełku, tylko gotowy link z terminem ważności - dzięki
- * temu nie ma czego skopiować i wysłać dalej "na stałe".
+ * Zdjęć tu NIE podpisujemy. Galeria prosi o linki sama (akcja `linkiDoZdjec`),
+ * kiedy ktoś ją otworzy - przeglądarka nigdy nie dostaje ścieżki w kubełku,
+ * tylko gotowy link z terminem ważności.
  */
 export default async function WygladPage() {
   const supabase = await createClient();
@@ -58,33 +54,43 @@ export default async function WygladPage() {
     supabase.from("wyglad_protokoly").select("*").eq("user_id", user.id),
     supabase.from("wyglad_produkty").select("*").eq("user_id", user.id).order("pora"),
     supabase.rpc("wyglad_limit", {}),
-    supabase
-      .from("wyglad_zdjecia")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("utworzono", { ascending: false }),
+    supabase.from("wyglad_zdjecia").select("skan_id, ujecie").eq("user_id", user.id),
   ]);
 
   const skany = (skanyRaw ?? []) as WygladSkan[];
-  const wszystkieZdjecia = (zdjecia ?? []) as WygladZdjecie[];
 
-  /* Suwak przed/po - zawsze to samo ujęcie, inaczej porównanie nic nie znaczy. */
-  const frontowe = wszystkieZdjecia.filter((z) => z.ujecie === "front");
-  const podpisz = async (z?: WygladZdjecie): Promise<ZdjecieDoPorownania | null> => {
-    if (!z) return null;
-    const { data } = await supabase.storage
-      .from("wyglad")
-      .createSignedUrl(z.storage_path, WAZNOSC_LINKU);
-    return data?.signedUrl ? { ujecie: z.ujecie, url: data.signedUrl, data: z.utworzono } : null;
-  };
+  /*
+   * Skany bez oceny (nieudana analiza) nie trafiają na wykres ani do wyniku.
+   * Wcześniej taki skan na szczycie listy chował ostatni prawdziwy wynik
+   * i ekran pisał "Brak skanu", choć skanów było kilka.
+   */
+  const ocenione = skany.filter((s) => s.ocena_ogolna != null);
 
-  const najnowszeZdjecie = frontowe.length >= 2 ? await podpisz(frontowe[0]) : null;
-  const najstarszeZdjecie =
-    frontowe.length >= 2 ? await podpisz(frontowe[frontowe.length - 1]) : null;
+  const ujeciaSkanu = new Map<string, Ujecie[]>();
+  for (const z of (zdjecia ?? []) as Pick<WygladZdjecie, "skan_id" | "ujecie">[]) {
+    ujeciaSkanu.set(z.skan_id, [...(ujeciaSkanu.get(z.skan_id) ?? []), z.ujecie]);
+  }
+
+  // W galerii także skany bez oceny - ich zdjęcia istnieją i da się dokończyć analizę.
+  const galeria: SkanWGalerii[] = skany
+    .filter((s) => ujeciaSkanu.has(s.id))
+    .map((s) => ({
+      id: s.id,
+      utworzono: s.utworzono,
+      ocena_ogolna: s.ocena_ogolna,
+      jakosc_ok: s.jakosc_ok,
+      ujecia: ujeciaSkanu.get(s.id) ?? [],
+      raport: (s.raport as WygladAnalysis | null) ?? null,
+    }));
+
+  const ostatni = ocenione[0];
+  const odniesienie = ostatni?.skan_odniesienia
+    ? skany.find((s) => s.id === ostatni.skan_odniesienia)
+    : undefined;
 
   /* --------------------- Dane do zestawień, liczone tutaj -------------------- */
 
-  const chronologicznie = [...skany].sort((a, b) => a.utworzono.localeCompare(b.utworzono));
+  const chronologicznie = [...ocenione].sort((a, b) => a.utworzono.localeCompare(b.utworzono));
 
   const [{ data: sen }, { data: wagi }, { data: wpadki }] = await Promise.all([
     // v_sleep, bo realny sen (po odjęciu zasypiania i pobudek) liczy widok, nie tabela.
@@ -125,21 +131,21 @@ export default async function WygladPage() {
   const dane: LooksDane = {
     maZgode: Boolean(zgoda?.wiek_potwierdzony),
     maPro: Boolean(pro),
-    skany: skany.map((s) => ({
+    skany: ocenione.map((s) => ({
       id: s.id,
       utworzono: s.utworzono,
       ocena_ogolna: s.ocena_ogolna,
       oceny: s.oceny,
       jakosc_ok: s.jakosc_ok,
     })),
-    ostatniRaport: (skany.find((s) => s.raport)?.raport as WygladAnalysis | undefined) ?? null,
+    ostatniRaport: (ostatni?.raport as WygladAnalysis | undefined) ?? null,
+    ostatniOdniesienieData: odniesienie?.utworzono ?? null,
+    galeria,
     rutyny: (rutyny ?? []) as WygladRutyna[],
     odhaczoneDzis: (logi ?? []).map((l) => l.rutyna_id),
     protokoly: (protokoly ?? []) as WygladProtokol[],
     produkty: (produkty ?? []) as WygladProdukt[],
     limit: (limit as WygladLimit | null) ?? null,
-    najstarszeZdjecie,
-    najnowszeZdjecie,
     senPrzedSkanem,
     czysteDniPrzedSkanem,
     wagaPrzySkanie,

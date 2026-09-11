@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { Alert, Button, Card, Chip } from "@/components/ui";
 import { clsx } from "@/lib/clsx";
-import { KATEGORIA_ETYKIETA, PODOCENA_ETYKIETA } from "@/lib/ai/wygladSchema";
-import type { Kategoria, PodocenaKlucz, WygladAnalysis } from "@/lib/ai/wygladSchema";
+import {
+  KATEGORIA_ETYKIETA,
+  OBSZARY_STALE,
+  PODOCENA_ETYKIETA,
+  PODOCENA_KLUCZE,
+  WYMAGANE_UJECIE,
+  ZMIANA_ETYKIETA,
+} from "@/lib/ai/wygladSchema";
+import type { Kategoria, PodocenaKlucz, WygladAnalysis, Zmiana } from "@/lib/ai/wygladSchema";
+import type { Ujecie } from "@/lib/database.types";
+import { humanDate } from "@/lib/format";
 
 /**
  * Pełny raport z ostatniego skanu.
@@ -21,12 +30,40 @@ const DO_PROTOKOLU: Partial<Record<Kategoria, string>> = {
   postawa: "postawa",
 };
 
+const STRZALKA: Record<Zmiana, string> = {
+  wyraznie_lepiej: "↑↑",
+  lepiej: "↑",
+  bez_zmian: "=",
+  gorzej: "↓",
+  wyraznie_gorzej: "↓↓",
+  brak_porownania: "",
+};
+
+const TON: Record<Zmiana, "success" | "danger" | "neutral"> = {
+  wyraznie_lepiej: "success",
+  lepiej: "success",
+  bez_zmian: "neutral",
+  gorzej: "danger",
+  wyraznie_gorzej: "danger",
+  brak_porownania: "neutral",
+};
+
+const BRAK_ZDJECIA: Record<Ujecie, string> = {
+  front: "zdjęcia twarzy na wprost",
+  zeby: "zdjęcia z uśmiechem",
+  profil: "zdjęcia z profilu",
+  sylwetka: "zdjęcia sylwetki",
+};
+
 export function ScanReport({
   analiza,
+  odniesienieData,
   aktywneProtokoly,
   onWlaczProtokol,
 }: {
   analiza: WygladAnalysis;
+  /** Data skanu, z którym model porównywał zdjęcia. */
+  odniesienieData: string | null;
   aktywneProtokoly: string[];
   onWlaczProtokol: (klucz: string) => Promise<void>;
 }) {
@@ -36,6 +73,22 @@ export function ScanReport({
   const przelacz = (i: number) =>
     setOtwarte((o) => (o.includes(i) ? o.filter((x) => x !== i) : [...o, i]));
 
+  /*
+   * Obszary bez oceny, pogrupowane według brakującego zdjęcia. Bez tej
+   * informacji brak "Zębów" w raporcie wygląda jak błąd, a nie jak
+   * konsekwencja pominiętego ujęcia.
+   */
+  const ocenione = new Set(analiza.podoceny.map((p) => p.klucz));
+  const brakujace = new Map<Ujecie, string[]>();
+  for (const k of PODOCENA_KLUCZE) {
+    if (ocenione.has(k)) continue;
+    const u = WYMAGANE_UJECIE[k];
+    brakujace.set(u, [...(brakujace.get(u) ?? []), PODOCENA_ETYKIETA[k]]);
+  }
+  const liczoneDoOgolnej = analiza.podoceny.filter(
+    (p) => !OBSZARY_STALE.includes(p.klucz as PodocenaKlucz),
+  ).length;
+
   return (
     <div className="space-y-3">
       {!analiza.jakosc_zdjecia.wystarczajaca && (
@@ -43,6 +96,19 @@ export function ScanReport({
           <strong>Zdjęcie utrudniło ocenę.</strong> {analiza.jakosc_zdjecia.uwagi} Wynik tego skanu
           traktuj ostrożnie - nie liczymy go też do porównań.
         </Alert>
+      )}
+
+      {analiza.porownanie_ogolne && (
+        <Card
+          title="Od poprzedniego skanu"
+          subtitle={
+            odniesienieData
+              ? `Model porównał zdjęcia ze skanem z ${humanDate(odniesienieData.slice(0, 10))}`
+              : undefined
+          }
+        >
+          <p className="text-[14px] leading-relaxed">{analiza.porownanie_ogolne}</p>
+        </Card>
       )}
 
       <Card>
@@ -62,26 +128,60 @@ export function ScanReport({
         </Card>
       )}
 
-      <Card title="Co widać">
+      <Card
+        title="Co widać"
+        subtitle={`Ocena ogólna ${analiza.ocena_ogolna} to średnia ${liczoneDoOgolnej} obszarów poniżej, bez symetrii.`}
+      >
         <div className="space-y-3">
-          {analiza.podoceny.map((p) => (
-            <div key={p.klucz}>
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[14px] font-semibold">
-                  {PODOCENA_ETYKIETA[p.klucz as PodocenaKlucz] ?? p.klucz}
-                </span>
-                <span className="tabular text-[14px] font-bold">{p.ocena}</span>
+          {analiza.podoceny.map((p) => {
+            const stala = OBSZARY_STALE.includes(p.klucz as PodocenaKlucz);
+            return (
+              <div key={p.klucz}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 text-[14px] font-semibold">
+                    {PODOCENA_ETYKIETA[p.klucz as PodocenaKlucz] ?? p.klucz}
+                    {stala && (
+                      <span className="ml-1.5 text-[11px] font-normal text-faint">
+                        nie liczy się do ogólnej
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {p.zmiana && p.zmiana !== "brak_porownania" && (
+                      <Chip tone={TON[p.zmiana]}>
+                        {STRZALKA[p.zmiana]} {ZMIANA_ETYKIETA[p.zmiana]}
+                      </Chip>
+                    )}
+                    <span className="tabular text-[14px] font-bold">{p.ocena}</span>
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${p.ocena}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[13px] text-muted">{p.obserwacja}</p>
+                {p.co_sie_zmienilo && (
+                  <p className="mt-1 text-[13px]">
+                    <span className="text-faint">Zmiana: </span>
+                    {p.co_sie_zmienilo}
+                  </p>
+                )}
               </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className="h-full rounded-full bg-[var(--accent)]"
-                  style={{ width: `${p.ocena}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-[13px] text-muted">{p.obserwacja}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {brakujace.size > 0 && (
+          <p className="mt-3 text-[12px] text-faint">
+            Nie oceniono:{" "}
+            {[...brakujace.entries()]
+              .map(([u, obszary]) => `${obszary.join(", ").toLowerCase()} (brak ${BRAK_ZDJECIA[u]})`)
+              .join("; ")}
+            . Obszar bez zdjęcia nie dostaje liczby - zgadywanie psułoby porównania.
+          </p>
+        )}
       </Card>
 
       <Card title="Plan">

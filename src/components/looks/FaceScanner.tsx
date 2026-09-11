@@ -318,6 +318,16 @@ export function FaceScanner({
           ))}
         </div>
 
+        {/*
+          Od wersji 2 obszar bez swojego zdjęcia nie dostaje oceny. Lepiej to
+          powiedzieć teraz, niż żeby raport bez zębów wyglądał na błąd.
+        */}
+        <p className="text-[12px] text-faint">
+          Oceniamy tylko to, co widać: bez uśmiechu nie ma oceny zębów, bez sylwetki - postawy
+          i składu ciała. Zmianę najlepiej widać, gdy każde ujęcie robisz w tym samym miejscu
+          i świetle.
+        </p>
+
         <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-black">
           <video
             ref={videoRef}

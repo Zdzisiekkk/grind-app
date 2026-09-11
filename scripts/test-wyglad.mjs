@@ -162,6 +162,47 @@ await db.exec(`update public.profiles set role = 'user' where id = '${B}'`);
 r = await as(B, `insert into public.wyglad_skany (user_id) values ('${B}')`);
 check('po odebraniu roli limit wraca', !r.ok, r.ok ? 'ZAPISAŁO SIĘ' : '');
 
+console.log('\n  Limit liczy to, co się stało (0078)\n');
+
+/*
+ * Nieudana analiza zostawiała wiersz skanu bez oceny, który zjadał pulę
+ * i blokował tydzień - choć człowiek nic nie dostał. A skasowanie skanu
+ * nie może oddawać miejsca w puli, bo wtedy "skanuj, skasuj, skanuj" byłoby
+ * darmową analizą bez końca.
+ */
+const C = (await db.query(`insert into auth.users (email) values ('c@x.pl') returning id`)).rows[0].id;
+await as(C, `insert into public.wyglad_zgoda (user_id, wiek_potwierdzony) values ('${C}', true)`);
+await db.exec(`insert into public.subscriptions (user_id, status, plan, current_period_end)
+               values ('${C}', 'active', 'pro', now() + interval '30 days')`);
+
+await db.exec(`insert into public.wyglad_skany (user_id, utworzono) values ('${C}', now() - interval '2 hours')`);
+r = await as(C, `select public.wyglad_limit() as l`);
+check('nieudany skan sprzed dwóch godzin nie zjada puli', r.ok && r.rows[0].l.w_miesiacu === 0, JSON.stringify(r.rows?.[0]?.l));
+check('i nie blokuje odstępu', r.ok && r.rows[0].l.mozna === true, JSON.stringify(r.rows?.[0]?.l));
+
+r = await as(C, `insert into public.wyglad_skany (user_id) values ('${C}') returning id`);
+check('po nieudanym można zacząć nowy skan', r.ok, r.err);
+const skanC = r.rows?.[0]?.id;
+
+r = await as(C, `select public.wyglad_limit() as l`);
+check('skan w toku od razu blokuje kolejny', r.ok && r.rows[0].l.mozna === false && r.rows[0].l.w_miesiacu === 1,
+  JSON.stringify(r.rows?.[0]?.l));
+
+// Analiza się odbyła (wpis w rejestrze kosztów), potem skan skasowany.
+await db.exec(`insert into public.ai_wydatki (user_id, kategoria, szacunek_usd, koszt_usd, rozliczono)
+               values ('${C}', 'wyglad', 0.1, 0.04, now())`);
+r = await as(C, `delete from public.wyglad_skany where id = '${skanC}'`);
+check('własny skan da się skasować', r.ok, r.err);
+r = await as(C, `select public.wyglad_limit() as l`);
+check('skasowanie skanu nie oddaje miejsca w puli', r.ok && r.rows[0].l.w_miesiacu === 1, JSON.stringify(r.rows?.[0]?.l));
+check('ani nie skraca odstępu', r.ok && r.rows[0].l.powod === 'odstep', JSON.stringify(r.rows?.[0]?.l));
+
+r = await as(C, `select * from public.ai_wydatki`);
+check('rejestru kosztów nie da się podejrzeć z przeglądarki', !r.ok || r.rows.length === 0, 'widać wiersze');
+r = await as(C, `delete from public.ai_wydatki where user_id = '${C}'`);
+const zostalo = (await db.query(`select count(*)::int n from public.ai_wydatki where user_id = '${C}'`)).rows[0].n;
+check('ani skasować, żeby odzyskać pulę', zostalo === 1, `zostało wpisów: ${zostalo}`);
+
 console.log('\n  Po usunięciu konta\n');
 
 /*

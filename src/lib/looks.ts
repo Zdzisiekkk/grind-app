@@ -1,4 +1,4 @@
-import type { PodocenaKlucz } from "@/lib/ai/wygladSchema";
+import { ocenaOgolna, type PodocenaKlucz } from "@/lib/ai/wygladSchema";
 
 /**
  * Liczenie dla modułu "Wygląd": konflikty składników, delty między skanami
@@ -133,27 +133,53 @@ export type Skan = {
 export type Delta = { klucz: PodocenaKlucz | "ogolna"; od: number; do: number; zmiana: number };
 
 /**
+ * Ocena ogólna dwóch skanów liczona na tych samych obszarach.
+ *
+ * Skan ze zdjęciem zębów ma o jeden obszar więcej niż skan bez niego. Gdyby
+ * porównywać ich oceny ogólne wprost, samo dołożenie zdjęcia ruszałoby wynik
+ * w górę albo w dół - a to nie jest zmiana wyglądu, tylko zmiana tego, co
+ * się mierzy.
+ */
+function ogolnaNaWspolnych(
+  a: Skan,
+  b: Skan,
+): { od: number; do: number; obszarow: number } | null {
+  const wspolne = (Object.keys(b.oceny ?? {}) as PodocenaKlucz[]).filter(
+    (k) => typeof a.oceny?.[k] === "number" && typeof b.oceny?.[k] === "number",
+  );
+  if (wspolne.length) {
+    const wybierz = (s: Skan) => Object.fromEntries(wspolne.map((k) => [k, s.oceny?.[k]]));
+    const od = ocenaOgolna(wybierz(a));
+    const doo = ocenaOgolna(wybierz(b));
+    if (od != null && doo != null) return { od, do: doo, obszarow: wspolne.length };
+  }
+  if (a.ocena_ogolna != null && b.ocena_ogolna != null) {
+    return { od: a.ocena_ogolna, do: b.ocena_ogolna, obszarow: 0 };
+  }
+  return null;
+}
+
+/**
  * Zmiana między pierwszym a ostatnim skanem.
  *
  * Skany z dopiskiem "złe zdjęcie" pomijamy w liczeniu. Przepalona klatka
  * potrafi zbić ocenę skóry o kilkanaście punktów i pokazać spadek tam, gdzie
- * zmieniło się wyłącznie oświetlenie w łazience.
+ * zmieniło się wyłącznie oświetlenie w łazience. Skany bez oceny (nieudana
+ * analiza) też - nie ma w nich czego porównywać.
  */
 export function delty(skany: Skan[]): Delta[] {
-  const dobre = skany.filter((s) => s.jakosc_ok !== false).sort((a, b) => a.utworzono.localeCompare(b.utworzono));
+  const dobre = skany
+    .filter((s) => s.jakosc_ok !== false && s.ocena_ogolna != null)
+    .sort((a, b) => a.utworzono.localeCompare(b.utworzono));
   if (dobre.length < 2) return [];
 
   const pierwszy = dobre[0];
   const ostatni = dobre[dobre.length - 1];
   const wynik: Delta[] = [];
 
-  if (pierwszy.ocena_ogolna != null && ostatni.ocena_ogolna != null) {
-    wynik.push({
-      klucz: "ogolna",
-      od: pierwszy.ocena_ogolna,
-      do: ostatni.ocena_ogolna,
-      zmiana: ostatni.ocena_ogolna - pierwszy.ocena_ogolna,
-    });
+  const ogolna = ogolnaNaWspolnych(pierwszy, ostatni);
+  if (ogolna) {
+    wynik.push({ klucz: "ogolna", od: ogolna.od, do: ogolna.do, zmiana: ogolna.do - ogolna.od });
   }
 
   for (const klucz of Object.keys(ostatni.oceny ?? {}) as PodocenaKlucz[]) {
@@ -167,12 +193,24 @@ export function delty(skany: Skan[]): Delta[] {
   return wynik.sort((a, b) => Math.abs(b.zmiana) - Math.abs(a.zmiana));
 }
 
-/** Różnica względem poprzedniego skanu - to jest liczba pokazywana na pierwszym planie. */
-export function deltaOdPoprzedniego(skany: Skan[]): { zmiana: number; data: string } | null {
-  const posortowane = [...skany].sort((a, b) => b.utworzono.localeCompare(a.utworzono));
+/**
+ * Różnica względem poprzedniego skanu - to jest liczba pokazywana na pierwszym planie.
+ *
+ * Liczona na obszarach wspólnych dla obu skanów (patrz `ogolnaNaWspolnych`),
+ * z pominięciem skanów bez oceny. Wcześniej nieudana analiza na szczycie
+ * listy chowała deltę całkiem, a zero w ocenie było traktowane jak jej brak.
+ */
+export function deltaOdPoprzedniego(
+  skany: Skan[],
+): { zmiana: number; data: string; obszarow: number } | null {
+  const posortowane = skany
+    .filter((s) => s.ocena_ogolna != null)
+    .sort((a, b) => b.utworzono.localeCompare(a.utworzono));
   const [teraz, poprzedni] = posortowane;
-  if (!teraz?.ocena_ogolna || !poprzedni?.ocena_ogolna) return null;
-  return { zmiana: teraz.ocena_ogolna - poprzedni.ocena_ogolna, data: poprzedni.utworzono };
+  if (!teraz || !poprzedni) return null;
+  const o = ogolnaNaWspolnych(poprzedni, teraz);
+  if (!o) return null;
+  return { zmiana: o.do - o.od, data: poprzedni.utworzono, obszarow: o.obszarow };
 }
 
 /* ------------------------------- Adherencja -------------------------------- */

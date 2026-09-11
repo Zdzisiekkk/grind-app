@@ -18,7 +18,8 @@ import { createClient } from "@/lib/supabase/client";
 import { clsx } from "@/lib/clsx";
 import { FaceScanner } from "@/components/looks/FaceScanner";
 import { ScanReport } from "@/components/looks/ScanReport";
-import { ProgressTimeline, type ZdjecieDoPorownania } from "@/components/looks/ProgressTimeline";
+import { ProgressTimeline } from "@/components/looks/ProgressTimeline";
+import { GaleriaSkanow, type SkanWGalerii } from "@/components/looks/GaleriaSkanow";
 import { RoutineEditor } from "@/components/looks/RoutineEditor";
 import { PROTOKOLY, PROTOKOL_WG_KLUCZA } from "@/lib/looks/protokoly";
 import { PODOCENA_ETYKIETA } from "@/lib/ai/wygladSchema";
@@ -42,21 +43,24 @@ import type {
  * robi z tego moduł do oceniania się, a nie do zmieniania czegokolwiek.
  */
 
-type Zakladka = "dzis" | "raport" | "progres" | "rutyny";
+type Zakladka = "dzis" | "raport" | "progres" | "zdjecia" | "rutyny";
 
 export type LooksDane = {
   maZgode: boolean;
   maPro: boolean;
+  /** Wyłącznie skany z oceną, od najnowszego. */
   skany: Skan[];
   ostatniRaport: WygladAnalysis | null;
+  /** Data skanu, z którym porównano ostatni. */
+  ostatniOdniesienieData: string | null;
+  /** Skany ze zdjęciami, także bez oceny - od najnowszego. */
+  galeria: SkanWGalerii[];
   rutyny: WygladRutyna[];
   /** Klucze rutyn odhaczonych dzisiaj. */
   odhaczoneDzis: string[];
   protokoly: WygladProtokol[];
   produkty: WygladProdukt[];
   limit: WygladLimit | null;
-  najstarszeZdjecie: ZdjecieDoPorownania | null;
-  najnowszeZdjecie: ZdjecieDoPorownania | null;
   senPrzedSkanem: Array<number | null>;
   czysteDniPrzedSkanem: Array<number | null>;
   wagaPrzySkanie: Array<number | null>;
@@ -195,6 +199,7 @@ export function LooksScreen(dane: LooksDane) {
           { value: "dzis", label: "Dziś" },
           { value: "raport", label: "Raport" },
           { value: "progres", label: "Progres" },
+          { value: "zdjecia", label: "Zdjęcia" },
           { value: "rutyny", label: "Rutyny" },
         ]}
       />
@@ -214,19 +219,26 @@ export function LooksScreen(dane: LooksDane) {
                     Skan {humanDate(ostatni.utworzono.slice(0, 10))}
                   </p>
                   {delta ? (
-                    <p
-                      className={clsx(
-                        "text-[15px] font-bold",
-                        delta.zmiana > 0
-                          ? "text-success"
-                          : delta.zmiana < 0
-                            ? "text-danger"
-                            : "text-muted",
+                    <>
+                      <p
+                        className={clsx(
+                          "text-[15px] font-bold",
+                          delta.zmiana > 0
+                            ? "text-success"
+                            : delta.zmiana < 0
+                              ? "text-danger"
+                              : "text-muted",
+                        )}
+                      >
+                        {delta.zmiana > 0 ? "+" : ""}
+                        {delta.zmiana} od {humanDate(delta.data.slice(0, 10))}
+                      </p>
+                      {delta.obszarow > 0 && (
+                        <p className="text-[11px] text-faint">
+                          na {delta.obszarow} wspólnych obszarach
+                        </p>
                       )}
-                    >
-                      {delta.zmiana > 0 ? "+" : ""}
-                      {delta.zmiana} od {humanDate(delta.data.slice(0, 10))}
-                    </p>
+                    </>
                   ) : (
                     <p className="text-[13px] text-faint">
                       Pierwszy skan - punktem odniesienia będzie on sam.
@@ -239,6 +251,12 @@ export function LooksScreen(dane: LooksDane) {
                   )}
                 </div>
               </div>
+
+              {dane.ostatniRaport?.porownanie_ogolne && (
+                <p className="mt-3 text-[13px] leading-relaxed text-muted">
+                  {dane.ostatniRaport.porownanie_ogolne}
+                </p>
+              )}
 
               {ostatni.oceny && (
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -384,6 +402,7 @@ export function LooksScreen(dane: LooksDane) {
         (dane.ostatniRaport ? (
           <ScanReport
             analiza={dane.ostatniRaport}
+            odniesienieData={dane.ostatniOdniesienieData}
             aktywneProtokoly={aktywneProtokoly}
             onWlaczProtokol={wlaczProtokol}
           />
@@ -400,11 +419,20 @@ export function LooksScreen(dane: LooksDane) {
       {zakladka === "progres" && (
         <ProgressTimeline
           skany={dane.skany}
-          najstarsze={dane.najstarszeZdjecie}
-          najnowsze={dane.najnowszeZdjecie}
           senPrzedSkanem={dane.senPrzedSkanem}
           czysteDniPrzedSkanem={dane.czysteDniPrzedSkanem}
           wagaPrzySkanie={dane.wagaPrzySkanie}
+        />
+      )}
+
+      {zakladka === "zdjecia" && (
+        <GaleriaSkanow
+          galeria={dane.galeria}
+          maPro={dane.maPro}
+          onZmiana={() => {
+            setToast("Zapisane.");
+            router.refresh();
+          }}
         />
       )}
 

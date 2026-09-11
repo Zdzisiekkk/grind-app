@@ -597,7 +597,17 @@ export function LooksChart({
           tickLine={false}
           axisLine={false}
           width={36}
-          domain={[0, 100]}
+          /*
+           * Oś dopasowana do danych, nie cała skala 0-100.
+           * Oceny wyglądu siedzą zwykle w paśmie 50-70 i na osi od zera
+           * zmiana z 58 na 66 wyglądała jak płaska linia - czyli dokładnie
+           * jak "nic się nie zmieniło", choć zmieniło się sporo.
+           */
+          domain={[
+            (min: number) => Math.max(0, Math.floor(min / 5) * 5 - 5),
+            (max: number) => Math.min(100, Math.ceil(max / 5) * 5 + 5),
+          ]}
+          allowDecimals={false}
         />
         <Tooltip
           content={<ChartTooltip colors={c} rows={tipRows} />}
