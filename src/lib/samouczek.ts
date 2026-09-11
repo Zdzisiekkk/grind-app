@@ -69,8 +69,8 @@ export const KROKI_SAMOUCZKA: readonly KrokSamouczka[] = [
     ikona: "🌙",
     tytul: "Sen, nawyki i reszta życia",
     tresc:
-      "W zakładce Więcej znajdziesz sen z oceną nocy, nawyki z passami, zadania, wygląd i finanse. " +
-      "To są rzeczy, które robią różnicę w miesiącach, a nie w dniach.",
+      "W zakładce Więcej znajdziesz sen, nawyki z passami, zadania, wygląd i finanse - a także Głowę " +
+      "(nastrój i wyciszenie), Naukę (powtórki) i Cele, które liczą postęp z całej reszty same.",
     gdzie: "Więcej",
   },
   {

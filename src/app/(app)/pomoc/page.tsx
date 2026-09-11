@@ -77,7 +77,13 @@ export default async function PomocPage() {
         userId={user.id}
         zgloszenia={zgloszenia ?? []}
         odpowiedzi={odpowiedzi ?? []}
-        wersja={process.env.NEXT_PUBLIC_WERSJA ?? "dev"}
+        // Commit z Vercela, gdy nikt nie ustawił wersji ręcznie. Zgłoszenie
+        // z "dev" nie mówiło, na której wersji kodu ktoś trafił na błąd.
+        wersja={
+          process.env.NEXT_PUBLIC_WERSJA ??
+          process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
+          "dev"
+        }
       />
 
       <Card title="Dokumenty" subtitle="Zasady, prywatność i ciasteczka" padded={false}>

@@ -1268,6 +1268,119 @@ export type WygladProdukt = {
   created_at: string;
 };
 
+/* -------------------------- Głowa, Nauka, Cele (0079) ------------------------ */
+
+export type GlowaDzien = {
+  id: string;
+  user_id: string;
+  data: string;
+  nastroj: number;
+  stres: number;
+  czynniki: string[];
+  notatka: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type GlowaSesja = {
+  id: string;
+  user_id: string;
+  data: string;
+  rodzaj: "medytacja" | "oddech" | "cisza";
+  minuty: number;
+  created_at: string;
+};
+
+export type GlowaWpis = {
+  id: string;
+  user_id: string;
+  data: string;
+  tresc: string;
+  /** Do trzech rzeczy, za które jesteś wdzięczny tego dnia. */
+  wdziecznosc: string[];
+  created_at: string;
+};
+
+export type NaukaTemat = {
+  id: string;
+  user_id: string;
+  nazwa: string;
+  ikona: string;
+  rodzaj: "jezyk" | "studia" | "kurs" | "umiejetnosc" | "inne";
+  /** Tygodniowy cel w minutach; null = bez celu. */
+  cel_min_tydz: number | null;
+  /** Postęp w jednostkach materiału ("lekcje", "rozdziały"); null = bez. */
+  jednostka: string | null;
+  jednostek_razem: number | null;
+  jednostek_zrobione: number;
+  archiwalny: boolean;
+  created_at: string;
+};
+
+export type NaukaSesja = {
+  id: string;
+  user_id: string;
+  temat_id: string;
+  data: string;
+  minuty: number;
+  notatka: string | null;
+  created_at: string;
+};
+
+export type NaukaPowtorka = {
+  id: string;
+  user_id: string;
+  temat_id: string;
+  tresc: string;
+  /** 0-5 w obiegu, 6 = opanowana (INTERWALY_DNI w src/lib/nauka.ts). */
+  etap: number;
+  /** Null wyłącznie dla opanowanych. */
+  nastepna: string | null;
+  ostatnio: string | null;
+  created_at: string;
+};
+
+export type CelMetryka =
+  | "waga"
+  | "majatek"
+  | "treningi"
+  | "ksiazki"
+  | "nauka"
+  | "nawyk"
+  | "wlasna"
+  | "kamienie";
+
+export type Cel = {
+  id: string;
+  user_id: string;
+  tytul: string;
+  opis: string | null;
+  horyzont: "kwartal" | "rok" | "wlasny";
+  metryka: CelMetryka;
+  od: string;
+  termin: string;
+  wartosc_cel: number | null;
+  wartosc_start: number | null;
+  /** Aktualna wartość - tylko dla metryki "wlasna". */
+  wartosc_reczna: number | null;
+  jednostka: string | null;
+  habit_id: string | null;
+  temat_id: string | null;
+  status: "aktywny" | "osiagniety" | "porzucony";
+  osiagniety_at: string | null;
+  created_at: string;
+};
+
+export type CelKamien = {
+  id: string;
+  user_id: string;
+  cel_id: string;
+  tytul: string;
+  zrobione_at: string | null;
+  kolejnosc: number;
+  created_at: string;
+};
+
 /** Stan limitu układania planów - zwracany przez `plan_ai_limit()` (migracja 0048). */
 export type PlanAiLimit = {
   odstep_dni: number;
@@ -1402,6 +1515,14 @@ export type Database = {
       wyglad_rutyna_log: Tbl<WygladRutynaLog, "user_id" | "rutyna_id">;
       wyglad_protokoly: Tbl<WygladProtokol, "user_id" | "klucz">;
       wyglad_produkty: Tbl<WygladProdukt, "user_id" | "nazwa">;
+      glowa_dzien: Tbl<GlowaDzien, "user_id" | "nastroj" | "stres">;
+      glowa_sesje: Tbl<GlowaSesja, "user_id" | "rodzaj" | "minuty">;
+      glowa_wpisy: Tbl<GlowaWpis, "user_id">;
+      nauka_tematy: Tbl<NaukaTemat, "user_id" | "nazwa">;
+      nauka_sesje: Tbl<NaukaSesja, "user_id" | "temat_id" | "minuty">;
+      nauka_powtorki: Tbl<NaukaPowtorka, "user_id" | "temat_id" | "tresc">;
+      cele: Tbl<Cel, "user_id" | "tytul" | "metryka" | "termin">;
+      cele_kamienie: Tbl<CelKamien, "user_id" | "cel_id" | "tytul">;
     };
     Views: {
       v_daily_nutrition: { Row: DailyNutrition; Relationships: [] };

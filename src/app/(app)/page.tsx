@@ -31,6 +31,7 @@ import { HISTORY_DAYS } from "@/lib/nawyki";
 import { ogolnaPassa } from "@/lib/passa";
 import { widoczneKarty } from "@/lib/pulpit";
 import { UstawieniaPulpitu } from "@/components/pulpit/UstawieniaPulpitu";
+import { ZycieKarty } from "@/components/pulpit/ZycieKarty";
 import { postepDoNastepnego, poziomZXp, progPoziomu, tytulPoziomu } from "@/lib/xp";
 import { dayWord } from "@/lib/vices";
 import { nazwaMiesiaca, tempoBudzetu, zl } from "@/lib/finanse";
@@ -375,6 +376,14 @@ export default async function DashboardPage() {
           </Link>
         </Card>
       )}
+
+      {/* --- Głowa, powtórki i cele: tylko wtedy, gdy czegoś chcą --- */}
+      <ZycieKarty
+        userId={user.id}
+        dzis={today}
+        pokazGlowe={pokaz("glowa")}
+        pokazCele={pokaz("cele")}
+      />
 
       {/* --- Propozycje trenera czekające na decyzję --- */}
       {(coachProposals ?? []).length > 0 && (

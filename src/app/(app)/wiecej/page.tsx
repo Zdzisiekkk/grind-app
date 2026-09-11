@@ -12,7 +12,10 @@ export const metadata = { title: "Więcej" };
  */
 const LINKS = [
   { href: "/nawyki", icon: "🔥", label: "Nawyki i nałogi", desc: "Codzienne odhaczanie, passy, wpadki" },
+  { href: "/cele", icon: "🎯", label: "Cele", desc: "Cele kwartalne i roczne, postęp liczy się sam" },
   { href: "/sen", icon: "😴", label: "Sen", desc: "Godziny, jakość, drzemki i wynik nocy" },
+  { href: "/glowa", icon: "🧠", label: "Głowa", desc: "Nastrój, stres, wyciszenie i dziennik" },
+  { href: "/nauka", icon: "🎓", label: "Nauka", desc: "Przedmioty, sesje ze stoperem i powtórki" },
   { href: "/zadania", icon: "☑️", label: "Zadania", desc: "Lista rzeczy do zrobienia z terminami" },
   { href: "/wyglad", icon: "🪪", label: "Wygląd", desc: "Skan twarzy, pielęgnacja, postawa, progres" },
   { href: "/finanse", icon: "💰", label: "Finanse", desc: "Wpływy, budżet, majątek i cele" },

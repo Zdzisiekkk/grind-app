@@ -55,6 +55,18 @@ export const KARTY_PULPITU: readonly KartaPulpitu[] = [
     domyslna: true,
   },
   {
+    id: "glowa",
+    nazwa: "Głowa",
+    opis: "Przypomnienie o wpisie nastroju - znika, gdy już jest.",
+    domyslna: true,
+  },
+  {
+    id: "cele",
+    nazwa: "Cele",
+    opis: "Najbliższe terminy Twoich celów.",
+    domyslna: false,
+  },
+  {
     id: "sen",
     nazwa: "Sen",
     opis: "Ostatnia noc i wynik snu.",

@@ -53,6 +53,8 @@ jobs:
           npm run test:prywatnosc
           npm run test:finanse
           npm run test:pomoc
+          npm run test:zycie
+          npm run test:zip
       - name: Budowanie
         run: npm run build
         env:

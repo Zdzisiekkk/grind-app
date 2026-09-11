@@ -36,6 +36,8 @@
     "test:prywatnosc": "node --no-warnings scripts/test-prywatnosc.mjs",
     "test:pomoc": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-pomoc.mjs",
     "test:finanse": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-finanse.mjs",
+    "test:zip": "node --no-warnings --import ./scripts/register-alias.mjs scripts/test-zip.mjs",
+    "test:zycie":"TZ=UTC node --no-warnings --import ./scripts/register-alias.mjs scripts/test-zycie.mjs",
     "import:przepisy": "node scripts/import-przepisy.mjs"
   },
   "dependencies": {

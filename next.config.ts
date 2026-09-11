@@ -12,13 +12,18 @@ import type { NextConfig } from "next";
  */
 
 /**
- * CSP idzie NA RAZIE w trybie samego raportowania.
+ * CSP egzekwowana (od września 2026, wcześniej tylko raportowanie).
  *
- * Włączenie jej od razu w trybie egzekwowania potrafi wygasić działającą
- * aplikację przez jedną przeoczoną domenę — a tego nie widać w testach, tylko
- * u ludzi. W trybie raportowania przeglądarka zgłasza naruszenia do konsoli,
- * niczego nie blokując; po kilku dniach bez zgłoszeń wystarczy zmienić nazwę
- * nagłówka na `Content-Security-Policy`.
+ * Przed przełączeniem przejrzane wszystkie miejsca, w których przeglądarka
+ * sięga poza własny serwer: jedyne zapytania idą do Supabase (dane, magazyn
+ * zdjęć, zmiany na żywo), a Open Food Facts, Open Library, Google Books,
+ * notowania i model AI są wołane z tras API, czyli z serwera. Stripe to
+ * przekierowanie, nie zapytanie. Obrazki z cudzych serwerów przepuszcza
+ * `img-src https:`.
+ *
+ * Nowa zewnętrzna usługa wołana Z PRZEGLĄDARKI musi trafić do `connect-src`
+ * - inaczej zapytanie zostanie zablokowane bez żadnego komunikatu na ekranie,
+ * tylko z wpisem w konsoli.
  */
 const csp = [
   "default-src 'self'",
