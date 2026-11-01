@@ -4,6 +4,7 @@ import { addDaysISO, todayISO } from "@/lib/format";
 import type {
   PartnerDzien,
   PartnerStan,
+  PartnerTydzienWiersz,
   PartnerWiadomosc,
   PartnerWspolny,
   PartnerWspolnyLog,
@@ -30,8 +31,10 @@ export default async function PartnerPage({ searchParams }: { searchParams: Prom
     return <PartnerScreen stan={stan} userId={user.id} dzis={dzis} dzien={dzien} />;
   }
 
-  const [{ data: partner }, { data: wspolne }, { data: logi }, { data: wiadomosci }] = await Promise.all([
+  const [{ data: partner }, { data: tydzien }, { data: wspolne }, { data: logi }, { data: wiadomosci }] = await Promise.all([
     supabase.rpc("partner_dzien", { p_data: dzien }),
+    // Bez migracji 0081 zwraca błąd: ekran działa dalej, tylko bez serii i pojedynku.
+    supabase.rpc("partner_tydzien", { p_do: dzis }),
     supabase.from("partner_wspolne").select("*").order("created_at"),
     supabase
       .from("partner_wspolne_log")
@@ -48,6 +51,7 @@ export default async function PartnerPage({ searchParams }: { searchParams: Prom
       dzis={dzis}
       dzien={dzien}
       partner={(partner ?? null) as PartnerDzien | null}
+      tydzien={Array.isArray(tydzien) ? (tydzien as PartnerTydzienWiersz[]) : null}
       wspolne={(wspolne ?? []) as PartnerWspolny[]}
       logiWspolne={(logi ?? []) as PartnerWspolnyLog[]}
       wiadomosci={(wiadomosci ?? []) as PartnerWiadomosc[]}

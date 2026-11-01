@@ -1504,6 +1504,18 @@ export type PartnerDzien = {
   skincare: Array<{ nazwa: string; pora: "rano" | "wieczor" | "dowolnie"; zrobione: boolean }>;
 };
 
+/** Jeden wiersz z partner_tydzien(): jedna osoba, jeden dzień (migracja 0081). */
+export type PartnerTydzienWiersz = {
+  kto: "ja" | "on";
+  data: string;
+  jedzenie: boolean;
+  trening: boolean;
+  nawyki_n: number;
+  nawyki_ok: number;
+  skin_n: number;
+  skin_ok: number;
+};
+
 export type PartnerSubskrypcja = { endpoint: string; p256dh: string; auth: string };
 
 export type Database = {
@@ -1639,6 +1651,7 @@ export type Database = {
       partner_dolacz: { Args: { p_kod: string }; Returns: PartnerStan };
       partner_rozlacz: { Args: Record<string, never>; Returns: undefined };
       partner_ustaw_alerty: { Args: { p_wlaczone: boolean }; Returns: undefined };
+      partner_tydzien: { Args: { p_do?: string }; Returns: PartnerTydzienWiersz[] | null };
       partner_dzien: { Args: { p_data?: string }; Returns: PartnerDzien | null };
       partner_wyslij: {
         Args: {
