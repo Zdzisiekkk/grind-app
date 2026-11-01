@@ -39,7 +39,12 @@ const PUBLIC_PATHS = [
  * bez wariantu edge) - stąd nazwa pliku i funkcji.
  */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Layout aplikacji nie zna ścieżki, a bramka trybu uproszczonego jej potrzebuje.
+  // Nagłówek jest ustawiany na żądaniu (nie na odpowiedzi), więc klient go nie podrobi.
+  const naglowki = new Headers(request.headers);
+  naglowki.set("x-grind-sciezka", request.nextUrl.pathname);
+
+  let response = NextResponse.next({ request: { headers: naglowki } });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -56,7 +61,7 @@ export async function proxy(request: NextRequest) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: { headers: naglowki } });
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
         }

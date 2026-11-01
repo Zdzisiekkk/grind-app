@@ -45,6 +45,7 @@ export function HabitsScreen({
   perfectStreak,
   reading,
   vices,
+  uproszczony = false,
 }: {
   userId: string;
   habits: HabitWithDay[];
@@ -58,6 +59,8 @@ export function HabitsScreen({
   reading: { id: string; title: string; current_page: number; pages: number | null } | null;
   /** Ile nałogów i najdłuższa trwająca passa - skrót do podstrony z nałogami. */
   vices: { count: number; bestDays: number };
+  /** Tryb uproszczony: bez skrótów do czytania i nałogów. */
+  uproszczony?: boolean;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -218,51 +221,55 @@ export function HabitsScreen({
         </Card>
       )}
 
-      {/* Czytanie mieszka tu, ale ma własny ekran - nie da się go odhaczyć
-          ptaszkiem, bo ma tytuł, strony i notatki. */}
-      <Link href="/nawyki/ksiazki" className="block">
-        <Card className="transition-colors active:bg-surface-2">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
-              📚
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold leading-tight">Czytanie</p>
-              <p className="truncate text-[13px] text-muted">
-                {reading
-                  ? `${reading.title} · s. ${reading.current_page}${reading.pages ? ` z ${reading.pages}` : ""}`
-                  : "Książki, postęp, cytaty i notatki"}
-              </p>
+      {!uproszczony && (
+        <>
+        {/* Czytanie mieszka tu, ale ma własny ekran - nie da się go odhaczyć
+            ptaszkiem, bo ma tytuł, strony i notatki. */}
+        <Link href="/nawyki/ksiazki" className="block">
+          <Card className="transition-colors active:bg-surface-2">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
+                📚
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-semibold leading-tight">Czytanie</p>
+                <p className="truncate text-[13px] text-muted">
+                  {reading
+                    ? `${reading.title} · s. ${reading.current_page}${reading.pages ? ` z ${reading.pages}` : ""}`
+                    : "Książki, postęp, cytaty i notatki"}
+                </p>
+              </div>
+              <span className="text-faint" aria-hidden>
+                ›
+              </span>
             </div>
-            <span className="text-faint" aria-hidden>
-              ›
-            </span>
-          </div>
-        </Card>
-      </Link>
+          </Card>
+        </Link>
 
-      {/* Nałóg to odwrócony nawyk - sukcesem jest dzień, w którym nic nie
-          zrobiłeś. Osobny ekran, bo passa liczy się tam w drugą stronę. */}
-      <Link href="/nawyki/nalogi" className="block">
-        <Card className="transition-colors active:bg-surface-2">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
-              🚭
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold leading-tight">Nałogi</p>
-              <p className="truncate text-[13px] text-muted">
-                {vices.count === 0
-                  ? "Walka ze złymi nawykami - licznik czystych dni"
-                  : `${vices.bestDays} ${dayWord(vices.bestDays)} czysto · ${viceWord(vices.count)}`}
-              </p>
+        {/* Nałóg to odwrócony nawyk - sukcesem jest dzień, w którym nic nie
+            zrobiłeś. Osobny ekran, bo passa liczy się tam w drugą stronę. */}
+        <Link href="/nawyki/nalogi" className="block">
+          <Card className="transition-colors active:bg-surface-2">
+            <div className="flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-xl">
+                🚭
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-semibold leading-tight">Nałogi</p>
+                <p className="truncate text-[13px] text-muted">
+                  {vices.count === 0
+                    ? "Walka ze złymi nawykami - licznik czystych dni"
+                    : `${vices.bestDays} ${dayWord(vices.bestDays)} czysto · ${viceWord(vices.count)}`}
+                </p>
+              </div>
+              <span className="text-faint" aria-hidden>
+                ›
+              </span>
             </div>
-            <span className="text-faint" aria-hidden>
-              ›
-            </span>
-          </div>
-        </Card>
-      </Link>
+          </Card>
+        </Link>
+        </>
+      )}
 
       {error && <Alert>{error}</Alert>}
 

@@ -66,7 +66,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Nie udało się pobrać kolejki." }, { status: 500 });
   }
 
-  const due = (data ?? []) as unknown as Due[];
+  // Alerty pary (migracja 0080) idą osobną funkcją, ale tą samą wysyłką. Jej
+  // awaria - np. migracja jeszcze niewdrożona - nie może zablokować zwykłych
+  // przypomnień, więc błąd tylko logujemy.
+  const { data: dataPara, error: errorPara } = await supabase.rpc("partner_push_due", {
+    p_secret: secret,
+  });
+  if (errorPara) console.error("partner_push_due:", errorPara.message);
+
+  const due = [
+    ...((data ?? []) as unknown as Due[]),
+    ...((dataPara ?? []) as unknown as Due[]),
+  ];
   if (due.length === 0) return NextResponse.json({ sent: 0 });
 
   let sent = 0;

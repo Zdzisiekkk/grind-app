@@ -34,6 +34,10 @@ export type Profile = {
   email: string | null;
   display_name: string | null;
   role: "user" | "admin";
+  /** Pełna aplikacja albo uproszczona; zmienia wyłącznie administrator (migracja 0080). */
+  tryb: "pelny" | "prosty";
+  /** Czy dostajesz wieczorny push, gdy partner ma zaległości (migracja 0080). */
+  partner_alerty: boolean;
   daily_kcal: number | null;
   daily_protein_g: number | null;
   daily_carbs_g: number | null;
@@ -1441,6 +1445,67 @@ export type SleepNap = {
   created_at: string;
 };
 
+/* --- Tryb uproszczony i partner (migracja 0080) --- */
+export type TrybKonta = "pelny" | "prosty";
+
+export type AdminTryb = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  tryb: TrybKonta;
+  w_parze: boolean;
+};
+
+export type PartnerStan =
+  | { w_parze: true; imie: string; alerty: boolean }
+  | { w_parze: false; kod: string | null; wygasa: string | null };
+
+export type PartnerKontekst = "ogolne" | "trening" | "posilek" | "nawyk" | "skincare" | "woda";
+
+export type PartnerPara = { user_id: string; partner_id: string; para_id: string; created_at: string };
+
+export type PartnerWspolny = {
+  id: string;
+  para_id: string;
+  nazwa: string;
+  ikona: string;
+  autor_id: string;
+  created_at: string;
+};
+
+export type PartnerWspolnyLog = { wspolne_id: string; user_id: string; data: string };
+
+export type PartnerWiadomosc = {
+  id: string;
+  para_id: string;
+  od_id: string;
+  do_id: string;
+  rodzaj: "szturch" | "reakcja" | "wiadomosc";
+  kontekst: PartnerKontekst;
+  tresc: string | null;
+  emoji: string | null;
+  data: string;
+  odczytano: string | null;
+  created_at: string;
+};
+
+/** Wycinek dnia partnera - wszystko, co partner_dzien() oddaje i nic ponad to. */
+export type PartnerDzien = {
+  imie: string;
+  data: string;
+  cel_kcal: number | null;
+  cel_wody_ml: number;
+  kcal: number;
+  bialko: number;
+  posilki: Array<{ typ: string; nazwa: string; gramy: number; kcal: number }>;
+  woda_ml: number;
+  treningi: Array<{ nazwa: string; zakonczony: boolean; minuty: number | null; serie: number }>;
+  nawyki: Array<{ nazwa: string; ikona: string; cel: number; zrobione: number }>;
+  skincare: Array<{ nazwa: string; pora: "rano" | "wieczor" | "dowolnie"; zrobione: boolean }>;
+};
+
+export type PartnerSubskrypcja = { endpoint: string; p256dh: string; auth: string };
+
 export type Database = {
   public: {
     Tables: {
@@ -1513,6 +1578,10 @@ export type Database = {
       wyglad_pomiary: Tbl<WygladPomiar, "user_id">;
       wyglad_rutyny: Tbl<WygladRutyna, "user_id" | "klucz" | "nazwa" | "pora">;
       wyglad_rutyna_log: Tbl<WygladRutynaLog, "user_id" | "rutyna_id">;
+      partner_pary: Tbl<PartnerPara, "user_id" | "partner_id" | "para_id">;
+      partner_wspolne: Tbl<PartnerWspolny, "para_id" | "nazwa" | "autor_id">;
+      partner_wspolne_log: Tbl<PartnerWspolnyLog, "wspolne_id" | "user_id">;
+      partner_wiadomosci: Tbl<PartnerWiadomosc, never>;
       wyglad_protokoly: Tbl<WygladProtokol, "user_id" | "klucz">;
       wyglad_produkty: Tbl<WygladProdukt, "user_id" | "nazwa">;
       glowa_dzien: Tbl<GlowaDzien, "user_id" | "nastroj" | "stres">;
@@ -1562,6 +1631,26 @@ export type Database = {
       admin_statystyki: { Args: Record<string, never>; Returns: unknown };
       admin_uzycie: { Args: { p_dni?: number }; Returns: AdminUzycie[] };
       admin_uzytkownicy: { Args: { p_limit?: number }; Returns: AdminUzytkownik[] };
+      admin_tryby: { Args: Record<string, never>; Returns: AdminTryb[] };
+      admin_ustaw_tryb: { Args: { p_konto: string; p_tryb: TrybKonta }; Returns: undefined };
+      partner_push_due: { Args: { p_secret: string }; Returns: unknown };
+      partner_stan: { Args: Record<string, never>; Returns: PartnerStan };
+      partner_kod: { Args: Record<string, never>; Returns: string };
+      partner_dolacz: { Args: { p_kod: string }; Returns: PartnerStan };
+      partner_rozlacz: { Args: Record<string, never>; Returns: undefined };
+      partner_ustaw_alerty: { Args: { p_wlaczone: boolean }; Returns: undefined };
+      partner_dzien: { Args: { p_data?: string }; Returns: PartnerDzien | null };
+      partner_wyslij: {
+        Args: {
+          p_rodzaj: "szturch" | "reakcja" | "wiadomosc";
+          p_kontekst?: PartnerKontekst;
+          p_tresc?: string | null;
+          p_emoji?: string | null;
+        };
+        Returns: string;
+      };
+      partner_odczytane: { Args: Record<string, never>; Returns: undefined };
+      partner_subskrypcje: { Args: Record<string, never>; Returns: PartnerSubskrypcja[] };
       zgloszenie_dostepne: { Args: { p_id: string }; Returns: boolean };
       finanse_podsumowanie: { Args: Record<string, never>; Returns: unknown };
       finanse_zapisz_migawke: { Args: { p_data?: string }; Returns: unknown };

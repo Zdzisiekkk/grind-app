@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { OfflineGate } from "@/components/offline/OfflineGate";
@@ -14,6 +15,7 @@ import { Samouczek } from "@/components/pomoc/Samouczek";
 import { DEFAULT_WATER_GOAL_ML, habitDueOn } from "@/lib/constants";
 import { todayISO } from "@/lib/format";
 import { DEFAULT_SLEEP_GOAL_MIN, sleepDuration } from "@/lib/sleep";
+import { sciezkaDozwolona } from "@/lib/tryb";
 import type { Habit } from "@/lib/database.types";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       supabase
         .from("profiles")
         .select(
-          "daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, elektrolity_przypomnienie, elektrolity_prog_ml, sleep_reminder_at, sleep_goal_min, onboarded_at, samouczek_stan",
+          "tryb, daily_kcal, daily_water_ml, water_reminder_from, water_reminder_to, water_reminder_every_min, elektrolity_przypomnienie, elektrolity_prog_ml, sleep_reminder_at, sleep_goal_min, onboarded_at, samouczek_stan",
         )
         .eq("id", user.id)
         .maybeSingle(),
@@ -50,6 +52,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Nowa osoba nie ma prawa zobaczyć pustego pulpitu z napisem "wybierz plan".
   // Kreator stoi poza tą grupą tras, więc przekierowanie się nie zapętli.
   if (profile && !profile.onboarded_at) redirect("/start");
+
+  const tryb = profile?.tryb ?? "pelny";
+
+  // Bramka trybu uproszczonego. Nagłówek ustawia proxy; bez niego (np. render
+  // poza proxy) nie blokujemy niczego, bo gorsze jest zamknięcie całej aplikacji.
+  const sciezka = (await headers()).get("x-grind-sciezka");
+  if (sciezka && !sciezkaDozwolona(tryb, sciezka)) redirect("/");
 
   const doneToday = new Map((habitLogs ?? []).map((l) => [l.habit_id, l.count]));
   const habitReminders = ((habits ?? []) as Habit[])
@@ -120,7 +129,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       */}
       {profile?.samouczek_stan === "nowy" && <Samouczek />}
       <OfflineGate />
-      <BottomNav />
+      <BottomNav tryb={tryb} />
       <Reminders
         habits={habitReminders}
         water={waterReminder}

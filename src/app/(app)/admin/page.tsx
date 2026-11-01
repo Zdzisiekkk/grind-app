@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, Chip, Stat } from "@/components/ui";
 import { Skrzynka } from "@/components/admin/Skrzynka";
+import { TrybyKont } from "@/components/admin/TrybyKont";
 import { createClient } from "@/lib/supabase/server";
 import { humanDate } from "@/lib/format";
 import type {
   AdminStatystyki,
+  AdminTryb,
   AdminUzycie,
   AdminUzytkownik,
   Zgloszenie,
@@ -47,12 +49,14 @@ export default async function AdminPage() {
     { data: uzytkownicy },
     { data: zgloszenia },
     { data: odpowiedzi },
+    { data: tryby },
   ] = await Promise.all([
     supabase.rpc("admin_statystyki"),
     supabase.rpc("admin_uzycie", { p_dni: 30 }),
     supabase.rpc("admin_uzytkownicy", { p_limit: 100 }),
     supabase.from("zgloszenia").select("*").order("created_at", { ascending: false }),
     supabase.from("zgloszenia_odpowiedzi").select("*").order("created_at"),
+    supabase.rpc("admin_tryby"),
   ]);
 
   const s = statystyki as AdminStatystyki | null;
@@ -177,6 +181,8 @@ export default async function AdminPage() {
           </Card>
         </>
       )}
+
+      <TrybyKont konta={(tryby ?? []) as AdminTryb[]} mojeId={user.id} />
 
       <Skrzynka
         adminId={user.id}

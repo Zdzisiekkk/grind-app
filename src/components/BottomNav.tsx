@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { clsx } from "@/lib/clsx";
 import { Sheet } from "@/components/ui";
+import type { TrybKonta } from "@/lib/database.types";
 
 /**
  * Pięć zakładek i przycisk dodawania pośrodku.
@@ -25,6 +26,25 @@ const ITEMS = [
   { href: "/trening", label: "Trening", icon: "🏋️" },
   { href: "/dieta", label: "Dieta", icon: "🍽️" },
   { href: "/wiecej", label: "Więcej", icon: "⚙️" },
+] as const;
+
+/**
+ * Tryb uproszczony: Partner wchodzi na miejsce "Więcej", bo to ekran, na który
+ * wchodzi się w tym trybie najczęściej. Resztę (profil, pomoc) otwiera ikona
+ * ustawień na pulpicie.
+ */
+const ITEMS_PROSTY = [
+  { href: "/", label: "Dziś", icon: "🏠" },
+  { href: "/trening", label: "Trening", icon: "🏋️" },
+  { href: "/dieta", label: "Dieta", icon: "🍽️" },
+  { href: "/partner", label: "Partner", icon: "🤝" },
+] as const;
+
+const SKROTY_PROSTY = [
+  { href: "/dieta", ikona: "🍽️", tytul: "Posiłek", opis: "Wyszukaj produkt, opisz słowami albo zrób zdjęcie" },
+  { href: "/trening", ikona: "🏋️", tytul: "Trening", opis: "Zacznij sesję z planu albo zapisz zrobioną" },
+  { href: "/nawyki", ikona: "🔥", tytul: "Nawyk", opis: "Odhacz dzisiejsze nawyki" },
+  { href: "/skincare", ikona: "🧴", tytul: "Skin care", opis: "Odhacz poranną i wieczorną pielęgnację" },
 ] as const;
 
 /** Co da się dodać z przycisku "+" - w kolejności, w jakiej robi się to często. */
@@ -59,7 +79,7 @@ function Zakladka({
   item,
   active,
 }: {
-  item: (typeof ITEMS)[number];
+  item: { href: string; label: string; icon: string };
   active: boolean;
 }) {
   return (
@@ -83,9 +103,12 @@ function Zakladka({
   );
 }
 
-export function BottomNav() {
+export function BottomNav({ tryb = "pelny" }: { tryb?: TrybKonta }) {
   const pathname = usePathname();
   const [dodawanie, setDodawanie] = useState(false);
+
+  const items = tryb === "prosty" ? ITEMS_PROSTY : ITEMS;
+  const skroty = tryb === "prosty" ? SKROTY_PROSTY : SKROTY;
 
   const aktywna = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
@@ -96,7 +119,7 @@ export function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-lg"
       >
         <ul className="mx-auto flex max-w-lg items-stretch pb-[env(safe-area-inset-bottom)]">
-          {ITEMS.slice(0, 2).map((item) => (
+          {items.slice(0, 2).map((item) => (
             <li key={item.href} className="flex-1">
               <Zakladka item={item} active={aktywna(item.href)} />
             </li>
@@ -113,7 +136,7 @@ export function BottomNav() {
             </button>
           </li>
 
-          {ITEMS.slice(2).map((item) => (
+          {items.slice(2).map((item) => (
             <li key={item.href} className="flex-1">
               <Zakladka item={item} active={aktywna(item.href)} />
             </li>
@@ -123,7 +146,7 @@ export function BottomNav() {
 
       <Sheet open={dodawanie} onClose={() => setDodawanie(false)} title="Co chcesz zapisać?">
         <ul className="flex flex-col gap-1.5">
-          {SKROTY.map((s) => (
+          {skroty.map((s) => (
             <li key={s.href}>
               <Link
                 href={s.href}

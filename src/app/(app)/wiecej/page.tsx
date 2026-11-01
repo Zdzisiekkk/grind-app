@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
+import { sciezkaDozwolona } from "@/lib/tryb";
 
 export const metadata = { title: "Więcej" };
 
@@ -12,6 +13,8 @@ export const metadata = { title: "Więcej" };
  */
 const LINKS = [
   { href: "/nawyki", icon: "🔥", label: "Nawyki i nałogi", desc: "Codzienne odhaczanie, passy, wpadki" },
+  { href: "/skincare", icon: "🧴", label: "Skin care", desc: "Poranna i wieczorna pielęgnacja, rutyny" },
+  { href: "/partner", icon: "🤝", label: "Partner", desc: "Wasz dzień, szturchnięcia i wspólne nawyki" },
   { href: "/cele", icon: "🎯", label: "Cele", desc: "Cele kwartalne i roczne, postęp liczy się sam" },
   { href: "/sen", icon: "😴", label: "Sen", desc: "Godziny, jakość, drzemki i wynik nocy" },
   { href: "/glowa", icon: "🧠", label: "Głowa", desc: "Nastrój, stres, wyciszenie i dziennik" },
@@ -33,7 +36,7 @@ export default async function WiecejPage() {
   } = await supabase.auth.getUser();
 
   const { data: profile } = user
-    ? await supabase.from("profiles").select("role, email").eq("id", user.id).maybeSingle()
+    ? await supabase.from("profiles").select("role, email, tryb").eq("id", user.id).maybeSingle()
     : { data: null };
 
   return (
@@ -42,7 +45,7 @@ export default async function WiecejPage() {
 
       <Card padded={false}>
         <ul className="divide-y divide-border">
-          {LINKS.map((l) => (
+          {LINKS.filter((l) => sciezkaDozwolona(profile?.tryb ?? "pelny", l.href)).map((l) => (
             <li key={l.href}>
               <Link href={l.href} className="flex items-center gap-3 px-4 py-3.5">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-lg">

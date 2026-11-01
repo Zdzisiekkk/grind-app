@@ -30,6 +30,7 @@ import { POZIOM_LABEL, czas, porcja, udzialWCelu } from "@/lib/przepisy";
 import { HISTORY_DAYS } from "@/lib/nawyki";
 import { ogolnaPassa } from "@/lib/passa";
 import { widoczneKarty } from "@/lib/pulpit";
+import { PulpitProsty } from "@/components/prosty/PulpitProsty";
 import { UstawieniaPulpitu } from "@/components/pulpit/UstawieniaPulpitu";
 import { ZycieKarty } from "@/components/pulpit/ZycieKarty";
 import { postepDoNastepnego, poziomZXp, progPoziomu, tytulPoziomu } from "@/lib/xp";
@@ -46,6 +47,10 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // Tryb uproszczony ma osobny, lekki pulpit - patrz PulpitProsty.
+  const { data: tryb } = await supabase.from("profiles").select("tryb").eq("id", user.id).maybeSingle();
+  if (tryb?.tryb === "prosty") return <PulpitProsty userId={user.id} />;
 
   const today = todayISO();
 

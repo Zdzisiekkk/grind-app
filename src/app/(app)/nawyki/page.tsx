@@ -26,7 +26,8 @@ export default async function HabitsPage({
   // seria to fakt o teraz, a nie o dniu, który akurat masz na ekranie.
   const date = dataZAdresu(d, today);
 
-  const [{ data: habits }, { data: logs }] = await Promise.all([
+  const [{ data: profilTryb }, { data: habits }, { data: logs }] = await Promise.all([
+    supabase.from("profiles").select("tryb").eq("id", user.id).maybeSingle(),
     supabase
       .from("habits")
       .select("*")
@@ -113,6 +114,7 @@ export default async function HabitsPage({
       perfectStreak={perfectDayStreak((habits ?? []) as Habit[], byHabit, today)}
       reading={reading?.[0] ?? null}
       vices={{ count: viceRows.length, bestDays }}
+      uproszczony={profilTryb?.tryb === "prosty"}
     />
   );
 }
